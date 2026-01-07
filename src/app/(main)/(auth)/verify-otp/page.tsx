@@ -3,11 +3,10 @@
 import type { OTPInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
-import { useEffect, useMemo, useState } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { Suspense, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { useResendOtp, useVerifyOtp } from '@/api/auth/mutations';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,19 +14,15 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { otpSchema } from '@/validations/auth';
 
-export default function VerifyOTPPage() {
+function VerifyOTPContent() {
   const router = useRouter();
-  const [isAutoLogging, setIsAutoLogging] = useState(false);
-  const verifyOtpMutation = useVerifyOtp();
-  const resendOtpMutation = useResendOtp();
+  const searchParams = useSearchParams();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isResending, setIsResending] = useState(false);
 
-  // Get userId from sessionStorage (runs once on mount)
-  const userId = useMemo(() => {
-    if (typeof window === 'undefined') {
-      return null;
-    }
-    return sessionStorage.getItem('pendingUserId');
-  }, []);
+  // Get userId from URL params (set by NextAuth signup callback)
+  const userId = searchParams.get('userId');
 
   useEffect(() => {
     if (!userId) {
@@ -43,63 +38,63 @@ export default function VerifyOTPPage() {
     resolver: zodResolver(otpSchema),
   });
 
-  const onSubmit = (data: OTPInput) => {
+  const onSubmit = async (data: OTPInput) => {
     if (!userId) {
       return;
     }
 
-    verifyOtpMutation.mutate(
-      { userId, otp: data.otp },
-      {
-        onSuccess: async (result) => {
-          setIsAutoLogging(true);
-          sessionStorage.removeItem('pendingUserId');
+    setIsLoading(true);
+    setError(null);
 
-          // Auto-login with the tokens from OTP verification
-          const signInResult = await signIn('credentials', {
-            email: result.user.email,
-            userId: result.user.id,
-            accessToken: result.accessToken,
-            refreshToken: result.refreshToken,
-            isTokenLogin: 'true',
-            redirect: false,
-          });
+    try {
+      const result = await signIn('verify-otp', {
+        userId,
+        otp: data.otp,
+        redirect: false,
+      });
 
-          if (signInResult?.error) {
-            toast.error('Auto-login failed. Please sign in manually.');
-            router.push('/sign-in');
-          } else {
-            toast.success('Email verified! Welcome!');
-            router.push('/dashboard');
-          }
-          setIsAutoLogging(false);
-        },
-        onError: (error: any) => {
-          toast.error(error.response?.data?.message || 'Verification failed');
-        },
+      if (result?.error) {
+        setError(result.error);
+      } else {
+        toast.success('Email verified! Welcome!');
+        router.push('/dashboard');
       }
-    );
+    } catch {
+      setError('An unexpected error occurred');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const resendOTP = () => {
+  const resendOTP = async () => {
     if (!userId) {
       return;
     }
 
-    resendOtpMutation.mutate(
-      { userId },
-      {
-        onSuccess: () => {
-          toast.success('OTP sent! Please check your email.');
-        },
-        onError: (error: any) => {
-          toast.error(error.response?.data?.message || 'Failed to resend OTP');
-        },
+    setIsResending(true);
+
+    try {
+      const result = await signIn('resend-otp', {
+        userId,
+        redirect: false,
+      });
+
+      // We expect an error here because resend-otp throws OTP_RESENT
+      if (result?.error === 'OTP_RESENT') {
+        toast.success('OTP sent! Please check your email.');
+      } else if (result?.error) {
+        toast.error(result.error);
       }
-    );
+    } catch {
+      toast.error('Failed to resend OTP');
+    } finally {
+      setIsResending(false);
+    }
   };
 
-  const isLoading = verifyOtpMutation.isPending || isAutoLogging;
+  if (!userId) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen items-center justify-center p-4">
@@ -110,12 +105,9 @@ export default function VerifyOTPPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {verifyOtpMutation.error && (
+            {error && (
               <Alert variant="destructive">
-                <AlertDescription>
-                  {(verifyOtpMutation.error as any).response?.data?.message ||
-                    'Verification failed'}
-                </AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
@@ -126,11 +118,7 @@ export default function VerifyOTPPage() {
             </div>
 
             <Button type="submit" className="w-full" disabled={isLoading}>
-              {isAutoLogging
-                ? 'Logging in...'
-                : verifyOtpMutation.isPending
-                  ? 'Verifying...'
-                  : 'Verify'}
+              {isLoading ? 'Verifying...' : 'Verify'}
             </Button>
 
             <p className="text-center text-sm text-gray-600">
@@ -138,15 +126,25 @@ export default function VerifyOTPPage() {
               <button
                 type="button"
                 onClick={resendOTP}
-                disabled={resendOtpMutation.isPending}
+                disabled={isResending}
                 className="text-blue-600 hover:underline disabled:opacity-50"
               >
-                {resendOtpMutation.isPending ? 'Sending...' : 'Resend OTP'}
+                {isResending ? 'Sending...' : 'Resend OTP'}
               </button>
             </p>
           </form>
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function VerifyOTPPage() {
+  return (
+    <Suspense
+      fallback={<div className="flex min-h-screen items-center justify-center">Loading...</div>}
+    >
+      <VerifyOTPContent />
+    </Suspense>
   );
 }

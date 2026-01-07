@@ -2,11 +2,12 @@
 
 import type { SignUpInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { signIn } from 'next-auth/react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { redirect } from 'next/navigation';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { useSignUp } from '@/api/auth/mutations';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -15,8 +16,8 @@ import { Label } from '@/components/ui/label';
 import { signUpSchema } from '@/validations/auth';
 
 export default function SignUpPage() {
-  const router = useRouter();
-  const signUpMutation = useSignUp();
+  const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
 
   const {
     register,
@@ -26,17 +27,32 @@ export default function SignUpPage() {
     resolver: zodResolver(signUpSchema),
   });
 
-  const onSubmit = (data: SignUpInput) => {
-    signUpMutation.mutate(data, {
-      onSuccess: (result) => {
+  const onSubmit = async (data: SignUpInput) => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await signIn('signup', {
+        email: data.email,
+        password: data.password,
+        redirect: false,
+      });
+
+      if (result?.error) {
+        setError(result.error);
+        setIsLoading(false);
+        return;
+      }
+
+      // Success - redirect to OTP page (NextAuth signIn callback returns URL)
+      if (result?.url) {
         toast.success('Registration successful! Please check your email for OTP.');
-        sessionStorage.setItem('pendingUserId', result.userId);
-        router.push('/verify-otp');
-      },
-      onError: (error: any) => {
-        toast.error(error.response?.data?.message || 'Registration failed');
-      },
-    });
+        redirect(result.url);
+      }
+    } catch {
+      setError('An unexpected error occurred');
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -48,11 +64,9 @@ export default function SignUpPage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            {signUpMutation.error && (
+            {error && (
               <Alert variant="destructive">
-                <AlertDescription>
-                  {(signUpMutation.error as any).response?.data?.message || 'Registration failed'}
-                </AlertDescription>
+                <AlertDescription>{error}</AlertDescription>
               </Alert>
             )}
 
@@ -68,8 +82,8 @@ export default function SignUpPage() {
               {errors.password && <p className="text-sm text-red-500">{errors.password.message}</p>}
             </div>
 
-            <Button type="submit" className="w-full" disabled={signUpMutation.isPending}>
-              {signUpMutation.isPending ? 'Creating account...' : 'Sign Up'}
+            <Button type="submit" className="w-full" disabled={isLoading}>
+              {isLoading ? 'Creating account...' : 'Sign Up'}
             </Button>
 
             <p className="text-center text-sm text-gray-600">

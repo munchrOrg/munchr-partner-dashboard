@@ -32,7 +32,7 @@ export default function SignInPage() {
     setError(null);
 
     try {
-      const result = await signIn('credentials', {
+      const result = await signIn('login', {
         email: data.email,
         password: data.password,
         redirect: false,
