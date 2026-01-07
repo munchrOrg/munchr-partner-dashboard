@@ -10,11 +10,13 @@ const authRoutes = ['/sign-in', '/sign-up', '/verify-otp'];
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Check if path is protected
+  // Skip middleware for non-relevant routes early
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
-
-  // Check if path is auth route
   const isAuthRoute = authRoutes.some((route) => pathname.startsWith(route));
+
+  if (!isProtectedRoute && !isAuthRoute) {
+    return NextResponse.next();
+  }
 
   // Get session token from cookies (NextAuth uses this cookie name)
   const sessionToken =
@@ -38,7 +40,10 @@ export function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    // Match all paths except static files and api routes
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\..*).*)',
+    // Only match routes that need auth checking
+    '/dashboard/:path*',
+    '/sign-in',
+    '/sign-up',
+    '/verify-otp',
   ],
 };

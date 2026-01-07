@@ -60,9 +60,9 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       // Initial sign in
       if (user) {
         token.id = user.id;
-        token.email = user.email;
-        token.accessToken = user.accessToken;
-        token.refreshToken = user.refreshToken;
+        token.email = user.email ?? '';
+        token.accessToken = user.accessToken ?? '';
+        token.refreshToken = user.refreshToken ?? '';
       }
       return token;
     },
