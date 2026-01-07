@@ -1,10 +1,6 @@
 import type { Metadata } from 'next';
-import { hasLocale, NextIntlClientProvider } from 'next-intl';
-import { setRequestLocale } from 'next-intl/server';
-import { notFound } from 'next/navigation';
 import { QueryProvider } from '@/components/providers/QueryProvider';
 import { Toaster } from '@/components/ui/sonner';
-import { routing } from '@/lib/I18nRouting';
 import '@/styles/global.css';
 
 export const metadata: Metadata = {
@@ -34,27 +30,12 @@ export const metadata: Metadata = {
   ],
 };
 
-export function generateStaticParams() {
-  return routing.locales.map((locale) => ({ locale }));
-}
-
-export default async function RootLayout(props: {
-  children: React.ReactNode;
-  params: Promise<{ locale: string }>;
-}) {
-  const { locale } = await props.params;
-
-  if (!hasLocale(routing.locales, locale)) {
-    notFound();
-  }
-
-  setRequestLocale(locale);
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang={locale}>
+    <html lang="en">
       <body>
         <QueryProvider>
-          <NextIntlClientProvider>{props.children}</NextIntlClientProvider>
+          {children}
           <Toaster richColors position="top-right" />
         </QueryProvider>
       </body>

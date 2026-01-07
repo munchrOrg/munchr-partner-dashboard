@@ -29,6 +29,16 @@ export default antfu(
     ignores: [
       'migrations/**/*',
       'src/components/ui/**/*',
+      '.next/**/*',
+      'public/**/*',
+      '.storybook/**/*',
+      '.docs/**/*',
+      '.vscode/**/*',
+      '.husky/**/*',
+      '.lintstagedrc.json',
+      '.prettierignore',
+      '.prettierrc',
+      '.prettierignore',
     ],
   },
   // --- Accessibility Rules ---

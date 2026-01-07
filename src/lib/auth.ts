@@ -10,6 +10,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         email: { label: 'Email', type: 'email' },
         password: { label: 'Password', type: 'password' },
         // For auto-login after OTP verification
+        userId: { label: 'User ID', type: 'text' },
         accessToken: { label: 'Access Token', type: 'text' },
         refreshToken: { label: 'Refresh Token', type: 'text' },
         isTokenLogin: { label: 'Is Token Login', type: 'text' },
