@@ -28,7 +28,7 @@ declare module 'next-auth/jwt' {
   };
 }
 
-declare module '@auth/core/types' {
+declare module '@auth/core/interfaces' {
   type User = {
     id: string;
     email: string;
