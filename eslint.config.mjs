@@ -23,7 +23,11 @@ export default antfu(
     // Format settings
     formatters: {
       css: true,
+      ts: true,
+      tsx: true,
+      json: true,
     },
+    
 
     // Ignored paths
     ignores: [
@@ -54,6 +58,10 @@ export default antfu(
   },
   // --- Storybook Rules ---
   ...storybook.configs['flat/recommended'],
+  // --- Explicit Ignores ---
+  {
+    ignores: ['src/components/ui/**/*'],
+  },
   // --- Custom Rule Overrides ---
   {
     rules: {
@@ -64,6 +72,7 @@ export default antfu(
       'node/prefer-global/process': 'off', // Allow using `process.env`
       'test/padding-around-all': 'error', // Add padding in test files
       'test/prefer-lowercase-title': 'off', // Allow using uppercase titles in test titles
+      'no-console': ['warn', { allow: ['warn', 'error'] }], // Allow console.warn and console.error
     },
   },
 );

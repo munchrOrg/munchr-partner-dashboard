@@ -1,31 +1,45 @@
 'use client';
 
+import type { OTPInput } from '@/validations/auth';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
 
 export function VerifyOtpForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [otp, setOtp] = useState<string[]>(Array.from({ length: OTP_LENGTH }).fill(''));
   const [resendTimer, setResendTimer] = useState(60);
+  const [digits, setDigits] = useState<string[]>(
+    Array.from({ length: OTP_LENGTH }).fill('') as string[]
+  );
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   const userId = searchParams.get('userId');
   const phone = searchParams.get('phone');
 
-  useEffect(() => {
-    if (!userId && !phone) {
-      router.push('/sign-up');
-    }
-  }, [userId, phone, router]);
+  const {
+    setValue,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<OTPInput>({
+    resolver: zodResolver(otpSchema),
+    defaultValues: { otp: '' },
+  });
+  // NOTE: COmmented till APi's are available
+  // useEffect(() => {
+  //   if (!userId && !phone) {
+  //     router.push('/sign-up');
+  //   }
+  // }, [userId, phone, router]);
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -35,14 +49,19 @@ export function VerifyOtpForm() {
     return undefined;
   }, [resendTimer]);
 
+  const updateOtpValue = (newDigits: string[]) => {
+    setDigits(newDigits);
+    setValue('otp', newDigits.join(''), { shouldValidate: false });
+  };
+
   const handleChange = (index: number, value: string) => {
     if (!/^\d*$/.test(value)) {
       return;
     }
 
-    const newOtp = [...otp];
-    newOtp[index] = value.slice(-1);
-    setOtp(newOtp);
+    const newDigits = [...digits];
+    newDigits[index] = value.slice(-1);
+    updateOtpValue(newDigits);
 
     if (value && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
@@ -50,7 +69,7 @@ export function VerifyOtpForm() {
   };
 
   const handleKeyDown = (index: number, e: React.KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === 'Backspace' && !otp[index] && index > 0) {
+    if (e.key === 'Backspace' && !digits[index] && index > 0) {
       inputRefs.current[index - 1]?.focus();
     }
   };
@@ -58,43 +77,30 @@ export function VerifyOtpForm() {
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
     const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
-    const newOtp = [...otp];
+    const newDigits = [...digits];
     pastedData.split('').forEach((char, i) => {
-      newOtp[i] = char;
+      newDigits[i] = char;
     });
-    setOtp(newOtp);
+    updateOtpValue(newDigits);
     inputRefs.current[Math.min(pastedData.length, OTP_LENGTH - 1)]?.focus();
   };
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const otpCode = otp.join('');
-
-    if (otpCode.length !== OTP_LENGTH) {
-      setError('Please enter the complete code');
-      return;
-    }
-
-    setIsLoading(true);
-    setError(null);
-
+  const onSubmit = async (data: OTPInput) => {
     try {
       const result = await signIn('verify-otp', {
         userId,
-        otp: otpCode,
+        otp: data.otp,
         redirect: false,
       });
 
       if (result?.error) {
-        setError(result.error);
+        setError('otp', { message: result.error });
       } else {
         toast.success('Verified successfully!');
         router.push('/dashboard');
       }
     } catch {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
+      setError('otp', { message: 'An unexpected error occurred' });
     }
   };
 
@@ -137,15 +143,15 @@ export function VerifyOtpForm() {
         We have sent a verification code to your {phone ? 'Phone No' : 'email'}
       </p>
 
-      <form onSubmit={onSubmit} className="space-y-6">
-        {error && (
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {errors.otp && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{errors.otp.message}</AlertDescription>
           </Alert>
         )}
 
         <div className="flex items-center justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
-          {otp.map((digit, index) => (
+          {digits.map((digit, index) => (
             <div key={index} className="flex items-center gap-2 sm:gap-3">
               <input
                 ref={(el) => {
@@ -166,13 +172,10 @@ export function VerifyOtpForm() {
 
         <Button
           type="submit"
-          disabled={isLoading || otp.some((d) => !d)}
-          className="h-11 w-full rounded-full text-black sm:h-12"
-          style={{
-            background: 'linear-gradient(90deg, #FFBE0D 0%, #F9F993 100%)',
-          }}
+          disabled={isSubmitting || digits.some((d) => !d)}
+          className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
         >
-          {isLoading ? 'Verifying...' : 'Submit'}
+          {isSubmitting ? 'Verifying...' : 'Submit'}
         </Button>
 
         <div className="text-center">

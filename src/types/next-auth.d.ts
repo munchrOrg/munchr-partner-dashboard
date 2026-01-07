@@ -28,21 +28,12 @@ declare module 'next-auth/jwt' {
   };
 }
 
-declare module '@auth/core/interfaces' {
-  type User = {
+declare module '@auth/core/adapters' {
+  type AdapterUser = {
     id: string;
     email: string;
     accessToken?: string;
     refreshToken?: string;
     pendingVerification?: boolean;
-  };
-
-  type Session = {
-    user: {
-      id: string;
-      email: string;
-    };
-    accessToken: string;
-    refreshToken: string;
   };
 }

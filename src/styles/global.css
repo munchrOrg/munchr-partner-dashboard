@@ -222,3 +222,7 @@
     @apply bg-background text-foreground;
   }
 }
+
+@utility bg-gradient-yellow {
+  background: linear-gradient(90deg, #ffbe0d 0%, #f9f993 100%);
+}

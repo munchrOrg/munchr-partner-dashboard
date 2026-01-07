@@ -31,7 +31,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
   };
 
   return (
-    <div className="w-full">
+    <div className="flex w-full flex-col items-start">
       <h1 className="mb-6 text-center text-xl font-semibold sm:text-2xl">Log in with your phone</h1>
 
       <form onSubmit={onSubmit} className="space-y-4">

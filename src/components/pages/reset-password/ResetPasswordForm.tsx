@@ -1,39 +1,30 @@
 'use client';
 
+import type { ResetPasswordInput } from '@/validations/auth';
+import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useState } from 'react';
+import { useForm } from 'react-hook-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { resetPasswordSchema } from '@/validations/auth';
 
 export function ResetPasswordForm() {
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
+  const {
+    register,
+    handleSubmit,
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<ResetPasswordInput>({
+    resolver: zodResolver(resetPasswordSchema),
+  });
 
-  const onSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError(null);
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-
-    if (password.length < 8) {
-      setError('Password must be at least 8 characters');
-      return;
-    }
-
-    setIsLoading(true);
-
+  const onSubmit = async (data: ResetPasswordInput) => {
     try {
       // Handler to be implemented - should reset password and redirect to sign-in
+      console.log('Reset password:', data.password);
     } catch {
-      setError('An unexpected error occurred');
-    } finally {
-      setIsLoading(false);
+      setError('root', { message: 'An unexpected error occurred' });
     }
   };
 
@@ -44,40 +35,43 @@ export function ResetPasswordForm() {
         Make sure your password is different from previous password
       </p>
 
-      <form onSubmit={onSubmit} className="space-y-4">
-        {error && (
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        {errors.root && (
           <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
+            <AlertDescription>{errors.root.message}</AlertDescription>
           </Alert>
         )}
 
-        <Input
-          type="password"
-          placeholder="Enter your New password"
-          className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          required
-        />
+        <div>
+          <Input
+            type="password"
+            placeholder="Enter your New password"
+            className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
+            {...register('password')}
+          />
+          {errors.password && (
+            <p className="mt-1 ml-4 text-sm text-red-500">{errors.password.message}</p>
+          )}
+        </div>
 
-        <Input
-          type="password"
-          placeholder="Re-type password"
-          className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
-          value={confirmPassword}
-          onChange={(e) => setConfirmPassword(e.target.value)}
-          required
-        />
+        <div>
+          <Input
+            type="password"
+            placeholder="Re-type password"
+            className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
+            {...register('confirmPassword')}
+          />
+          {errors.confirmPassword && (
+            <p className="mt-1 ml-4 text-sm text-red-500">{errors.confirmPassword.message}</p>
+          )}
+        </div>
 
         <Button
           type="submit"
-          disabled={isLoading || !password.trim() || !confirmPassword.trim()}
-          className="h-11 w-full rounded-full text-black sm:h-12"
-          style={{
-            background: 'linear-gradient(90deg, #FFBE0D 0%, #F9F993 100%)',
-          }}
+          disabled={isSubmitting}
+          className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
         >
-          {isLoading ? 'Resetting...' : 'Submit'}
+          {isSubmitting ? 'Resetting...' : 'Submit'}
         </Button>
 
         <div className="text-center">
