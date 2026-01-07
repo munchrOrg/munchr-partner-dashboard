@@ -5,13 +5,20 @@ export const signInSchema = z.object({
   password: z.string().min(1, 'Password is required'),
 });
 
+export const serviceProviderTypes = ['restaurant', 'home-chef'] as const;
+
 export const signUpSchema = z.object({
-  businessName: z.string().min(1, 'Business name is required'),
-  businessDescription: z.string().min(1, 'Business description is required'),
+  serviceProviderType: z.enum(serviceProviderTypes, {
+    message: 'Please select a service type',
+  }),
+  businessName: z.string().min(1, 'This field is required'),
+  businessDescription: z
+    .string()
+    .min(10, 'Description must be at least 10 characters')
+    .max(500, 'Description must be under 500 characters'),
   email: z.string().email('Invalid email address'),
-  phoneNumber: z.string().min(10, 'Phone number must be at least 10 digits'),
-  cuisines: z.string().min(1, 'Please select a cuisine'),
-  serviceProviderType: z.string().min(1, 'Please select a service type'),
+  phoneNumber: z.string().min(1, 'Phone number is required'),
+  cuisines: z.array(z.string()).min(1, 'Please select at least one cuisine'),
 });
 
 export const otpSchema = z.object({
