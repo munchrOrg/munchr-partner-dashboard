@@ -2,12 +2,14 @@ import type { Metadata } from 'next';
 import { hasLocale, NextIntlClientProvider } from 'next-intl';
 import { setRequestLocale } from 'next-intl/server';
 import { notFound } from 'next/navigation';
-import { PostHogProvider } from '@/components/analytics/PostHogProvider';
-import { DemoBadge } from '@/components/DemoBadge';
-import { routing } from '@/libs/I18nRouting';
+import { QueryProvider } from '@/components/providers/QueryProvider';
+import { Toaster } from '@/components/ui/sonner';
+import { routing } from '@/lib/I18nRouting';
 import '@/styles/global.css';
 
 export const metadata: Metadata = {
+  title: 'Munchr Partner Dashboard',
+  description: 'Partner dashboard for Munchr',
   icons: [
     {
       rel: 'apple-touch-icon',
@@ -33,7 +35,7 @@ export const metadata: Metadata = {
 };
 
 export function generateStaticParams() {
-  return routing.locales.map(locale => ({ locale }));
+  return routing.locales.map((locale) => ({ locale }));
 }
 
 export default async function RootLayout(props: {
@@ -51,13 +53,10 @@ export default async function RootLayout(props: {
   return (
     <html lang={locale}>
       <body>
-        <NextIntlClientProvider>
-          <PostHogProvider>
-            {props.children}
-          </PostHogProvider>
-
-          <DemoBadge />
-        </NextIntlClientProvider>
+        <QueryProvider>
+          <NextIntlClientProvider>{props.children}</NextIntlClientProvider>
+          <Toaster richColors position="top-right" />
+        </QueryProvider>
       </body>
     </html>
   );

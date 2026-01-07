@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { getTranslations, setRequestLocale } from 'next-intl/server';
 import Image from 'next/image';
-import { routing } from '@/libs/I18nRouting';
+import { routing } from '@/lib/I18nRouting';
 
 type IPortfolioDetailProps = {
   params: Promise<{ slug: string; locale: string }>;
@@ -9,11 +9,11 @@ type IPortfolioDetailProps = {
 
 export function generateStaticParams() {
   return routing.locales
-    .map(locale =>
-      Array.from(Array.from({ length: 6 }).keys()).map(elt => ({
+    .map((locale) =>
+      Array.from(Array.from({ length: 6 }).keys()).map((elt) => ({
         slug: `${elt}`,
         locale,
-      })),
+      }))
     )
     .flat(1);
 }
@@ -54,9 +54,7 @@ export default async function PortfolioDetail(props: IPortfolioDetailProps) {
         </a>
       </div>
 
-      <a
-        href="https://www.coderabbit.ai?utm_source=next_js_starter&utm_medium=github&utm_campaign=next_js_starter_oss_2025"
-      >
+      <a href="https://www.coderabbit.ai?utm_source=next_js_starter&utm_medium=github&utm_campaign=next_js_starter_oss_2025">
         <Image
           className="mx-auto mt-2"
           src="/assets/images/coderabbit-logo-light.svg"
@@ -67,6 +65,6 @@ export default async function PortfolioDetail(props: IPortfolioDetailProps) {
       </a>
     </>
   );
-};
+}
 
 export const dynamicParams = false;

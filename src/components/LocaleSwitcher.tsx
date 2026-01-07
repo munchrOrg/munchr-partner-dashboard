@@ -3,8 +3,8 @@
 import type { ChangeEventHandler } from 'react';
 import { useLocale } from 'next-intl';
 import { useRouter } from 'next/navigation';
-import { usePathname } from '@/libs/I18nNavigation';
-import { routing } from '@/libs/I18nRouting';
+import { usePathname } from '@/lib/I18nNavigation';
+import { routing } from '@/lib/I18nRouting';
 
 export const LocaleSwitcher = () => {
   const router = useRouter();
@@ -23,7 +23,7 @@ export const LocaleSwitcher = () => {
       className="border border-gray-300 font-medium focus:outline-hidden focus-visible:ring-3"
       aria-label="lang-switcher"
     >
-      {routing.locales.map(elt => (
+      {routing.locales.map((elt) => (
         <option key={elt} value={elt}>
           {elt.toUpperCase()}
         </option>
