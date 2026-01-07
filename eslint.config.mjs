@@ -75,4 +75,11 @@ export default antfu(
       'no-console': ['warn', { allow: ['warn', 'error'] }], // Allow console.warn and console.error
     },
   },
+  // --- Allow interfaces in type definition files (needed for module augmentation) ---
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      'ts/consistent-type-definitions': 'off', // Allow interfaces in .d.ts files for module augmentation
+    },
+  },
 );

@@ -1,39 +1,39 @@
 import type { DefaultSession, DefaultUser } from 'next-auth';
 
 declare module 'next-auth' {
-  type User = {
+  interface User extends DefaultUser {
     id: string;
     email: string;
     accessToken?: string;
     refreshToken?: string;
     pendingVerification?: boolean;
-  } & DefaultUser;
+  }
 
-  type Session = {
+  interface Session extends DefaultSession {
     user: {
       id: string;
       email: string;
     } & DefaultSession['user'];
     accessToken: string;
     refreshToken: string;
-  } & DefaultSession;
+  }
 }
 
 declare module 'next-auth/jwt' {
-  type JWT = {
+  interface JWT {
     id: string;
     email: string;
     accessToken: string;
     refreshToken: string;
-  };
+  }
 }
 
 declare module '@auth/core/adapters' {
-  type AdapterUser = {
+  interface AdapterUser {
     id: string;
     email: string;
     accessToken?: string;
     refreshToken?: string;
     pendingVerification?: boolean;
-  };
+  }
 }
