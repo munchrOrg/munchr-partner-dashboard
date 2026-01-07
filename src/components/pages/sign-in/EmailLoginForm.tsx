@@ -96,7 +96,10 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
         <Button
           type="submit"
           disabled={isLoading}
-          className="h-11 w-full rounded-full bg-amber-400 font-medium text-black hover:bg-amber-500 sm:h-12"
+          className="h-11 w-full rounded-full font-medium text-black hover:bg-amber-500 sm:h-12"
+          style={{
+            background: 'linear-gradient(90deg, #FFBE0D 0%, #F9F993 100%)',
+          }}
         >
           {isLoading ? 'Logging in...' : 'Log In'}
         </Button>
