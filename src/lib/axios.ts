@@ -1,3 +1,4 @@
+import type { Session } from 'next-auth';
 import axios from 'axios';
 import { getSession } from 'next-auth/react';
 
@@ -13,7 +14,7 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     if (typeof window !== 'undefined') {
-      const session = await getSession();
+      const session = (await getSession()) as Session | null;
       if (session?.accessToken) {
         config.headers.Authorization = `Bearer ${session.accessToken}`;
       }

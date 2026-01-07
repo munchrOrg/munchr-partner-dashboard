@@ -3,7 +3,6 @@ import Credentials from 'next-auth/providers/credentials';
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [
-    // Login Provider
     Credentials({
       id: 'login',
       name: 'Login',
@@ -35,8 +34,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         };
       },
     }),
-
-    // Signup Provider
     Credentials({
       id: 'signup',
       name: 'Sign Up',
@@ -60,18 +57,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error(data.message || 'Registration failed');
         }
 
-        // Return partial user - no tokens yet (needs OTP verification)
-        // We store userId to use in OTP verification
         return {
           id: data.userId,
           email: credentials?.email as string,
-          // No tokens - user needs to verify OTP first
           pendingVerification: true,
         };
       },
     }),
-
-    // OTP Verification Provider
     Credentials({
       id: 'verify-otp',
       name: 'Verify OTP',
@@ -103,8 +95,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         };
       },
     }),
-
-    // Resend OTP Provider (just triggers resend, doesn't create session)
     Credentials({
       id: 'resend-otp',
       name: 'Resend OTP',
@@ -126,8 +116,6 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           throw new Error(data.message || 'Failed to resend OTP');
         }
 
-        // Return null - we don't want to create a session, just resend OTP
-        // The error will be caught and we handle it in the UI
         throw new Error('OTP_RESENT');
       },
     }),
@@ -138,9 +126,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
   },
   callbacks: {
     async signIn({ user }) {
-      // Block session creation for pending verification users
       if ('pendingVerification' in user && user.pendingVerification) {
-        // Store userId for OTP page - will be handled by the page
         return `/verify-otp?userId=${user.id}`;
       }
       return true;
