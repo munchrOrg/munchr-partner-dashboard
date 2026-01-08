@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { EmailLoginForm, PhoneLoginForm } from '@/components/pages/sign-in';
+import { EmailLoginForm } from '@/components/pages/sign-in/EmailLoginForm';
+import { PhoneLoginForm } from '@/components/pages/sign-in/PhoneLoginForm';
 
 type LoginMethod = 'email' | 'phone';
 

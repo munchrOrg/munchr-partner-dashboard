@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
-import { VerifyOtpForm } from '@/components/pages/verify-otp';
+import { VerifyOtpForm } from '@/components/pages/verify/VerifyOtpForm';
 
-export default function VerifyOtpPage() {
+export default function VerifyPhonePage() {
   return (
     <Suspense
       fallback={
@@ -10,7 +10,7 @@ export default function VerifyOtpPage() {
         </div>
       }
     >
-      <VerifyOtpForm />
+      <VerifyOtpForm type="phone" />
     </Suspense>
   );
 }

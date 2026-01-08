@@ -1,5 +1,5 @@
 import Image from 'next/image';
-import { FeatureShowcase } from '@/components/shared/auth';
+import { FeatureShowcase } from '@/components/shared/auth/FeatureShowcase';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (

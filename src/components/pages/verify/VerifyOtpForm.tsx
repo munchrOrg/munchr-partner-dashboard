@@ -2,7 +2,6 @@
 
 import type { OTPInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -13,7 +12,26 @@ import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
 
-export function VerifyOtpForm() {
+type VerifyOtpFormProps = {
+  type: 'email' | 'phone';
+};
+
+const CONFIG = {
+  email: {
+    title: 'Verify your email',
+    getDescription: (destination: string) => `We have sent a verification code to ${destination}`,
+    resendText: 'Resend code to email',
+    successMessage: 'Email verified successfully!',
+  },
+  phone: {
+    title: 'Verify your phone',
+    getDescription: (destination: string) => `We have sent a verification code to ${destination}`,
+    resendText: 'Resend code to phone',
+    successMessage: 'Phone verified successfully!',
+  },
+};
+
+export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [resendTimer, setResendTimer] = useState(60);
@@ -22,8 +40,11 @@ export function VerifyOtpForm() {
   );
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const userId = searchParams.get('userId');
+  const email = searchParams.get('email');
   const phone = searchParams.get('phone');
+  const destination = type === 'email' ? email : phone;
+
+  const config = CONFIG[type];
 
   const {
     setValue,
@@ -34,12 +55,6 @@ export function VerifyOtpForm() {
     resolver: zodResolver(otpSchema),
     defaultValues: { otp: '' },
   });
-  // NOTE: COmmented till APi's are available
-  // useEffect(() => {
-  //   if (!userId && !phone) {
-  //     router.push('/sign-up');
-  //   }
-  // }, [userId, phone, router]);
 
   useEffect(() => {
     if (resendTimer > 0) {
@@ -87,16 +102,16 @@ export function VerifyOtpForm() {
 
   const onSubmit = async (data: OTPInput) => {
     try {
-      const result = await signIn('verify-otp', {
-        userId,
-        otp: data.otp,
-        redirect: false,
-      });
+      // For now: log data and navigate
+      console.log('OTP Verification:', { type, destination, otp: data.otp });
 
-      if (result?.error) {
-        setError('otp', { message: result.error });
+      toast.success(config.successMessage);
+
+      if (type === 'email') {
+        // After email verification, go to phone verification
+        router.push(`/verify-phone?phone=${encodeURIComponent(phone ?? '')}`);
       } else {
-        toast.success('Verified successfully!');
+        // After phone verification, go to dashboard
         router.push('/dashboard');
       }
     } catch {
@@ -105,22 +120,15 @@ export function VerifyOtpForm() {
   };
 
   const handleResend = async () => {
-    if (resendTimer > 0 || !userId) {
+    if (resendTimer > 0) {
       return;
     }
 
     try {
-      const result = await signIn('resend-otp', {
-        userId,
-        redirect: false,
-      });
-
-      if (result?.error === 'OTP_RESENT') {
-        toast.success('OTP sent! Please check your email.');
-        setResendTimer(60);
-      } else if (result?.error) {
-        toast.error(result.error);
-      }
+      // For now: just log and reset timer
+      console.log('Resend OTP:', { type, destination });
+      toast.success(`OTP sent to your ${type}!`);
+      setResendTimer(60);
     } catch {
       toast.error('Failed to resend OTP');
     }
@@ -132,15 +140,37 @@ export function VerifyOtpForm() {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  if (!userId && !phone) {
+  const maskDestination = (value: string | null) => {
+    if (!value) {
+      return '';
+    }
+    if (type === 'email') {
+      const [local, domain] = value.split('@');
+      if (!local || !domain) {
+        return value;
+      }
+      const maskedLocal =
+        local.length > 2
+          ? `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}`
+          : local;
+      return `${maskedLocal}@${domain}`;
+    }
+    // Phone masking
+    if (value.length > 4) {
+      return `${'*'.repeat(value.length - 4)}${value.slice(-4)}`;
+    }
+    return value;
+  };
+
+  if (!destination) {
     return null;
   }
 
   return (
     <div className="w-full">
-      <h1 className="mb-2 text-xl font-semibold sm:text-2xl">Enter the code</h1>
+      <h1 className="mb-2 text-xl font-semibold sm:text-2xl">{config.title}</h1>
       <p className="mb-6 text-sm text-gray-600">
-        We have sent a verification code to your {phone ? 'Phone No' : 'email'}
+        {config.getDescription(maskDestination(destination))}
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
@@ -187,7 +217,7 @@ export function VerifyOtpForm() {
               onClick={handleResend}
               className="text-sm font-medium text-amber-500 hover:underline"
             >
-              Resend code
+              {config.resendText}
             </button>
           )}
         </div>

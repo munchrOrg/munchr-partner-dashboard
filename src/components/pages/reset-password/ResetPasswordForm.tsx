@@ -3,6 +3,7 @@
 import type { ResetPasswordInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -18,11 +19,14 @@ export function ResetPasswordForm() {
   } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
   });
+  const router = useRouter();
 
   const onSubmit = async (data: ResetPasswordInput) => {
     try {
       // Handler to be implemented - should reset password and redirect to sign-in
       console.log('Reset password:', data.password);
+      console.log('Confirm password:', data.confirmPassword);
+      router.push('/sign-in');
     } catch {
       setError('root', { message: 'An unexpected error occurred' });
     }

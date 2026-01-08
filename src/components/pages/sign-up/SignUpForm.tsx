@@ -7,6 +7,7 @@ import { isValidPhoneNumber } from 'libphonenumber-js';
 import { X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import PhoneInput from 'react-phone-number-input';
@@ -57,6 +58,7 @@ const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export function SignUpForm() {
+  const router = useRouter();
   const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
@@ -129,8 +131,21 @@ export function SignUpForm() {
     }
 
     try {
-      // Handler to be implemented - should send OTP and redirect to verify-otp page
-      console.log('Sign up data:', data, logoFile);
+      // Log data for now
+      console.log('Sign up data:', {
+        serviceProviderType: data.serviceProviderType,
+        businessName: data.businessName,
+        businessDescription: data.businessDescription,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        cuisines: data.cuisines,
+        logoFile,
+      });
+
+      // Navigate to verify-email with email and phone in query params
+      router.push(
+        `/verify-email?email=${encodeURIComponent(data.email)}&phone=${encodeURIComponent(data.phoneNumber)}`
+      );
     } catch {
       setError('root', { message: 'An unexpected error occurred' });
     }
@@ -260,47 +275,54 @@ export function SignUpForm() {
           )}
         </div>
 
-        {/* Logo Upload with Side-by-Side Preview */}
-        <div className="flex gap-4">
-          <label className="flex min-h-[100px] flex-1 cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white transition-colors hover:bg-gray-50">
-            <input
-              type="file"
-              accept=".jpg,.jpeg,.png,.webp"
-              className="hidden"
-              onChange={handleFileChange}
-            />
-            <svg
-              className="mb-2 h-6 w-6 text-gray-400"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
-              />
-            </svg>
-            <span className="text-sm text-gray-500">
-              {logoFile ? 'Change logo' : 'Upload logo'}
-            </span>
-            <span className="mt-1 text-xs text-gray-400">JPG, PNG, WebP (max 5MB)</span>
-          </label>
-
-          {logoPreview && (
-            <div className="relative">
-              <div className="relative h-[100px] w-[100px] overflow-hidden rounded-2xl border border-gray-200">
-                <Image src={logoPreview} alt="Logo preview" fill className="object-cover" />
+        {/* Logo Upload with Preview Inside Box */}
+        <div>
+          {logoPreview ? (
+            <div className="relative flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
+              <div className="relative h-24 w-24 overflow-hidden rounded-xl">
+                <Image src={logoPreview} alt="Logo preview" fill className="object-contain" />
               </div>
               <button
                 type="button"
                 onClick={handleRemoveLogo}
-                className="absolute -top-2 -right-2 rounded-full bg-red-500 p-1 text-white shadow-md hover:bg-red-600"
+                className="absolute top-2 right-2 rounded-full bg-red-500 p-1 text-white shadow-md hover:bg-red-600"
               >
                 <X className="size-3" />
               </button>
+              <label className="mt-2 cursor-pointer text-sm text-amber-500 hover:underline">
+                <input
+                  type="file"
+                  accept=".jpg,.jpeg,.png,.webp"
+                  className="hidden"
+                  onChange={handleFileChange}
+                />
+                Change logo
+              </label>
             </div>
+          ) : (
+            <label className="flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white transition-colors hover:bg-gray-50">
+              <input
+                type="file"
+                accept=".jpg,.jpeg,.png,.webp"
+                className="hidden"
+                onChange={handleFileChange}
+              />
+              <svg
+                className="mb-2 h-6 w-6 text-gray-400"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"
+                />
+              </svg>
+              <span className="text-sm text-gray-500">Upload logo</span>
+              <span className="mt-1 text-xs text-gray-400">JPG, PNG, WebP (max 5MB)</span>
+            </label>
           )}
         </div>
         {logoError && <p className="ml-4 text-sm text-red-500">{logoError}</p>}
