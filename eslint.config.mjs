@@ -2,7 +2,6 @@ import { dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import antfu from '@antfu/eslint-config';
 import jsxA11y from 'eslint-plugin-jsx-a11y';
-import playwright from 'eslint-plugin-playwright';
 import storybook from 'eslint-plugin-storybook';
 import tailwind from 'eslint-plugin-tailwindcss';
 
@@ -24,11 +23,26 @@ export default antfu(
     // Format settings
     formatters: {
       css: true,
+      ts: true,
+      tsx: true,
+      json: true,
     },
+    
 
     // Ignored paths
     ignores: [
       'migrations/**/*',
+      'src/components/ui/**/*',
+      '.next/**/*',
+      'public/**/*',
+      '.storybook/**/*',
+      '.docs/**/*',
+      '.vscode/**/*',
+      '.husky/**/*',
+      '.lintstagedrc.json',
+      '.prettierignore',
+      '.prettierrc',
+      '.prettierignore',
     ],
   },
   // --- Accessibility Rules ---
@@ -42,16 +56,12 @@ export default antfu(
       },
     },
   },
-  // --- E2E Testing Rules ---
-  {
-    files: [
-      '**/*.spec.ts',
-      '**/*.e2e.ts',
-    ],
-    ...playwright.configs['flat/recommended'],
-  },
   // --- Storybook Rules ---
   ...storybook.configs['flat/recommended'],
+  // --- Explicit Ignores ---
+  {
+    ignores: ['src/components/ui/**/*'],
+  },
   // --- Custom Rule Overrides ---
   {
     rules: {
@@ -62,6 +72,14 @@ export default antfu(
       'node/prefer-global/process': 'off', // Allow using `process.env`
       'test/padding-around-all': 'error', // Add padding in test files
       'test/prefer-lowercase-title': 'off', // Allow using uppercase titles in test titles
+      'no-console': ['warn', { allow: ['warn', 'error'] }], // Allow console.warn and console.error
+    },
+  },
+  // --- Allow interfaces in type definition files (needed for module augmentation) ---
+  {
+    files: ['**/*.d.ts'],
+    rules: {
+      'ts/consistent-type-definitions': 'off', // Allow interfaces in .d.ts files for module augmentation
     },
   },
 );
