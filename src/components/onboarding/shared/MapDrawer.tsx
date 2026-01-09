@@ -2,7 +2,7 @@
 
 import type { Coordinates } from '@/types/onboarding';
 import { Autocomplete, GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { Search, X } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -17,7 +17,8 @@ const libraries: 'places'[] = ['places'];
 
 const containerStyle = {
   width: '100%',
-  height: '400px',
+  height: '350px',
+  borderRadius: '20px',
 };
 
 const defaultCenter = {
@@ -194,81 +195,55 @@ export function MapDrawer() {
 
   return (
     <Sheet open={isMapDrawerOpen} onOpenChange={closeMapDrawer}>
-      <SheetContent side="right" className="w-full max-w-lg overflow-y-auto sm:max-w-xl">
+      <SheetContent
+        side="right"
+        className="flex w-full flex-col overflow-y-auto rounded-l-2xl px-6 pt-6 pb-10 sm:max-w-xl"
+      >
         <SheetHeader className="pb-4">
-          <div className="flex items-center justify-between">
-            <SheetTitle className="text-xl font-semibold">Is This the right location?</SheetTitle>
-            <button
-              onClick={closeMapDrawer}
-              className="ring-offset-background rounded-sm opacity-70 transition-opacity hover:opacity-100"
-            >
-              <X className="h-5 w-5" />
-              <span className="sr-only">Close</span>
-            </button>
-          </div>
-          <p className="pt-2 text-sm text-gray-600">
+          <SheetTitle className="text-3xl font-bold">Is This the right location?</SheetTitle>
+
+          <p className="pt-2 text-lg">
             This helps customers find you easily. If it&apos;s not correct, search for your exact
             address or a nearby landmark.
           </p>
         </SheetHeader>
 
-        <div className="mt-6 space-y-4">
-          {/* Search Input */}
+        <div className="mt-6 flex flex-1 flex-col">
           <div className="relative">
-            {isLoaded && (
-              <Autocomplete onLoad={setAutocomplete} onPlaceChanged={onPlaceChanged}>
-                <div className="relative">
-                  <Search className="absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                  <Input
-                    ref={searchInputRef}
-                    type="text"
-                    placeholder="Search address or landmark"
-                    className="h-11 rounded-lg pr-4 pl-10"
-                  />
+            <div className="relative overflow-hidden rounded-2xl border">
+              {isLoaded && (
+                <div className="pointer-events-none absolute top-4 left-1/2 z-50 w-full -translate-x-1/2 px-4">
+                  <div className="pointer-events-auto mx-auto w-full max-w-full">
+                    <Autocomplete onLoad={setAutocomplete} onPlaceChanged={onPlaceChanged}>
+                      <div className="relative rounded-full bg-white shadow-md">
+                        <Search className="absolute top-1/2 left-3 size-5 -translate-y-1/2 text-gray-400" />
+                        <Input
+                          ref={searchInputRef}
+                          type="text"
+                          placeholder="Search address or landmark"
+                          className="h-11 rounded-full bg-transparent pr-4 pl-10 placeholder:text-gray-400"
+                        />
+                      </div>
+                    </Autocomplete>
+                  </div>
                 </div>
-              </Autocomplete>
-            )}
-          </div>
-
-          {/* Map */}
-          <div className="overflow-hidden rounded-lg border">
-            {isLoaded ? (
-              <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={15}>
-                <Marker position={markerPosition} draggable onDragEnd={onMarkerDragEnd} />
-              </GoogleMap>
-            ) : (
-              <div className="flex h-[400px] items-center justify-center bg-gray-100">
-                Loading map...
-              </div>
-            )}
-          </div>
-
-          {/* Instruction Text */}
-          <p className="rounded-md bg-gray-50 p-3 text-center text-sm text-gray-600">
-            Drag the marker to indicate the precise location of your venue if necessary.
-          </p>
-
-          {/* Current Address Display */}
-          <div className="rounded-lg border border-gray-200 bg-white p-4">
-            <h4 className="mb-2 text-sm font-semibold text-gray-900">Current Address:</h4>
-            <div className="space-y-1 text-sm text-gray-600">
-              {location.buildingName && <p>{location.buildingName}</p>}
-              <p>
-                {location.houseNumber} {location.street}
-              </p>
-              {location.area && <p>{location.area}</p>}
-              <p>
-                {location.city}
-                {location.city && location.state && ', '}
-                {location.state} {location.postalCode}
-              </p>
+              )}
+              {/* Map */}
+              {isLoaded ? (
+                <GoogleMap mapContainerStyle={containerStyle} center={center} zoom={15}>
+                  <Marker position={markerPosition} draggable onDragEnd={onMarkerDragEnd} />
+                </GoogleMap>
+              ) : (
+                <div className="flex h-[400px] items-center justify-center bg-gray-100">
+                  Loading map...
+                </div>
+              )}
             </div>
           </div>
 
-          {/* Continue Button */}
           <Button
             onClick={handleConfirm}
-            className="bg-gradient-yellow w-full rounded-full py-6 text-base font-semibold text-black hover:opacity-90"
+            className="bg-gradient-yellow mt-auto w-full rounded-full py-6 text-base font-semibold text-black hover:opacity-90"
           >
             Continue
           </Button>
