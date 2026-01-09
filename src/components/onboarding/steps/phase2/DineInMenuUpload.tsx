@@ -37,6 +37,8 @@ export function DineInMenuUpload() {
       <StepHeader
         title="Add your Dine-in Menu"
         description="Upload a clear photo of your complete menu. This will be displayed to customers."
+        onViewExample={showExample}
+        showExamples={true}
       />
 
       <div className="mt-6">
@@ -44,7 +46,6 @@ export function DineInMenuUpload() {
           label="Menu"
           value={formData.menu?.menuFile || null}
           onChange={handleFileChange}
-          onViewExample={showExample}
         />
 
         <div className="mt-4 rounded-lg bg-amber-50 p-4">
