@@ -1,7 +1,7 @@
 'use client';
 
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
-import { IconLib } from '@/lib/icon';
+import { Icon } from '@/components/ui/icon';
 
 const FINAL_STEPS = ['Set your business hours', 'Review and go live'];
 
@@ -36,7 +36,7 @@ export function OpenBusinessIntro() {
         </div>
 
         <div className="flex justify-center lg:w-1/2">
-          <IconLib.welcomeThumbnail className="h-64 w-64 sm:h-80 sm:w-80" />
+          <Icon name="welcomeThumbnail" className="h-64 w-64 sm:h-80 sm:w-80" />
         </div>
       </div>
     </div>

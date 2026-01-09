@@ -9,7 +9,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
   return (
     <div className="flex min-h-screen flex-col bg-white">
       <OnboardingHeader />
-      <main className="flex-1 pb-24">{children}</main>
+      <main className="flex flex-1 flex-col pb-24">{children}</main>
       <OnboardingFooter />
 
       {/* Global drawers/modals - controlled by Zustand */}

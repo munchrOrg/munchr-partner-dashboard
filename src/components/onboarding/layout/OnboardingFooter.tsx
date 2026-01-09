@@ -3,15 +3,14 @@
 import { useParams, useRouter } from 'next/navigation';
 
 import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
 import {
-  canGoBack,
   getNextPhase,
   getNextStep,
   getPrevStep,
   isLastStepOfPhase,
   STEP_PHASE_MAP,
 } from '@/config/onboarding-steps';
-import { IconLib } from '@/lib/icon';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
@@ -22,7 +21,7 @@ export function OnboardingFooter() {
 
   const { completeStep, completePhase, openProgressDrawer } = useOnboardingStore();
 
-  const showBack = canGoBack(currentStep);
+  // const showBack = canGoBack(currentStep);
 
   const handleBack = () => {
     const prevStep = getPrevStep(currentStep);
@@ -61,14 +60,14 @@ export function OnboardingFooter() {
 
   return (
     <footer className="fixed right-0 bottom-0 left-0 border-t bg-white px-4 py-4 sm:px-8">
-      <div className="mx-auto flex max-w-4xl items-center justify-between">
+      <div className="mx-10 flex items-center justify-between">
         <div className="w-28">
-          {showBack && (
+          {true && (
             <Button
               type="button"
               variant="outline"
               onClick={handleBack}
-              className="rounded-full px-6"
+              className="size-full rounded-full border-gray-400 px-6 text-lg font-medium text-black"
             >
               Back
             </Button>
@@ -78,17 +77,17 @@ export function OnboardingFooter() {
         <button
           type="button"
           onClick={openProgressDrawer}
-          className="flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-gray-900"
+          className="flex cursor-pointer items-center gap-2 text-lg font-medium text-gray-700 hover:text-gray-900"
         >
-          <IconLib.menuIcon className="h-5 w-5" />
+          <Icon name="menuIcon" className="size-6" />
           <span>See Progress</span>
         </button>
 
-        <div className="w-28 text-right">
+        <div className="h-14 w-44 text-right">
           <Button
             type="button"
             onClick={handleContinue}
-            className="bg-gradient-yellow rounded-full px-6 text-black"
+            className="bg-gradient-yellow size-full rounded-full px-6 text-lg font-medium text-black"
           >
             Continue
           </Button>

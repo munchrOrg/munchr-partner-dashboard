@@ -82,6 +82,8 @@
   --color-sidebar-border: var(--sidebar-border);
 
   --color-sidebar-ring: var(--sidebar-ring);
+
+  --color-purple-dark: #310260;
 }
 
 :root {
@@ -223,6 +225,8 @@
   }
 }
 
-@utility bg-gradient-yellow {
-  background: linear-gradient(90deg, #ffbe0d 0%, #f9f993 100%);
+@layer utilities {
+  .bg-gradient-yellow {
+    background: linear-gradient(90deg, #ffbe0d 0%, #f9f993 100%);
+  }
 }

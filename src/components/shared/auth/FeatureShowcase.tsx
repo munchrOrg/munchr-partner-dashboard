@@ -1,4 +1,4 @@
-import { Icon } from '@/lib/icon';
+import { Icon } from '@/components/ui/icon';
 import { FeatureItem } from './FeatureItem';
 
 export function FeatureShowcase() {

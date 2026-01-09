@@ -1,12 +1,21 @@
 'use client';
 
+import type { IconLib } from '@/lib/icon';
 import type { IntroStepProps } from '@/types/onboarding';
 import { Check } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
 
-export function IntroStep({ phaseLabel, title, description, items, illustration }: IntroStepProps) {
+export function IntroStep({
+  phaseLabel,
+  title,
+  description,
+  items,
+  illustrationName,
+  illustrationClassName,
+}: IntroStepProps) {
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
-      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-16">
+    <div className="flex flex-1 flex-col px-4 py-8 sm:px-8">
+      <div className="flex flex-1 flex-col gap-8 lg:flex-row lg:items-center lg:gap-16">
         <div className="flex-1">
           {phaseLabel && <p className="mb-2 text-sm font-semibold text-purple-700">{phaseLabel}</p>}
           <h1 className="mb-4 text-2xl font-bold sm:text-3xl">{title}</h1>
@@ -18,7 +27,10 @@ export function IntroStep({ phaseLabel, title, description, items, illustration 
                 <div key={item.label} className="flex items-center justify-between border-b pb-4">
                   <div>
                     {item.completed !== undefined && (
-                      <p className="text-sm font-semibold text-purple-700">Step {index + 1}</p>
+                      <p className="text-sm font-semibold text-purple-700">
+                        Step
+                        {index + 1}
+                      </p>
                     )}
                     <p className="text-gray-900">{item.label}</p>
                   </div>
@@ -34,7 +46,14 @@ export function IntroStep({ phaseLabel, title, description, items, illustration 
           )}
         </div>
 
-        {illustration && <div className="flex justify-center lg:w-1/2">{illustration}</div>}
+        {illustrationName && (
+          <div className="flex justify-center lg:w-1/2">
+            <Icon
+              name={illustrationName as keyof typeof IconLib}
+              className={illustrationClassName}
+            />
+          </div>
+        )}
       </div>
     </div>
   );

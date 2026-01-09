@@ -240,5 +240,6 @@ export type IntroStepProps = {
   title: string;
   description: string;
   items?: { label: string; completed?: boolean }[];
-  illustration?: React.ReactNode;
+  illustrationName?: string;
+  illustrationClassName?: string;
 };

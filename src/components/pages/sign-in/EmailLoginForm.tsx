@@ -9,8 +9,8 @@ import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { Icon } from '@/lib/icon';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
