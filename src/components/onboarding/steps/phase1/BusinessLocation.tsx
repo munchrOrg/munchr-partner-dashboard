@@ -78,27 +78,28 @@ export function BusinessLocation() {
   };
 
   return (
-    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-8">
-      <StepHeader
-        title="Where is your business located?"
-        description="Customers and riders will use this information to find your store."
-      />
+    <div className="flex h-full w-full items-center justify-center px-4 sm:px-8">
+      <div className="w-full max-w-xl">
+        <StepHeader
+          title="Where is your business located?"
+          description="Customers and riders will use this information to find your store."
+        />
 
-      <form id="location-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-        {fieldConfigs.map((field) => (
-          <div key={field.name} className="relative">
-            {/* <label className='absolute top-1/2 -translate-y-1/2 left-6 group-data-[filled=true]:hidden' htmlFor={field.name}>{field.placeholder}</label> */}
-            <Input
-              placeholder={`${field.placeholder} ${field.required ? '*' : ''}`}
-              {...register(field.name)}
-              className="h-12 rounded-full border-gray-300 px-6 py-7 group-data-[filled=true]:placeholder-transparent"
-            />
-            {errors[field.name] && (
-              <p className="mt-1 text-sm text-red-500">{errors[field.name]?.message}</p>
-            )}
-          </div>
-        ))}
-      </form>
+        <form id="location-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+          {fieldConfigs.map((field) => (
+            <div key={field.name} className="relative">
+              <Input
+                placeholder={`${field.placeholder} ${field.required ? '*' : ''}`}
+                {...register(field.name)}
+                className="h-12 rounded-full border-gray-300 px-6 py-7 group-data-[filled=true]:placeholder-transparent"
+              />
+              {errors[field.name] && (
+                <p className="mt-1 text-sm text-red-500">{errors[field.name]?.message}</p>
+              )}
+            </div>
+          ))}
+        </form>
+      </div>
     </div>
   );
 }

@@ -7,14 +7,11 @@ import { ProgressDrawer } from '@/components/onboarding/shared/ProgressDrawer';
 
 export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen flex-col bg-white">
+    <div className="h-dvh bg-white">
       <OnboardingHeader />
-      <main className="flex flex-1 flex-col items-center justify-center px-4 py-8 pb-24 sm:px-8">
-        {children}
-      </main>
+      <main className="h-[calc(100dvh-128px-96px)] w-full overflow-y-auto">{children}</main>
       <OnboardingFooter />
 
-      {/* Global drawers/modals - controlled by Zustand */}
       <ProgressDrawer />
       <ExampleDrawer />
       <MapDrawer />

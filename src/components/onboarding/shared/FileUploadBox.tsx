@@ -12,7 +12,6 @@ export function FileUploadBox({
   label,
   value,
   onChange,
-  onViewExample,
   acceptedFormats = DEFAULT_FORMATS,
   maxSizeMB = DEFAULT_MAX_SIZE,
 }: FileUploadBoxProps) {
@@ -58,20 +57,11 @@ export function FileUploadBox({
   const formatsList = acceptedFormats.replace(/\./g, '').replace(/,/g, ', ');
 
   return (
-    <div className="rounded-lg border-2 border-dashed border-gray-300 p-6">
+    <div className="border-2 border-dashed border-gray-300 p-6">
       <div className="mb-4 flex items-center justify-between">
-        <span className="rounded bg-purple-900 px-3 py-1 text-sm font-medium text-white">
+        <span className="bg-purple-dark rounded px-3 py-1 text-sm font-medium text-white">
           {label}
         </span>
-        {onViewExample && (
-          <button
-            type="button"
-            onClick={onViewExample}
-            className="text-sm font-medium text-purple-700 hover:underline"
-          >
-            See example
-          </button>
-        )}
       </div>
 
       {value ? (
@@ -92,16 +82,16 @@ export function FileUploadBox({
         <div className="flex flex-col items-center text-center">
           <Link2 className="mb-2 h-6 w-6 text-gray-400" />
 
-          <p className="mb-1 text-sm font-medium text-gray-700">Drag your file</p>
+          <p className="mb-1 text-base font-bold">Drag your file</p>
 
-          <p className="mb-3 text-xs text-gray-500">
-            accepted formats {formatsList} with maximum size of {maxSizeMB} MB
+          <p className="mb-3 text-base">
+            Accepted formats {formatsList} with maximum size of {maxSizeMB} MB
           </p>
 
           <button
             type="button"
             onClick={handleClick}
-            className="text-sm font-medium text-purple-700 hover:underline"
+            className="text-purple-dark text-base font-bold hover:underline"
           >
             Upload from your device
           </button>

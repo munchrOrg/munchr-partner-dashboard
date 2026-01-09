@@ -224,13 +224,15 @@ export type StepHeaderProps = {
   phase?: string;
   title: string;
   description?: string;
+  centered?: boolean;
+  showExamples?: boolean;
+  onViewExample?: () => void;
 };
 
 export type FileUploadBoxProps = {
   label: string;
   value: FileUpload | null;
   onChange: (file: FileUpload | null) => void;
-  onViewExample?: () => void;
   acceptedFormats?: string;
   maxSizeMB?: number;
 };

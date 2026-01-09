@@ -56,56 +56,67 @@ export function OwnerIdentityUpload() {
   };
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
-      <StepHeader
-        title="Upload Business Owner ID (Front and Back)"
-        description="We need to verify your identity. Please upload front and back of your ID card."
-      />
+    <div className="flex h-full w-full items-start justify-center px-4 py-10 sm:px-8">
+      <div className="flex w-full max-w-xl flex-col items-start justify-start">
+        <StepHeader
+          title="Upload Business Owner ID (Front and Back)"
+          description="We need to verify your identity. Please upload front and back of your ID card."
+          showExamples={true}
+          onViewExample={showIdCardExample}
+        />
 
-      <div className="mt-6 space-y-6">
-        {/* SNTN Question */}
-        <div>
-          <p className="mb-3 font-medium text-gray-900">
-            Does your restaurant have Sales tax Registration Number (SNTN)?
-          </p>
-          <RadioGroup
-            value={
-              ownerIdentity.hasSNTN === null ? undefined : ownerIdentity.hasSNTN ? 'yes' : 'no'
-            }
-            onValueChange={handleSNTNChange}
-            className="flex gap-6"
-          >
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="yes" id="sntn-yes" />
-              <Label htmlFor="sntn-yes">Yes</Label>
-            </div>
-            <div className="flex items-center space-x-2">
-              <RadioGroupItem value="no" id="sntn-no" />
-              <Label htmlFor="sntn-no">No</Label>
-            </div>
-          </RadioGroup>
-        </div>
-
-        {/* Conditional Upload Boxes */}
-        {ownerIdentity.hasSNTN === true && (
-          <FileUploadBox label="SNTN" value={ownerIdentity.sntnFile} onChange={handleSntnChange} />
-        )}
-
-        {ownerIdentity.hasSNTN === false && (
-          <div className="space-y-4">
-            <FileUploadBox
-              label="ID Card (Front)"
-              value={ownerIdentity.idCardFrontFile}
-              onChange={handleIdCardFrontChange}
-              onViewExample={showIdCardExample}
-            />
-            <FileUploadBox
-              label="ID Card (Back)"
-              value={ownerIdentity.idCardBackFile}
-              onChange={handleIdCardBackChange}
-            />
+        <div className="space-y-6">
+          {/* SNTN Question */}
+          <div>
+            <p className="mb-3 text-lg font-bold">
+              Does your restaurant have Sales tax Registration Number (SNTN)?
+            </p>
+            <RadioGroup
+              value={
+                ownerIdentity.hasSNTN === null ? undefined : ownerIdentity.hasSNTN ? 'yes' : 'no'
+              }
+              onValueChange={handleSNTNChange}
+              className="flex gap-6"
+            >
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="yes" id="sntn-yes" />
+                <Label htmlFor="sntn-yes" className="text-lg font-bold">
+                  Yes
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="no" id="sntn-no" />
+                <Label htmlFor="sntn-no" className="text-lg font-bold">
+                  No
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
-        )}
+
+          {/* Conditional Upload Boxes */}
+          {ownerIdentity.hasSNTN === true && (
+            <FileUploadBox
+              label="SNTN"
+              value={ownerIdentity.sntnFile}
+              onChange={handleSntnChange}
+            />
+          )}
+
+          {ownerIdentity.hasSNTN === false && (
+            <div className="space-y-4">
+              <FileUploadBox
+                label="ID Card (Front)"
+                value={ownerIdentity.idCardFrontFile}
+                onChange={handleIdCardFrontChange}
+              />
+              <FileUploadBox
+                label="ID Card (Back)"
+                value={ownerIdentity.idCardBackFile}
+                onChange={handleIdCardBackChange}
+              />
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );
