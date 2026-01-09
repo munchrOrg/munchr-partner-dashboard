@@ -78,7 +78,7 @@ export function OnboardingFooter() {
         <button
           type="button"
           onClick={openProgressDrawer}
-          className="flex cursor-pointer items-center gap-2 text-lg font-medium text-gray-700 hover:text-gray-900"
+          className="text-purple-dark hover:text-purple-dark/80 flex cursor-pointer items-center gap-2 text-lg font-medium"
         >
           <Icon name="menuIcon" className="size-6" />
           <span>See Progress</span>
