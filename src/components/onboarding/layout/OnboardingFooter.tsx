@@ -15,6 +15,11 @@ import {
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
+// Steps that have forms that need to be submitted
+const STEPS_WITH_FORMS: Record<string, string> = {
+  [OnboardingStep.BUSINESS_LOCATION]: 'location-form',
+};
+
 export function OnboardingFooter() {
   const router = useRouter();
   const params = useParams();
@@ -23,6 +28,8 @@ export function OnboardingFooter() {
   const { completeStep, completePhase, openProgressDrawer } = useOnboardingStore();
 
   const showBack = canGoBack(currentStep);
+  const formId = STEPS_WITH_FORMS[currentStep];
+  const hasForm = Boolean(formId);
 
   const handleBack = () => {
     const prevStep = getPrevStep(currentStep);
@@ -86,8 +93,9 @@ export function OnboardingFooter() {
 
         <div className="h-14 w-44 text-right">
           <Button
-            type="button"
-            onClick={handleContinue}
+            type={hasForm ? 'submit' : 'button'}
+            form={hasForm ? formId : undefined}
+            onClick={hasForm ? undefined : handleContinue}
             className="bg-gradient-yellow size-full rounded-full px-6 text-lg font-medium text-black"
           >
             Continue

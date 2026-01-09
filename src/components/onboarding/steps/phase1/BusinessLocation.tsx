@@ -1,9 +1,7 @@
 'use client';
 
-import type { Coordinates, LocationFormData } from '@/types/onboarding';
+import type { LocationFormData } from '@/types/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
-import { useCallback, useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { z } from 'zod';
@@ -24,30 +22,29 @@ const locationSchema = z.object({
 
 type LocationInput = z.infer<typeof locationSchema>;
 
-const containerStyle = {
-  width: '100%',
-  height: '250px',
+type FieldConfig = {
+  name: keyof LocationInput;
+  placeholder: string;
+  required?: boolean;
 };
 
-const defaultCenter = {
-  lat: 24.8607,
-  lng: 67.0011,
-};
+const fieldConfigs: FieldConfig[] = [
+  { name: 'buildingName', placeholder: 'Building or Place Name' },
+  { name: 'street', placeholder: 'Street ', required: true },
+  { name: 'houseNumber', placeholder: 'House Number ', required: true },
+  { name: 'state', placeholder: 'State ', required: true },
+  { name: 'city', placeholder: 'City' },
+  { name: 'area', placeholder: 'Area' },
+  { name: 'postalCode', placeholder: 'Postal Code ', required: true },
+  { name: 'comment', placeholder: 'Add comment about location' },
+];
 
 export function BusinessLocation() {
   const { formData, setFormData, openMapDrawer } = useOnboardingStore();
-  const [mapCenter, setMapCenter] = useState<Coordinates>(defaultCenter);
-  const [markerPosition, setMarkerPosition] = useState<Coordinates>(defaultCenter);
-
-  const { isLoaded } = useJsApiLoader({
-    id: 'google-map-script',
-    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
-  });
 
   const {
     register,
     handleSubmit,
-    watch,
     formState: { errors },
   } = useForm<LocationInput>({
     resolver: zodResolver(locationSchema),
@@ -63,49 +60,6 @@ export function BusinessLocation() {
     },
   });
 
-  const houseNumber = watch('houseNumber');
-  const street = watch('street');
-  const area = watch('area');
-  const city = watch('city');
-  const state = watch('state');
-  const postalCode = watch('postalCode');
-
-  // Geocode address when fields change
-  const geocodeAddress = useCallback(async () => {
-    if (!isLoaded || !window.google) {
-      return;
-    }
-
-    const addressParts = [houseNumber, street, area, city, state, postalCode].filter(Boolean);
-
-    if (addressParts.length < 2) {
-      return;
-    }
-
-    const address = addressParts.join(', ');
-    const geocoder = new window.google.maps.Geocoder();
-
-    try {
-      const result = await geocoder.geocode({ address });
-      if (result.results[0]) {
-        const { lat, lng } = result.results[0].geometry.location;
-        const newPosition = { lat: lat(), lng: lng() };
-        setMapCenter(newPosition);
-        setMarkerPosition(newPosition);
-      }
-    } catch (error) {
-      console.error('Geocoding error:', error);
-    }
-  }, [isLoaded, houseNumber, street, area, city, state, postalCode]);
-
-  useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      geocodeAddress();
-    }, 1000); // Debounce geocoding
-
-    return () => clearTimeout(timeoutId);
-  }, [geocodeAddress]);
-
   const onSubmit = (data: LocationInput) => {
     const locationData: LocationFormData = {
       buildingName: data.buildingName || '',
@@ -116,7 +70,7 @@ export function BusinessLocation() {
       area: data.area || '',
       postalCode: data.postalCode,
       comment: data.comment || '',
-      coordinates: markerPosition,
+      coordinates: null,
     };
 
     setFormData('location', locationData);
@@ -124,108 +78,27 @@ export function BusinessLocation() {
   };
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
-      <div className="grid gap-8 lg:grid-cols-2">
-        {/* Form Section */}
-        <div>
-          <StepHeader
-            title="Where is your business located?"
-            description="Customers and riders will use this information to find your store."
-          />
+    <div className="mx-auto max-w-2xl px-4 py-8 sm:px-8">
+      <StepHeader
+        title="Where is your business located?"
+        description="Customers and riders will use this information to find your store."
+      />
 
-          <form id="location-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-            <div>
-              <Input
-                placeholder="Building or Place Name"
-                {...register('buildingName')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-            </div>
-
-            <div>
-              <Input
-                placeholder="Street *"
-                {...register('street')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-              {errors.street && (
-                <p className="mt-1 text-sm text-red-500">{errors.street.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Input
-                placeholder="House Number *"
-                {...register('houseNumber')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-              {errors.houseNumber && (
-                <p className="mt-1 text-sm text-red-500">{errors.houseNumber.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Input
-                placeholder="State *"
-                {...register('state')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-              {errors.state && <p className="mt-1 text-sm text-red-500">{errors.state.message}</p>}
-            </div>
-
-            <div>
-              <Input
-                placeholder="City"
-                {...register('city')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-            </div>
-
-            <div>
-              <Input
-                placeholder="Area"
-                {...register('area')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-            </div>
-
-            <div>
-              <Input
-                placeholder="Postal Code *"
-                {...register('postalCode')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-              {errors.postalCode && (
-                <p className="mt-1 text-sm text-red-500">{errors.postalCode.message}</p>
-              )}
-            </div>
-
-            <div>
-              <Input
-                placeholder="Add comment about location"
-                {...register('comment')}
-                className="h-12 rounded-full border-gray-300 px-4"
-              />
-            </div>
-          </form>
-        </div>
-
-        {/* Map Section */}
-        <div className="lg:pt-16">
-          <div className="overflow-hidden rounded-lg border">
-            {isLoaded ? (
-              <GoogleMap mapContainerStyle={containerStyle} center={mapCenter} zoom={15}>
-                <Marker position={markerPosition} />
-              </GoogleMap>
-            ) : (
-              <div className="flex h-[250px] items-center justify-center bg-gray-100">
-                Loading map...
-              </div>
+      <form id="location-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+        {fieldConfigs.map((field) => (
+          <div key={field.name} className="relative">
+            {/* <label className='absolute top-1/2 -translate-y-1/2 left-6 group-data-[filled=true]:hidden' htmlFor={field.name}>{field.placeholder}</label> */}
+            <Input
+              placeholder={`${field.placeholder} ${field.required ? '*' : ''}`}
+              {...register(field.name)}
+              className="h-12 rounded-full border-gray-300 px-6 py-7 group-data-[filled=true]:placeholder-transparent"
+            />
+            {errors[field.name] && (
+              <p className="mt-1 text-sm text-red-500">{errors[field.name]?.message}</p>
             )}
           </div>
-          <p className="mt-2 text-sm text-gray-500">The marker updates as you enter your address</p>
-        </div>
-      </div>
+        ))}
+      </form>
     </div>
   );
 }
