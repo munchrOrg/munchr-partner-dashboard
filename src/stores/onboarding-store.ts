@@ -1,0 +1,108 @@
+import type {
+  ConfirmModalConfig,
+  ExampleDrawerConfig,
+  OnboardingFormData,
+  OnboardingPhase,
+  OnboardingStep,
+  OnboardingStore,
+} from '@/types/onboarding';
+import { create } from 'zustand';
+
+import { persist } from 'zustand/middleware';
+import { OnboardingStep as Step } from '@/types/onboarding';
+
+const initialFormData: OnboardingFormData = {
+  location: null,
+  ownerIdentity: null,
+  legalTax: null,
+  banking: null,
+  bankStatement: null,
+  package: null,
+  paymentMethod: null,
+  menu: null,
+  trainingCall: null,
+  onboardingFee: null,
+  businessHours: null,
+};
+
+export const useOnboardingStore = create<OnboardingStore>()(
+  persist(
+    (set) => ({
+      // Navigation State
+      currentStep: Step.WELCOME,
+      completedSteps: [],
+      completedPhases: [],
+      formData: initialFormData,
+
+      // UI State
+      isProgressDrawerOpen: false,
+      isExampleDrawerOpen: false,
+      isMapDrawerOpen: false,
+      isConfirmModalOpen: false,
+      exampleDrawerConfig: null,
+      confirmModalConfig: null,
+
+      // Form Data Actions
+      setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) =>
+        set((state) => ({
+          formData: { ...state.formData, [key]: data },
+        })),
+
+      // Navigation Actions
+      completeStep: (step: OnboardingStep) =>
+        set((state) => ({
+          completedSteps: state.completedSteps.includes(step)
+            ? state.completedSteps
+            : [...state.completedSteps, step],
+        })),
+
+      completePhase: (phase: OnboardingPhase) =>
+        set((state) => ({
+          completedPhases: state.completedPhases.includes(phase)
+            ? state.completedPhases
+            : [...state.completedPhases, phase],
+        })),
+
+      goToStep: (step: OnboardingStep) => set({ currentStep: step }),
+
+      // UI Actions
+      openProgressDrawer: () => set({ isProgressDrawerOpen: true }),
+      closeProgressDrawer: () => set({ isProgressDrawerOpen: false }),
+
+      openExampleDrawer: (config: ExampleDrawerConfig) =>
+        set({ isExampleDrawerOpen: true, exampleDrawerConfig: config }),
+      closeExampleDrawer: () => set({ isExampleDrawerOpen: false, exampleDrawerConfig: null }),
+
+      openMapDrawer: () => set({ isMapDrawerOpen: true }),
+      closeMapDrawer: () => set({ isMapDrawerOpen: false }),
+
+      openConfirmModal: (config: ConfirmModalConfig) =>
+        set({ isConfirmModalOpen: true, confirmModalConfig: config }),
+      closeConfirmModal: () => set({ isConfirmModalOpen: false, confirmModalConfig: null }),
+
+      // Reset
+      reset: () =>
+        set({
+          currentStep: Step.WELCOME,
+          completedSteps: [],
+          completedPhases: [],
+          formData: initialFormData,
+          isProgressDrawerOpen: false,
+          isExampleDrawerOpen: false,
+          isMapDrawerOpen: false,
+          isConfirmModalOpen: false,
+          exampleDrawerConfig: null,
+          confirmModalConfig: null,
+        }),
+    }),
+    {
+      name: 'onboarding-storage',
+      partialize: (state) => ({
+        currentStep: state.currentStep,
+        completedSteps: state.completedSteps,
+        completedPhases: state.completedPhases,
+        formData: state.formData,
+      }),
+    }
+  )
+);

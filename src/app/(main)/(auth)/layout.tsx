@@ -1,4 +1,5 @@
 import Image from 'next/image';
+import Link from 'next/link';
 import { FeatureShowcase } from '@/components/shared/auth/FeatureShowcase';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
@@ -11,13 +12,15 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       <div className="flex w-full flex-col overflow-y-auto py-10 lg:w-1/2">
         <header className="shrink-0 p-4 sm:p-6 md:p-8">
           <div className="relative h-14 w-40 sm:h-16 sm:w-48 md:h-20 md:w-56">
-            <Image
-              src="/logo.png"
-              alt="munchr"
-              fill
-              priority
-              className="object-contain object-left"
-            />
+            <Link href="/">
+              <Image
+                src="/logo.png"
+                alt="munchr"
+                fill
+                priority
+                className="object-contain object-left"
+              />
+            </Link>
           </div>
         </header>
 

@@ -1,0 +1,44 @@
+'use client';
+
+import { StepHeader } from '@/components/onboarding/shared/StepHeader';
+import { IconLib } from '@/lib/icon';
+
+const REQUIREMENTS = [
+  'Details of your business',
+  'Location of your business',
+  'Legal and Sales Tax details',
+  'Banking Details',
+  'Choose the best plan for your business',
+];
+
+export function AddBusinessIntro() {
+  return (
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-center lg:gap-16">
+        <div className="flex-1">
+          <StepHeader
+            phase="Step 1"
+            title="Add your business"
+            description="Add your business information so we can create your contract and you can start earning more."
+          />
+
+          <div className="mt-6">
+            <p className="mb-4 font-medium text-gray-900">What do we need from you</p>
+            <ul className="space-y-3">
+              {REQUIREMENTS.map((req) => (
+                <li key={req} className="flex items-start gap-3">
+                  <span className="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-gray-900" />
+                  <span className="text-gray-700">{req}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+
+        <div className="flex justify-center lg:w-1/2">
+          <IconLib.welcomeThumbnail className="h-64 w-64 sm:h-80 sm:w-80" />
+        </div>
+      </div>
+    </div>
+  );
+}

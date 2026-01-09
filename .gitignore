@@ -61,3 +61,5 @@ build-archive.log
 
 # coverage
 /coverage
+
+# docs/**/*
