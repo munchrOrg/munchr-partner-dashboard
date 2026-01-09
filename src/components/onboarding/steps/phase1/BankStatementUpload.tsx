@@ -24,6 +24,8 @@ export function BankStatementUpload() {
       <StepHeader
         title="Upload Bank Book / Account Statement"
         description="Please upload a copy of your bank book or recent account statement for verification."
+        onViewExample={showExample}
+        showExamples={true}
       />
 
       <div className="mt-6">
@@ -31,7 +33,6 @@ export function BankStatementUpload() {
           label="Bank Statement"
           value={formData.bankStatement?.statementFile || null}
           onChange={handleFileChange}
-          onViewExample={showExample}
         />
       </div>
     </div>
