@@ -24,9 +24,9 @@ export function ProgressDrawer() {
 
   return (
     <Sheet open={isProgressDrawerOpen} onOpenChange={closeProgressDrawer}>
-      <SheetContent side="right" className="w-full max-w-md overflow-y-auto">
+      <SheetContent side="right" className="w-full overflow-y-auto rounded-l-2xl p-6 sm:max-w-lg">
         <SheetHeader className="pb-4">
-          <SheetTitle className="text-2xl font-bold">You're making progress!</SheetTitle>
+          <SheetTitle className="text-3xl font-bold">You're making progress!</SheetTitle>
         </SheetHeader>
 
         <div className="mt-4 space-y-2">
@@ -41,20 +41,20 @@ export function ProgressDrawer() {
                   <div
                     className={cn(
                       'flex h-6 w-6 items-center justify-center rounded-full border-2',
-                      status === 'completed' && 'border-black bg-black',
-                      status === 'current' && 'border-black bg-black',
-                      status === 'pending' && 'border-gray-300 bg-white'
+                      status === 'completed' && 'border-black bg-white',
+                      status === 'current' && 'border-black bg-white',
+                      status === 'pending' && 'border-gray-300 bg-none'
                     )}
                   >
                     {(status === 'completed' || status === 'current') && (
-                      <div className="h-2 w-2 rounded-full bg-white" />
+                      <div className="h-4 w-4 rounded-full bg-black" />
                     )}
                   </div>
                   {index < PHASE_ORDER.length - 1 && (
                     <div
                       className={cn(
-                        'mt-2 h-20 w-0.5',
-                        status === 'completed' ? 'bg-black' : 'bg-gray-200'
+                        'mt-2 h-20 w-0.5 bg-gray-200'
+                        // status === 'completed' ? 'bg-black' : 'bg-gray-200'
                       )}
                     />
                   )}
@@ -63,14 +63,14 @@ export function ProgressDrawer() {
                 {/* Content */}
                 <div className="flex-1 pb-6">
                   <div className="flex items-center gap-2">
-                    <h3 className="font-semibold text-gray-900">{info.title}</h3>
+                    <h3 className="text-lg font-bold">{info.title}</h3>
                     {status === 'completed' && (
                       <span className="rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-700">
                         Completed
                       </span>
                     )}
                   </div>
-                  <p className="mt-1 text-sm text-gray-600">{info.description}</p>
+                  <p className="mt-1 text-lg">{info.description}</p>
                 </div>
               </div>
             );
