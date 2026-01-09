@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
+  canGoBack,
   getNextPhase,
   getNextStep,
   getPrevStep,
@@ -21,7 +22,7 @@ export function OnboardingFooter() {
 
   const { completeStep, completePhase, openProgressDrawer } = useOnboardingStore();
 
-  // const showBack = canGoBack(currentStep);
+  const showBack = canGoBack(currentStep);
 
   const handleBack = () => {
     const prevStep = getPrevStep(currentStep);
@@ -62,7 +63,7 @@ export function OnboardingFooter() {
     <footer className="fixed right-0 bottom-0 left-0 border-t bg-white px-4 py-4 sm:px-8">
       <div className="mx-10 flex items-center justify-between">
         <div className="w-28">
-          {true && (
+          {showBack && (
             <Button
               type="button"
               variant="outline"

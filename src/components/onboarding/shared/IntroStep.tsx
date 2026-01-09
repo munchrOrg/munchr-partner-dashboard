@@ -14,12 +14,12 @@ export function IntroStep({
   illustrationClassName,
 }: IntroStepProps) {
   return (
-    <div className="flex flex-1 flex-col px-4 py-8 sm:px-8">
-      <div className="flex flex-1 flex-col gap-8 lg:flex-row lg:items-center lg:gap-16">
-        <div className="flex-1">
-          {phaseLabel && <p className="mb-2 text-sm font-semibold text-purple-700">{phaseLabel}</p>}
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-8 sm:px-8">
+      <div className="flex w-full max-w-xl flex-col items-center justify-center gap-8 lg:flex-row lg:gap-16">
+        <div className="w-full max-w-2xl lg:max-w-none lg:shrink-0">
+          {phaseLabel && <p className="text-purple-dark mb-2 text-xl font-bold">{phaseLabel}</p>}
           <h1 className="mb-4 text-2xl font-bold sm:text-3xl">{title}</h1>
-          <p className="mb-8 text-gray-600">{description}</p>
+          <p className="mb-8 max-w-[80%] font-medium">{description}</p>
 
           {items && items.length > 0 && (
             <div className="space-y-4">
@@ -27,12 +27,12 @@ export function IntroStep({
                 <div key={item.label} className="flex items-center justify-between border-b pb-4">
                   <div>
                     {item.completed !== undefined && (
-                      <p className="text-sm font-semibold text-purple-700">
+                      <p className="text-purple-dark text-lg font-semibold">
                         Step
                         {index + 1}
                       </p>
                     )}
-                    <p className="text-gray-900">{item.label}</p>
+                    <p className="text-sm font-medium">{item.label}</p>
                   </div>
                   {item.completed && (
                     <span className="flex items-center gap-1 rounded-full bg-green-100 px-2 py-1 text-xs font-medium text-green-700">
@@ -47,7 +47,7 @@ export function IntroStep({
         </div>
 
         {illustrationName && (
-          <div className="flex justify-center lg:w-1/2">
+          <div className="flex w-full items-center justify-center lg:w-auto lg:shrink-0">
             <Icon
               name={illustrationName as keyof typeof IconLib}
               className={illustrationClassName}
