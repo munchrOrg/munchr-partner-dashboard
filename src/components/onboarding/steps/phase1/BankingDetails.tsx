@@ -9,12 +9,13 @@ import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingStep } from '@/types/onboarding';
 
 const bankingSchema = z.object({
   accountTitle: z.string().min(1, 'Account title is required'),
   bankName: z.string().min(1, 'Bank name is required'),
   iban: z.string().min(1, 'IBAN is required'),
-  sameAsBusinessAddress: z.boolean().default(false),
+  sameAsBusinessAddress: z.boolean(),
   enterAddress: z.string().optional(),
   buildingName: z.string().optional(),
   street: z.string().min(1, 'Street is required'),
@@ -28,7 +29,7 @@ const bankingSchema = z.object({
 type BankingInput = z.infer<typeof bankingSchema>;
 
 export function BankingDetails() {
-  const { formData, setFormData } = useOnboardingStore();
+  const { formData, setFormData, triggerNavigation } = useOnboardingStore();
 
   const {
     register,
@@ -52,12 +53,13 @@ export function BankingDetails() {
       area: formData.banking?.area || '',
       billingPostalCode: formData.banking?.billingPostalCode || '',
     },
-    mode: 'onChange',
+    mode: 'all',
   });
 
   const sameAsBusinessAddress = watch('sameAsBusinessAddress');
 
   const onSubmit = (data: BankingInput) => {
+    // Save form data
     setFormData('banking', {
       accountTitle: data.accountTitle,
       bankName: data.bankName,
@@ -72,6 +74,9 @@ export function BankingDetails() {
       area: data.area || '',
       billingPostalCode: data.billingPostalCode,
     });
+
+    // Trigger navigation (Footer will handle it)
+    triggerNavigation(OnboardingStep.BANKING_DETAILS);
   };
 
   return (
@@ -94,13 +99,13 @@ export function BankingDetails() {
         </div>
 
         <div className="mt-6 flex items-start gap-3 rounded-lg bg-gray-100 p-4">
-          <CircleAlert className="mt-0.5 size-5 shrink-0 text-gray-600" />
-          <div className="text-sm text-gray-700">
-            <p className="mb-2 font-semibold">
+          <CircleAlert className="text-gray-light mt-0.5 size-5 shrink-0" />
+          <div className="text-gray-light text-sm">
+            <p className="mb-2">
               Note: your have to upload a bank proof later in this process and the proof must
               matches with the details you share here. Please considfer the following.
             </p>
-            <ul className="ml-1 list-inside list-disc space-y-1">
+            <ul className="text-gray-light ml-1 list-inside list-disc space-y-1 text-sm">
               <li>The bank account holder's name exactly as it appears on the bank statement</li>
               <li>
                 If the bank account is under your business name, add the business name rather than
@@ -142,7 +147,7 @@ export function BankingDetails() {
               id="sameAddress"
               checked={sameAsBusinessAddress}
               onCheckedChange={(checked) => {
-                setValue('sameAsBusinessAddress', checked as boolean);
+                setValue('sameAsBusinessAddress', Boolean(checked));
               }}
             />
             <label

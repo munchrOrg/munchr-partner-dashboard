@@ -1,6 +1,7 @@
 'use client';
 
 import { useParams, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -27,11 +28,50 @@ export function OnboardingFooter() {
   const params = useParams();
   const currentStep = params.step as OnboardingStep;
 
-  const { completeStep, completePhase, openProgressDrawer } = useOnboardingStore();
+  const {
+    completeStep,
+    completePhase,
+    openProgressDrawer,
+    shouldNavigate,
+    navigationStep,
+    clearNavigation,
+  } = useOnboardingStore();
 
   const showBack = canGoBack(currentStep);
   const formId = STEPS_WITH_FORMS[currentStep];
   const hasForm = Boolean(formId);
+
+  // Watch for navigation trigger from forms
+  useEffect(() => {
+    if (shouldNavigate && navigationStep) {
+      // Mark step as completed
+      completeStep(navigationStep);
+
+      // Check if this is the last step of a phase
+      if (isLastStepOfPhase(navigationStep)) {
+        const currentPhase = STEP_PHASE_MAP[navigationStep];
+        completePhase(currentPhase);
+
+        // Go back to welcome with phase completed
+        const nextPhase = getNextPhase(currentPhase);
+        if (nextPhase) {
+          router.push(`/onboarding/${OnboardingStep.WELCOME}`);
+        } else {
+          // All phases complete, go to dashboard
+          router.push('/dashboard');
+        }
+      } else {
+        // Regular navigation to next step
+        const nextStep = getNextStep(navigationStep);
+        if (nextStep) {
+          router.push(`/onboarding/${nextStep}`);
+        }
+      }
+
+      // Clear navigation state
+      clearNavigation();
+    }
+  }, [shouldNavigate, navigationStep, completeStep, completePhase, router, clearNavigation]);
 
   const handleBack = () => {
     const prevStep = getPrevStep(currentStep);
@@ -41,7 +81,8 @@ export function OnboardingFooter() {
   };
 
   const handleContinue = () => {
-    // Mark current step as completed
+    // For pages without forms, trigger navigation directly
+    // Mark step as completed
     completeStep(currentStep);
 
     // Check if this is the last step of a phase
@@ -52,7 +93,6 @@ export function OnboardingFooter() {
       // Go back to welcome with phase completed
       const nextPhase = getNextPhase(currentPhase);
       if (nextPhase) {
-        // Go to welcome first, then user clicks continue to go to next phase
         router.push(`/onboarding/${OnboardingStep.WELCOME}`);
       } else {
         // All phases complete, go to dashboard

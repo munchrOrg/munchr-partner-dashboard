@@ -3,13 +3,11 @@
 import type { Coordinates } from '@/types/onboarding';
 import { Autocomplete, GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { Search } from 'lucide-react';
-import { useRouter } from 'next/navigation';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { getNextStep } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
@@ -27,8 +25,7 @@ const defaultCenter = {
 };
 
 export function MapDrawer() {
-  const router = useRouter();
-  const { isMapDrawerOpen, closeMapDrawer, formData, setFormData, completeStep } =
+  const { isMapDrawerOpen, closeMapDrawer, formData, setFormData, triggerNavigation } =
     useOnboardingStore();
 
   const [center, setCenter] = useState(defaultCenter);
@@ -179,14 +176,11 @@ export function MapDrawer() {
       coordinates: markerPosition,
     });
 
-    // Complete the step and navigate
-    completeStep(OnboardingStep.BUSINESS_LOCATION);
+    // Close drawer
     closeMapDrawer();
 
-    const nextStep = getNextStep(OnboardingStep.BUSINESS_LOCATION);
-    if (nextStep) {
-      router.push(`/onboarding/${nextStep}`);
-    }
+    // Trigger navigation (Footer will handle it)
+    triggerNavigation(OnboardingStep.BUSINESS_LOCATION);
   };
 
   if (!location) {

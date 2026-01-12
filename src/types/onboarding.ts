@@ -78,6 +78,15 @@ export enum DayOfWeek {
 }
 
 // ===== Form Data Types =====
+export type BusinessInfoFormData = {
+  serviceProviderType: 'restaurant' | 'home-chef';
+  businessName: string;
+  businessDescription: string;
+  email: string;
+  phoneNumber: string;
+  cuisines: string[];
+};
+
 export type LocationFormData = {
   buildingName: string;
   street: string;
@@ -162,6 +171,7 @@ export type BusinessHoursFormData = {
 
 // ===== Store Types =====
 export type OnboardingFormData = {
+  businessInfo: BusinessInfoFormData | null;
   location: LocationFormData | null;
   ownerIdentity: OwnerIdentityFormData | null;
   legalTax: LegalTaxFormData | null;
@@ -188,6 +198,10 @@ export type OnboardingState = {
   isConfirmModalOpen: boolean;
   exampleDrawerConfig: ExampleDrawerConfig | null;
   confirmModalConfig: ConfirmModalConfig | null;
+
+  // Navigation State
+  shouldNavigate: boolean;
+  navigationStep: OnboardingStep | null;
 };
 
 export type OnboardingActions = {
@@ -205,6 +219,10 @@ export type OnboardingActions = {
   closeMapDrawer: () => void;
   openConfirmModal: (config: ConfirmModalConfig) => void;
   closeConfirmModal: () => void;
+
+  // Navigation Actions
+  triggerNavigation: (step: OnboardingStep) => void;
+  clearNavigation: () => void;
 
   reset: () => void;
 };

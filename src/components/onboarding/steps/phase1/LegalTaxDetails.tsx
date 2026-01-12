@@ -8,9 +8,10 @@ import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingStep } from '@/types/onboarding';
 
 const legalTaxSchema = z.object({
-  cnicNumber: z.string().min(1, 'CNIC number is required'),
+  cnicNumber: z.string().max(13).min(13, 'CNIC number is required'),
   taxRegistrationNumber: z.string().min(1, 'Tax registration number is required'),
   firstAndMiddleName: z.string().min(1, 'First and middle name is required'),
   lastName: z.string().min(1, 'Last name is required'),
@@ -19,7 +20,7 @@ const legalTaxSchema = z.object({
 type LegalTaxInput = z.infer<typeof legalTaxSchema>;
 
 export function LegalTaxDetails() {
-  const { formData, setFormData, openExampleDrawer } = useOnboardingStore();
+  const { formData, setFormData, openExampleDrawer, triggerNavigation } = useOnboardingStore();
 
   const {
     register,
@@ -33,16 +34,20 @@ export function LegalTaxDetails() {
       firstAndMiddleName: formData.legalTax?.firstAndMiddleName || '',
       lastName: formData.legalTax?.lastName || '',
     },
-    mode: 'onChange',
+    mode: 'all',
   });
 
   const onSubmit = (data: LegalTaxInput) => {
+    // Save form data
     setFormData('legalTax', {
       cnicNumber: data.cnicNumber,
       taxRegistrationNumber: data.taxRegistrationNumber,
       firstAndMiddleName: data.firstAndMiddleName,
       lastName: data.lastName,
     });
+
+    // Trigger navigation (Footer will handle it)
+    triggerNavigation(OnboardingStep.LEGAL_TAX_DETAILS);
   };
 
   const showNameExample = () => {

@@ -12,6 +12,7 @@ import { persist } from 'zustand/middleware';
 import { OnboardingStep as Step } from '@/types/onboarding';
 
 const initialFormData: OnboardingFormData = {
+  businessInfo: null,
   location: null,
   ownerIdentity: null,
   legalTax: null,
@@ -41,6 +42,10 @@ export const useOnboardingStore = create<OnboardingStore>()(
       isConfirmModalOpen: false,
       exampleDrawerConfig: null,
       confirmModalConfig: null,
+
+      // Navigation State
+      shouldNavigate: false,
+      navigationStep: null,
 
       // Form Data Actions
       setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) =>
@@ -80,6 +85,11 @@ export const useOnboardingStore = create<OnboardingStore>()(
         set({ isConfirmModalOpen: true, confirmModalConfig: config }),
       closeConfirmModal: () => set({ isConfirmModalOpen: false, confirmModalConfig: null }),
 
+      // Navigation Actions
+      triggerNavigation: (step: OnboardingStep) =>
+        set({ shouldNavigate: true, navigationStep: step }),
+      clearNavigation: () => set({ shouldNavigate: false, navigationStep: null }),
+
       // Reset
       reset: () =>
         set({
@@ -93,6 +103,8 @@ export const useOnboardingStore = create<OnboardingStore>()(
           isConfirmModalOpen: false,
           exampleDrawerConfig: null,
           confirmModalConfig: null,
+          shouldNavigate: false,
+          navigationStep: null,
         }),
     }),
     {
