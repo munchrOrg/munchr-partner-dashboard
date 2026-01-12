@@ -1,26 +1,26 @@
 'use client';
 
-import { HelpCircle } from 'lucide-react';
+import { ChevronDown, Clock, HelpCircle } from 'lucide-react';
+import Image from 'next/image';
 
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
+import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { NetworkProvider } from '@/types/onboarding';
 
 const NETWORK_PROVIDERS = [
-  { value: NetworkProvider.JAZZ, label: 'Jazz', color: 'bg-red-500' },
-  { value: NetworkProvider.TELENOR, label: 'Telenor', color: 'bg-blue-500' },
-  { value: NetworkProvider.UFONE, label: 'Ufone', color: 'bg-red-600' },
-  { value: NetworkProvider.ZONG, label: 'Zong', color: 'bg-green-500' },
+  { value: NetworkProvider.JAZZ, label: 'Jazz', image: '/jazz.png' },
+  { value: NetworkProvider.TELENOR, label: 'Telenor', image: '/telenor.png' },
+  { value: NetworkProvider.UFONE, label: 'Ufone', image: '/ufone.png' },
+  { value: NetworkProvider.ZONG, label: 'Zong', image: '/zong.png' },
 ];
 
 const TIME_SLOTS = [
@@ -59,96 +59,102 @@ export function TrainingCallPreference() {
   };
 
   return (
-    <div className="relative mx-auto max-w-xl px-4 py-8 sm:px-8">
+    <div className="relative mx-auto max-w-2xl px-4 py-8 sm:px-8">
       <StepHeader
         title="Network & Training Call Preference"
         description="Please select your prefered mobile network and you convenient time for training call"
       />
 
-      <div className="mt-8 space-y-8">
-        {/* Network Provider Selection */}
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+      <div className="mt-10 space-y-6">
+        {/* Network Provider Cards - 2x2 Grid */}
+        <div className="grid max-w-md grid-cols-2 gap-4">
           {NETWORK_PROVIDERS.map((provider) => (
             <button
               key={provider.value}
               type="button"
               onClick={() => handleProviderSelect(provider.value)}
               className={cn(
-                'flex flex-col items-center justify-center gap-3 rounded-xl border-2 bg-white p-6 transition-all hover:shadow-md',
+                'relative flex h-28 items-center justify-center rounded-2xl border-2 bg-white p-4 transition-all hover:shadow-md sm:h-32',
                 trainingData.networkProvider === provider.value
-                  ? 'border-purple-600 shadow-md'
+                  ? 'border-gray-400 shadow-sm'
                   : 'border-gray-200'
               )}
             >
-              <div
-                className={cn(
-                  'flex h-16 w-16 items-center justify-center rounded-full',
-                  provider.color
-                )}
-              />
-              <span className="text-sm font-medium text-gray-900">{provider.label}</span>
+              <div className="relative h-16 w-16 sm:h-20 sm:w-20">
+                <Image src={provider.image} alt={provider.label} fill className="object-contain" />
+              </div>
             </button>
           ))}
         </div>
 
-        {/* Dropdown for mobile network (optional redundant field) */}
-        <div>
-          <Select
-            value={trainingData.networkProvider || ''}
-            onValueChange={(value) => handleProviderSelect(value as NetworkProvider)}
-          >
-            <SelectTrigger className="h-12 rounded-full border-gray-300">
-              <SelectValue placeholder="Select mobile network preference" />
-            </SelectTrigger>
-            <SelectContent>
+        {/* Network Provider Dropdown */}
+        <div className="max-w-xl">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="border-gray-light text-gray-light w-full justify-between rounded-full py-7 text-sm has-[>svg]:px-5"
+              >
+                {trainingData.networkProvider
+                  ? NETWORK_PROVIDERS.find((p) => p.value === trainingData.networkProvider)?.label
+                  : 'Select mobile network preference'}
+                <ChevronDown className="h-4 w-4 opacity-50" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent className="w-56" align="start">
               {NETWORK_PROVIDERS.map((provider) => (
-                <SelectItem key={provider.value} value={provider.value}>
+                <DropdownMenuItem
+                  key={provider.value}
+                  onClick={() => handleProviderSelect(provider.value)}
+                >
                   {provider.label}
-                </SelectItem>
+                </DropdownMenuItem>
               ))}
-            </SelectContent>
-          </Select>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
 
         {/* Book a Slot Section */}
-        <div>
-          <h3 className="mb-4 text-lg font-semibold text-gray-900">Book a Slot</h3>
-          <p className="mb-4 text-sm text-gray-600">
+        <div className="max-w-md">
+          <h3 className="mb-2 text-xl font-bold">Book a Slot</h3>
+          <p className="mb-4 text-base font-semibold">
             What time would be most convenient for you to receive the training call for device
             setup?
           </p>
 
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Time Selection */}
-            <div>
-              <Select
-                value={trainingData.preferredTime}
-                onValueChange={(value) => handleFieldChange('preferredTime', value)}
-              >
-                <SelectTrigger className="h-12 rounded-full border-gray-300">
-                  <SelectValue placeholder="Select time*" />
-                </SelectTrigger>
-                <SelectContent>
-                  {TIME_SLOTS.map((time) => (
-                    <SelectItem key={time} value={time}>
-                      {time}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  className="text-gray-light w-full justify-between rounded-full border-gray-300 py-7 text-sm has-[>svg]:px-5"
+                >
+                  {trainingData.preferredTime || 'Select time*'}
+                  <Clock className="h-4 w-4 opacity-50" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="start">
+                {TIME_SLOTS.map((time) => (
+                  <DropdownMenuItem
+                    key={time}
+                    onClick={() => handleFieldChange('preferredTime', time)}
+                  >
+                    {time}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
 
             {/* Date Selection */}
-            <div>
-              <Input
-                type="date"
-                value={trainingData.preferredDate}
-                onChange={(e) => handleFieldChange('preferredDate', e.target.value)}
-                min={new Date().toISOString().split('T')[0]}
-                placeholder="Select date*"
-                className="h-12 rounded-full border-gray-300"
-              />
-            </div>
+            <Input
+              type="date"
+              value={trainingData.preferredDate}
+              onChange={(e) => handleFieldChange('preferredDate', e.target.value)}
+              min={new Date().toISOString().split('T')[0]}
+              placeholder="Select date*"
+              className="placeholder:text-gray-light w-full rounded-full border-gray-300 px-8 py-7 text-sm"
+            />
           </div>
         </div>
       </div>

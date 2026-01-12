@@ -4,7 +4,7 @@ import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { canAccessStep, STEP_ORDER } from '@/config/onboarding-steps';
+import { STEP_ORDER } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
@@ -157,10 +157,12 @@ export default function OnboardingPage() {
     }
 
     // Guard: Prevent jumping ahead
-    if (!canAccessStep(stepEnum, completedSteps)) {
-      router.replace(`/onboarding/${currentStep}`);
-      return;
-    }
+    // Temporarily Disable for testing
+    // TODO: Uncomment this when testing is complete
+    // if (!canAccessStep(stepEnum, completedSteps)) {
+    //   router.replace(`/onboarding/${currentStep}`);
+    //   return;
+    // }
 
     // Sync current step
     goToStep(stepEnum);
