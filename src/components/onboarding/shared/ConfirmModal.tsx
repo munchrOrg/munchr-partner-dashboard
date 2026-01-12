@@ -23,20 +23,44 @@ export function ConfirmModal() {
     closeConfirmModal();
   };
 
+  const handleCancel = () => {
+    if (confirmModalConfig.onCancel) {
+      confirmModalConfig.onCancel();
+    }
+    closeConfirmModal();
+  };
+
   return (
     <Dialog open={isConfirmModalOpen} onOpenChange={closeConfirmModal}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="rounded-3xl sm:max-w-2xl">
         <DialogHeader>
-          <DialogTitle>{confirmModalConfig.title}</DialogTitle>
-          <DialogDescription>{confirmModalConfig.description}</DialogDescription>
+          <DialogTitle className="text-2xl font-bold">{confirmModalConfig.title}</DialogTitle>
+          <DialogDescription className="text-base text-black">
+            {confirmModalConfig.description}
+          </DialogDescription>
         </DialogHeader>
 
-        <DialogFooter className="gap-2 sm:gap-0">
-          <Button variant="outline" onClick={closeConfirmModal}>
-            Cancel
-          </Button>
-          <Button onClick={handleConfirm} className="bg-gradient-yellow text-black">
+        {confirmModalConfig.bulletPoints && confirmModalConfig.bulletPoints.length > 0 && (
+          <ul className="list-disc space-y-1 pl-5 text-base text-black">
+            {confirmModalConfig.bulletPoints.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
+          </ul>
+        )}
+
+        <DialogFooter className="flex-col gap-3 sm:flex-col">
+          <Button
+            onClick={handleConfirm}
+            className="bg-gradient-yellow h-12 w-full rounded-full text-lg font-medium text-black"
+          >
             {confirmModalConfig.confirmText || 'Confirm'}
+          </Button>
+          <Button
+            variant="outline"
+            onClick={handleCancel}
+            className="h-12 w-full rounded-full border-gray-300 text-lg font-medium"
+          >
+            {confirmModalConfig.cancelText || 'Cancel'}
           </Button>
         </DialogFooter>
       </DialogContent>

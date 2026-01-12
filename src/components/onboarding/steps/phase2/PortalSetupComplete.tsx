@@ -1,49 +1,56 @@
 'use client';
 
-import { CheckCircle } from 'lucide-react';
+import { Icon } from '@/components/ui/icon';
+import { useOnboardingStore } from '@/stores/onboarding-store';
 
-import { StepHeader } from '@/components/onboarding/shared/StepHeader';
-
-const PORTAL_FEATURES = [
-  'Manage your menu and pricing',
-  'View and accept incoming orders',
-  'Track your earnings and payouts',
-  'Access customer insights and analytics',
-  'Update your business information',
+const NEXT_STEPS = [
+  "Open the email and Click 'Create Password'",
+  'Set your Partner Portal password',
+  'Add opening hours, Menu and dish photos',
 ];
 
 export function PortalSetupComplete() {
+  const { formData } = useOnboardingStore();
+
+  // Get email from business info or use a placeholder
+  const email = formData.businessInfo?.email || 'your@email.com';
+
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
-      <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <CheckCircle className="h-10 w-10 text-green-600" />
+    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-8">
+      <div className="flex flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+        {/* Content */}
+        <div className="flex-1">
+          <div className="mb-6">
+            <p className="text-sm font-medium text-purple-600">Next Step!</p>
+            <h1 className="mt-2 text-3xl font-bold text-gray-900">
+              Setup your Partner Portal account
+            </h1>
+          </div>
+
+          <p className="mb-8 text-gray-700">
+            We've sent an email to set up your Partner Portal Account at{' '}
+            <span className="font-semibold text-purple-600">{email}</span>
+          </p>
+
+          <div>
+            <h3 className="mb-4 text-lg font-semibold text-gray-900">What to do next:</h3>
+            <ul className="space-y-4">
+              {NEXT_STEPS.map((step, index) => (
+                <li key={index} className="flex items-start gap-4">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-purple-600 text-sm font-semibold text-white">
+                    {index + 1}
+                  </div>
+                  <span className="pt-1 text-gray-700">{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
 
-        <div className="mt-6">
-          <StepHeader
-            title="Portal setup complete!"
-            description="Your partner portal is ready. You can now access all features to manage your restaurant."
-          />
+        {/* Illustration */}
+        <div className="flex justify-center lg:w-5/12">
+          <Icon name="welcomeThumbnail" className="h-64 w-64 sm:h-80 sm:w-80" />
         </div>
-      </div>
-
-      <div className="mt-8">
-        <h3 className="mb-4 font-medium text-gray-900">What you can do now:</h3>
-        <ul className="space-y-3">
-          {PORTAL_FEATURES.map((feature) => (
-            <li key={feature} className="flex items-start gap-3">
-              <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
-              <span className="text-gray-700">{feature}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-8 rounded-lg bg-purple-50 p-4 text-center">
-        <p className="text-sm text-purple-700">
-          Continue to the final step to set your business hours and start receiving orders.
-        </p>
       </div>
     </div>
   );

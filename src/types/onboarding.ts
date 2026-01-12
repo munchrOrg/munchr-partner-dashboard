@@ -196,6 +196,7 @@ export type OnboardingState = {
   isExampleDrawerOpen: boolean;
   isMapDrawerOpen: boolean;
   isConfirmModalOpen: boolean;
+  isEmailConfirmModalOpen: boolean;
   exampleDrawerConfig: ExampleDrawerConfig | null;
   confirmModalConfig: ConfirmModalConfig | null;
 
@@ -219,6 +220,8 @@ export type OnboardingActions = {
   closeMapDrawer: () => void;
   openConfirmModal: (config: ConfirmModalConfig) => void;
   closeConfirmModal: () => void;
+  openEmailConfirmModal: () => void;
+  closeEmailConfirmModal: () => void;
 
   // Navigation Actions
   triggerNavigation: (step: OnboardingStep) => void;
@@ -233,13 +236,17 @@ export type OnboardingStore = OnboardingState & OnboardingActions;
 export type ExampleDrawerConfig = {
   title: string;
   images: { label: string; src: string }[];
+  imageContainerClass?: string;
 };
 
 export type ConfirmModalConfig = {
   title: string;
   description: string;
+  bulletPoints?: string[];
   confirmText?: string;
+  cancelText?: string;
   onConfirm: () => void;
+  onCancel?: () => void;
 };
 
 // ===== Component Props =====

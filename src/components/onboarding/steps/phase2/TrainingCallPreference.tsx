@@ -1,6 +1,9 @@
 'use client';
 
+import { HelpCircle } from 'lucide-react';
+
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
+import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
   Select,
@@ -14,10 +17,10 @@ import { useOnboardingStore } from '@/stores/onboarding-store';
 import { NetworkProvider } from '@/types/onboarding';
 
 const NETWORK_PROVIDERS = [
-  { value: NetworkProvider.ZONG, label: 'Zong', color: 'bg-green-500' },
-  { value: NetworkProvider.UFONE, label: 'Ufone', color: 'bg-orange-500' },
   { value: NetworkProvider.JAZZ, label: 'Jazz', color: 'bg-red-500' },
   { value: NetworkProvider.TELENOR, label: 'Telenor', color: 'bg-blue-500' },
+  { value: NetworkProvider.UFONE, label: 'Ufone', color: 'bg-red-600' },
+  { value: NetworkProvider.ZONG, label: 'Zong', color: 'bg-green-500' },
 ];
 
 const TIME_SLOTS = [
@@ -25,6 +28,7 @@ const TIME_SLOTS = [
   '10:00 AM',
   '11:00 AM',
   '12:00 PM',
+  '01:00 PM',
   '02:00 PM',
   '03:00 PM',
   '04:00 PM',
@@ -55,68 +59,108 @@ export function TrainingCallPreference() {
   };
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
+    <div className="relative mx-auto max-w-xl px-4 py-8 sm:px-8">
       <StepHeader
         title="Network & Training Call Preference"
-        description="Select your network provider and schedule a training call with our team."
+        description="Please select your prefered mobile network and you convenient time for training call"
       />
 
-      <div className="mt-6 space-y-6">
+      <div className="mt-8 space-y-8">
         {/* Network Provider Selection */}
-        <div>
-          <p className="mb-3 font-medium text-gray-900">Select your network provider</p>
-          <div className="grid grid-cols-4 gap-3">
-            {NETWORK_PROVIDERS.map((provider) => (
-              <button
-                key={provider.value}
-                type="button"
-                onClick={() => handleProviderSelect(provider.value)}
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+          {NETWORK_PROVIDERS.map((provider) => (
+            <button
+              key={provider.value}
+              type="button"
+              onClick={() => handleProviderSelect(provider.value)}
+              className={cn(
+                'flex flex-col items-center justify-center gap-3 rounded-xl border-2 bg-white p-6 transition-all hover:shadow-md',
+                trainingData.networkProvider === provider.value
+                  ? 'border-purple-600 shadow-md'
+                  : 'border-gray-200'
+              )}
+            >
+              <div
                 className={cn(
-                  'flex flex-col items-center justify-center rounded-lg border-2 p-4 transition-all',
-                  trainingData.networkProvider === provider.value
-                    ? 'border-purple-700 bg-purple-50'
-                    : 'border-gray-200 hover:border-gray-300'
+                  'flex h-16 w-16 items-center justify-center rounded-full',
+                  provider.color
                 )}
-              >
-                <div className={cn('mb-2 h-10 w-10 rounded-full', provider.color)} />
-                <span className="text-sm font-medium">{provider.label}</span>
-              </button>
-            ))}
-          </div>
+              />
+              <span className="text-sm font-medium text-gray-900">{provider.label}</span>
+            </button>
+          ))}
         </div>
 
-        {/* Date Selection */}
+        {/* Dropdown for mobile network (optional redundant field) */}
         <div>
-          <p className="mb-3 font-medium text-gray-900">Preferred date</p>
-          <Input
-            type="date"
-            value={trainingData.preferredDate}
-            onChange={(e) => handleFieldChange('preferredDate', e.target.value)}
-            min={new Date().toISOString().split('T')[0]}
-            className="h-12 rounded-full border-gray-300 px-4"
-          />
-        </div>
-
-        {/* Time Selection */}
-        <div>
-          <p className="mb-3 font-medium text-gray-900">Preferred time</p>
           <Select
-            value={trainingData.preferredTime}
-            onValueChange={(value) => handleFieldChange('preferredTime', value)}
+            value={trainingData.networkProvider || ''}
+            onValueChange={(value) => handleProviderSelect(value as NetworkProvider)}
           >
-            <SelectTrigger className="h-12 rounded-full border-gray-300 px-4">
-              <SelectValue placeholder="Select time slot" />
+            <SelectTrigger className="h-12 rounded-full border-gray-300">
+              <SelectValue placeholder="Select mobile network preference" />
             </SelectTrigger>
             <SelectContent>
-              {TIME_SLOTS.map((time) => (
-                <SelectItem key={time} value={time}>
-                  {time}
+              {NETWORK_PROVIDERS.map((provider) => (
+                <SelectItem key={provider.value} value={provider.value}>
+                  {provider.label}
                 </SelectItem>
               ))}
             </SelectContent>
           </Select>
         </div>
+
+        {/* Book a Slot Section */}
+        <div>
+          <h3 className="mb-4 text-lg font-semibold text-gray-900">Book a Slot</h3>
+          <p className="mb-4 text-sm text-gray-600">
+            What time would be most convenient for you to receive the training call for device
+            setup?
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            {/* Time Selection */}
+            <div>
+              <Select
+                value={trainingData.preferredTime}
+                onValueChange={(value) => handleFieldChange('preferredTime', value)}
+              >
+                <SelectTrigger className="h-12 rounded-full border-gray-300">
+                  <SelectValue placeholder="Select time*" />
+                </SelectTrigger>
+                <SelectContent>
+                  {TIME_SLOTS.map((time) => (
+                    <SelectItem key={time} value={time}>
+                      {time}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Date Selection */}
+            <div>
+              <Input
+                type="date"
+                value={trainingData.preferredDate}
+                onChange={(e) => handleFieldChange('preferredDate', e.target.value)}
+                min={new Date().toISOString().split('T')[0]}
+                placeholder="Select date*"
+                className="h-12 rounded-full border-gray-300"
+              />
+            </div>
+          </div>
+        </div>
       </div>
+
+      {/* Help Button */}
+      <Button
+        type="button"
+        size="icon"
+        className="fixed right-8 bottom-8 h-14 w-14 rounded-full bg-gray-800 shadow-lg hover:bg-gray-700"
+      >
+        <HelpCircle className="h-6 w-6 text-white" />
+      </Button>
     </div>
   );
 }
