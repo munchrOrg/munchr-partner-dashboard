@@ -67,15 +67,15 @@ export enum NetworkProvider {
   TELENOR = 'telenor',
 }
 
-export enum DayOfWeek {
-  MONDAY = 'monday',
-  TUESDAY = 'tuesday',
-  WEDNESDAY = 'wednesday',
-  THURSDAY = 'thursday',
-  FRIDAY = 'friday',
-  SATURDAY = 'saturday',
-  SUNDAY = 'sunday',
-}
+// export enum DayOfWeek {
+//   MONDAY = 'monday',
+//   TUESDAY = 'tuesday',
+//   WEDNESDAY = 'wednesday',
+//   THURSDAY = 'thursday',
+//   FRIDAY = 'friday',
+//   SATURDAY = 'saturday',
+//   SUNDAY = 'sunday',
+// }
 
 // ===== Form Data Types =====
 export type BusinessInfoFormData = {
@@ -185,7 +185,7 @@ export type OnboardingFormData = {
   businessHours: BusinessHoursFormData | null;
 };
 
-export type OnboardingState = {
+type OnboardingState = {
   currentStep: OnboardingStep;
   completedSteps: OnboardingStep[];
   completedPhases: OnboardingPhase[];
@@ -205,7 +205,7 @@ export type OnboardingState = {
   navigationStep: OnboardingStep | null;
 };
 
-export type OnboardingActions = {
+type OnboardingActions = {
   setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) => void;
   completeStep: (step: OnboardingStep) => void;
   completePhase: (phase: OnboardingPhase) => void;
