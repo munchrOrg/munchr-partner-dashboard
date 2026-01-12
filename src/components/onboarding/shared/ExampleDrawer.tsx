@@ -15,7 +15,7 @@ export function ExampleDrawer() {
   return (
     <Sheet open={isExampleDrawerOpen} onOpenChange={closeExampleDrawer}>
       <SheetContent side="right" className="w-full overflow-y-auto rounded-l-2xl p-6 sm:max-w-lg">
-        <SheetHeader className="pb-4">
+        <SheetHeader className="px-0 pb-4">
           <SheetTitle className="text-3xl font-bold">{exampleDrawerConfig.title}</SheetTitle>
         </SheetHeader>
 

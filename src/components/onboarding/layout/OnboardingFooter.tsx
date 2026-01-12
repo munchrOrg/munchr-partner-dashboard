@@ -18,6 +18,8 @@ import { OnboardingStep } from '@/types/onboarding';
 // Steps that have forms that need to be submitted
 const STEPS_WITH_FORMS: Record<string, string> = {
   [OnboardingStep.BUSINESS_LOCATION]: 'location-form',
+  [OnboardingStep.LEGAL_TAX_DETAILS]: 'legal-tax-form',
+  [OnboardingStep.BANKING_DETAILS]: 'banking-form',
 };
 
 export function OnboardingFooter() {

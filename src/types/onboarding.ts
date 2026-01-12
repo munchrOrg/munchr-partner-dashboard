@@ -98,19 +98,24 @@ export type OwnerIdentityFormData = {
 };
 
 export type LegalTaxFormData = {
-  businessRegistrationNumber: string;
-  ntnNumber: string;
-  stnNumber: string;
+  cnicNumber: string;
+  taxRegistrationNumber: string;
+  firstAndMiddleName: string;
+  lastName: string;
 };
 
 export type BankingFormData = {
   accountTitle: string;
   bankName: string;
-  accountNumber: string;
   iban: string;
-  billingAddress: string;
-  billingCity: string;
+  sameAsBusinessAddress: boolean;
+  enterAddress?: string;
+  buildingName?: string;
+  street: string;
+  houseNumber: string;
   billingState: string;
+  billingCity?: string;
+  area?: string;
   billingPostalCode: string;
 };
 
