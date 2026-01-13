@@ -22,6 +22,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
 import 'react-phone-number-input/style.css';
 
@@ -131,6 +132,18 @@ export function SignUpForm() {
     }
 
     try {
+      // Persist signup data to store
+      const { setFormData } = useSignupStore.getState();
+      setFormData({
+        serviceProviderType: data.serviceProviderType,
+        businessName: data.businessName,
+        businessDescription: data.businessDescription,
+        email: data.email,
+        phoneNumber: data.phoneNumber,
+        cuisines: data.cuisines,
+        logoUrl: logoPreview,
+      });
+
       // Log data for now
       console.log('Sign up data:', {
         serviceProviderType: data.serviceProviderType,

@@ -8,6 +8,7 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useSignupStore } from '@/stores/signup-store';
 import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
@@ -42,6 +43,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
   const email = searchParams.get('email');
   const phone = searchParams.get('phone');
+  const flowType = searchParams.get('type');
   const destination = type === 'email' ? email : phone;
 
   const config = CONFIG[type];
@@ -89,30 +91,54 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
-    const newDigits = [...digits];
-    pastedData.split('').forEach((char, i) => {
-      newDigits[i] = char;
-    });
-    updateOtpValue(newDigits);
-    inputRefs.current[Math.min(pastedData.length, OTP_LENGTH - 1)]?.focus();
-  };
-
   const onSubmit = async (data: OTPInput) => {
     try {
-      // For now: log data and navigate
       console.log('OTP Verification:', { type, destination, otp: data.otp });
 
       toast.success(config.successMessage);
 
       if (type === 'email') {
-        // After email verification, go to phone verification
+        const { setEmailVerified } = useSignupStore.getState();
+        setEmailVerified(true);
         router.push(`/verify-phone?phone=${encodeURIComponent(phone ?? '')}`);
       } else {
-        // After phone verification, go to dashboard
-        router.push('/dashboard');
+        if (flowType === 'login') {
+          const { accountStatus, isEmailVerified, isPhoneVerified, formData } =
+            useSignupStore.getState();
+
+          if (!isEmailVerified || !isPhoneVerified) {
+            if (!formData.email) {
+              toast.error('Please complete signup first');
+              router.push('/sign-up');
+            } else if (!isEmailVerified) {
+              toast.info('Please verify your email to continue');
+              router.push(
+                `/verify-email?email=${encodeURIComponent(formData.email)}&phone=${encodeURIComponent(formData.phoneNumber)}`
+              );
+            } else {
+              toast.info('Please verify your phone to continue');
+              router.push(`/verify-phone?phone=${encodeURIComponent(formData.phoneNumber)}`);
+            }
+            return;
+          }
+
+          if (accountStatus === 'in_review') {
+            toast.info('Your account is under review. You will be notified when approved.');
+            router.push('/onboarding/portal-setup-complete');
+            return;
+          }
+
+          if (accountStatus === 'approved') {
+            router.push('/dashboard');
+            return;
+          }
+
+          router.push('/onboarding/welcome');
+        } else {
+          const { setPhoneVerified } = useSignupStore.getState();
+          setPhoneVerified(true);
+          router.push('/onboarding/welcome');
+        }
       }
     } catch {
       setError('otp', { message: 'An unexpected error occurred' });
@@ -125,7 +151,6 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     }
 
     try {
-      // For now: just log and reset timer
       console.log('Resend OTP:', { type, destination });
       toast.success(`OTP sent to your ${type}!`);
       setResendTimer(60);
@@ -140,28 +165,6 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const maskDestination = (value: string | null) => {
-    if (!value) {
-      return '';
-    }
-    if (type === 'email') {
-      const [local, domain] = value.split('@');
-      if (!local || !domain) {
-        return value;
-      }
-      const maskedLocal =
-        local.length > 2
-          ? `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}`
-          : local;
-      return `${maskedLocal}@${domain}`;
-    }
-    // Phone masking
-    if (value.length > 4) {
-      return `${'*'.repeat(value.length - 4)}${value.slice(-4)}`;
-    }
-    return value;
-  };
-
   if (!destination) {
     return null;
   }
@@ -169,9 +172,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   return (
     <div className="w-full">
       <h1 className="mb-2 text-xl font-semibold sm:text-2xl">{config.title}</h1>
-      <p className="mb-6 text-sm text-gray-600">
-        {config.getDescription(maskDestination(destination))}
-      </p>
+      <p className="mb-6 text-sm text-gray-600">{config.getDescription(destination)}</p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
         {errors.otp && (
@@ -180,7 +181,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           </Alert>
         )}
 
-        <div className="flex items-center justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
           {digits.map((digit, index) => (
             <div key={index} className="flex items-center gap-2 sm:gap-3">
               <input

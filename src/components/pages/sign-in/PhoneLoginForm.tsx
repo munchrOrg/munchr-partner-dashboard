@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
@@ -11,6 +12,7 @@ type PhoneLoginFormProps = {
 };
 
 export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
+  const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
@@ -21,8 +23,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
     setError(null);
 
     try {
-      // Handler to be implemented - should redirect to OTP page
-      // Example: router.push(`/verify-otp?phone=${encodeURIComponent(phoneNumber)}&type=login`);
+      router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}&type=login`);
     } catch {
       setError('An unexpected error occurred');
     } finally {

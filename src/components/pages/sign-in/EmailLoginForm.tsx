@@ -6,10 +6,12 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { useSignupStore } from '@/stores/signup-store';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
@@ -35,20 +37,39 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
     setError(null);
 
     try {
-      //  TODO: Uncomment this when the backend is ready
       console.log({ data });
-      router.push('/dashboard');
-      // const result = await signIn('login', {
-      //   email: data.email,
-      //   password: data.password,
-      //   redirect: false,
-      // });
 
-      // if (result?.error) {
-      //   setError(result.error);
-      // } else {
-      //   router.push('/dashboard');
-      // }
+      const { accountStatus, isEmailVerified, isPhoneVerified, formData } =
+        useSignupStore.getState();
+
+      if (!isEmailVerified || !isPhoneVerified) {
+        if (!formData.email) {
+          toast.error('Please complete signup first');
+          router.push('/sign-up');
+        } else if (!isEmailVerified) {
+          toast.info('Please verify your email to continue');
+          router.push(
+            `/verify-email?email=${encodeURIComponent(formData.email)}&phone=${encodeURIComponent(formData.phoneNumber)}`
+          );
+        } else {
+          toast.info('Please verify your phone to continue');
+          router.push(`/verify-phone?phone=${encodeURIComponent(formData.phoneNumber)}`);
+        }
+        return;
+      }
+
+      if (accountStatus === 'in_review') {
+        toast.info('Your account is under review. You will be notified when admin approves.');
+        router.push('/onboarding/portal-setup-complete');
+        return;
+      }
+
+      if (accountStatus === 'approved') {
+        router.push('/dashboard');
+        return;
+      }
+
+      router.push('/onboarding/welcome');
     } catch {
       setError('An unexpected error occurred');
     } finally {

@@ -13,13 +13,15 @@ export type AccountStatus = 'pending' | 'in_review' | 'approved';
 export type SignupState = {
   formData: SignupFormData;
   accountStatus: AccountStatus;
-  isSignupComplete: boolean;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
 };
 
 export type SignupActions = {
   setFormData: (data: Partial<SignupFormData>) => void;
   setAccountStatus: (status: AccountStatus) => void;
-  setSignupComplete: (complete: boolean) => void;
+  setEmailVerified: (verified: boolean) => void;
+  setPhoneVerified: (verified: boolean) => void;
   reset: () => void;
 };
 

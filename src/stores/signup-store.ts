@@ -17,7 +17,8 @@ export const useSignupStore = create<SignupStore>()(
     (set) => ({
       formData: initialFormData,
       accountStatus: 'pending',
-      isSignupComplete: false,
+      isEmailVerified: false,
+      isPhoneVerified: false,
 
       setFormData: (data: Partial<SignupFormData>) =>
         set((state) => ({
@@ -26,13 +27,16 @@ export const useSignupStore = create<SignupStore>()(
 
       setAccountStatus: (status: AccountStatus) => set({ accountStatus: status }),
 
-      setSignupComplete: (complete: boolean) => set({ isSignupComplete: complete }),
+      setEmailVerified: (verified: boolean) => set({ isEmailVerified: verified }),
+
+      setPhoneVerified: (verified: boolean) => set({ isPhoneVerified: verified }),
 
       reset: () =>
         set({
           formData: initialFormData,
           accountStatus: 'pending',
-          isSignupComplete: false,
+          isEmailVerified: false,
+          isPhoneVerified: false,
         }),
     }),
     {

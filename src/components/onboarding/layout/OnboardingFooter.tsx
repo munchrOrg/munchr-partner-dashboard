@@ -1,10 +1,11 @@
 'use client';
 
 import type { ConfirmModalConfig } from '@/types/onboarding';
-import { signOut } from 'next-auth/react';
 
+import { signOut } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
@@ -76,6 +77,31 @@ const STEP_BEHAVIORS: Partial<Record<OnboardingStep, StepBehavior>> = {
       return null;
     },
   },
+  [OnboardingStep.BUSINESS_HOURS_SETUP]: {
+    type: 'default',
+    validate: (formData) => {
+      if (!formData.businessHours) {
+        return 'Please configure your business hours.';
+      }
+
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+      const hasOpenDay = days.some((day) => formData.businessHours[day].isOpen);
+      if (!hasOpenDay) {
+        return 'Please mark at least one day as open.';
+      }
+
+      for (const day of days) {
+        const schedule = formData.businessHours[day];
+
+        if (schedule.isOpen && schedule.slots.length === 0) {
+          return 'Please add time slots for all open days or mark them as closed.';
+        }
+      }
+
+      return null;
+    },
+  },
 };
 
 export function OnboardingFooter() {
@@ -96,8 +122,6 @@ export function OnboardingFooter() {
     navigationStep,
     clearNavigation,
   } = useOnboardingStore();
-
-  const [validationError, setValidationError] = useState<string | null>(null);
 
   const showBack = canGoBack(currentStep);
   const formId = STEPS_WITH_FORMS[currentStep];
@@ -153,8 +177,6 @@ export function OnboardingFooter() {
   };
 
   const handleContinue = () => {
-    setValidationError(null);
-
     if (currentStep === OnboardingStep.WELCOME) {
       router.push(`/onboarding/${getNextPhaseEntryStep()}`);
       return;
@@ -165,7 +187,7 @@ export function OnboardingFooter() {
     if (stepBehavior?.validate) {
       const error = stepBehavior.validate(formData);
       if (error) {
-        setValidationError(error);
+        toast.error(error);
         return;
       }
     }
@@ -192,18 +214,12 @@ export function OnboardingFooter() {
     setTimeout(() => {
       signOut({ redirect: false });
       router.push('/sign-in');
-    }, 3000);
+    }, 5000);
     return null;
   }
 
   return (
     <footer className="fixed right-0 bottom-0 left-0 border-t bg-white px-4 py-4 sm:px-8">
-      {validationError && (
-        <div className="mx-10 mb-3 rounded-lg bg-red-50 px-4 py-2 text-center text-sm text-red-600">
-          {validationError}
-        </div>
-      )}
-
       <div className="mx-10 flex items-center justify-between">
         <div className="w-28">
           {showBack && (

@@ -1,4 +1,5 @@
 import { redirect } from 'next/navigation';
+import { SessionProvider } from '@/components/providers/SessionProvider';
 import { auth } from '@/lib/auth';
 
 export default async function ProtectedLayout({ children }: { children: React.ReactNode }) {
@@ -8,5 +9,5 @@ export default async function ProtectedLayout({ children }: { children: React.Re
     redirect('/sign-in');
   }
 
-  return <>{children}</>;
+  return <SessionProvider>{children}</SessionProvider>;
 }

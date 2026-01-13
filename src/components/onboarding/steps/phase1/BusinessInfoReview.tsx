@@ -6,11 +6,13 @@ import { useState } from 'react';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 export function BusinessInfoReview() {
   const router = useRouter();
   const { formData } = useOnboardingStore();
+  const { formData: signupData } = useSignupStore();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleChange = (step: OnboardingStep) => {
@@ -74,15 +76,17 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business name</span>
               <span className="font-medium">
-                {formData.businessInfo?.businessName || 'Not provided'}
+                {signupData.businessName || formData.businessInfo?.businessName || 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business type</span>
               <span className="font-medium capitalize">
-                {formData.businessInfo?.serviceProviderType === 'restaurant'
+                {(signupData.serviceProviderType || formData.businessInfo?.serviceProviderType) ===
+                'restaurant'
                   ? 'Restaurant'
-                  : formData.businessInfo?.serviceProviderType === 'home-chef'
+                  : (signupData.serviceProviderType ||
+                        formData.businessInfo?.serviceProviderType) === 'home-chef'
                     ? 'Home Chef'
                     : 'Not provided'}
               </span>
@@ -90,9 +94,11 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business category</span>
               <span className="font-medium">
-                {formData.businessInfo?.serviceProviderType === 'home-chef'
+                {(signupData.serviceProviderType || formData.businessInfo?.serviceProviderType) ===
+                'home-chef'
                   ? 'Home Based Kitchen'
-                  : formData.businessInfo?.serviceProviderType === 'restaurant'
+                  : (signupData.serviceProviderType ||
+                        formData.businessInfo?.serviceProviderType) === 'restaurant'
                     ? 'Restaurant'
                     : 'Not provided'}
               </span>
@@ -100,21 +106,23 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business cuisine</span>
               <span className="font-medium">
-                {formData.businessInfo?.cuisines?.length
-                  ? formData.businessInfo.cuisines[0]
-                  : 'Not provided'}
+                {signupData.cuisines?.length
+                  ? signupData.cuisines.join(', ')
+                  : formData.businessInfo?.cuisines?.length
+                    ? formData.businessInfo.cuisines.join(', ')
+                    : 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Mobile phone number</span>
               <span className="font-medium">
-                {formData.businessInfo?.phoneNumber || 'Not provided'}
+                {signupData.phoneNumber || formData.businessInfo?.phoneNumber || 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business phone number</span>
               <span className="font-medium">
-                {formData.businessInfo?.phoneNumber || 'Not provided'}
+                {signupData.phoneNumber || formData.businessInfo?.phoneNumber || 'Not provided'}
               </span>
             </div>
           </div>

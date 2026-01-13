@@ -6,11 +6,10 @@ import { useEffect } from 'react';
 
 import { STEP_ORDER } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
 import { OnboardingStep } from '@/types/onboarding';
 
-// Dynamic imports for all step components
 const stepComponents: Record<OnboardingStep, React.ComponentType> = {
-  // Phase 1
   [OnboardingStep.WELCOME]: dynamic(
     () => import('@/components/onboarding/steps/phase1/Welcome').then((mod) => mod.Welcome),
     { ssr: false }
@@ -146,27 +145,40 @@ export default function OnboardingPage() {
   const step = params.step as string;
 
   const { completedSteps, currentStep, goToStep } = useOnboardingStore();
+  const { accountStatus } = useSignupStore();
 
   useEffect(() => {
     const stepEnum = step as OnboardingStep;
 
-    // Validate step exists
+    const phase3Steps = [OnboardingStep.OPEN_BUSINESS_INTRO, OnboardingStep.BUSINESS_HOURS_SETUP];
+
+    if (accountStatus === 'in_review' || accountStatus === 'pending') {
+      if (stepEnum !== OnboardingStep.PORTAL_SETUP_COMPLETE) {
+        router.replace(`/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`);
+        return;
+      }
+    }
+
+    if (phase3Steps.includes(stepEnum) && accountStatus !== 'approved') {
+      router.replace(`/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`);
+      return;
+    }
+
     if (!STEP_ORDER.includes(stepEnum)) {
       router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
       return;
     }
 
     // Guard: Prevent jumping ahead
-    // Temporarily Disable for testing
-    // TODO: Uncomment this when testing is complete
+    // NOTE: Backend not ready - routing managed via Zustand stores (signup-store, onboarding-store)
+    // TODO: Uncomment this when backend is ready
     // if (!canAccessStep(stepEnum, completedSteps)) {
     //   router.replace(`/onboarding/${currentStep}`);
     //   return;
     // }
 
-    // Sync current step
     goToStep(stepEnum);
-  }, [step, completedSteps, currentStep, goToStep, router]);
+  }, [step, completedSteps, currentStep, goToStep, router, accountStatus]);
 
   const StepComponent = stepComponents[step as OnboardingStep];
 
