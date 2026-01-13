@@ -2,7 +2,6 @@
 
 import type { ConfirmModalConfig } from '@/types/onboarding';
 
-import { signOut } from 'next-auth/react';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
 import { toast } from 'sonner';
@@ -211,10 +210,6 @@ export function OnboardingFooter() {
     executeNavigation(currentStep);
   };
   if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
-    setTimeout(() => {
-      signOut({ redirect: false });
-      router.push('/sign-in');
-    }, 5000);
     return null;
   }
 

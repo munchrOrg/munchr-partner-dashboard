@@ -1,6 +1,11 @@
 'use client';
 
-import { ChevronDown } from 'lucide-react';
+import type { SavedPaymentAccount } from '@/types/onboarding';
+import type { PaymentFormInput } from '@/validations/payment';
+import { zodResolver } from '@hookform/resolvers/zod';
+import { ChevronDown, Trash2 } from 'lucide-react';
+import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -12,82 +17,192 @@ import {
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { PaymentMethod } from '@/types/onboarding';
+import { paymentFormSchema } from '@/validations/payment';
 
 const PAYMENT_OPTIONS = [
   { value: PaymentMethod.EASYPAISA, label: 'Easy Paisa' },
-  { value: PaymentMethod.JAZZCASH, label: 'Jazz cash' },
+  { value: PaymentMethod.JAZZCASH, label: 'Jazz Cash' },
   { value: PaymentMethod.MYPAY, label: 'Mypay' },
   { value: PaymentMethod.CARD, label: 'Pay via Master & Visa' },
 ];
+
+const getMethodLabel = (method: PaymentMethod) => {
+  return PAYMENT_OPTIONS.find((opt) => opt.value === method)?.label || method;
+};
+
+const maskAccountNumber = (number: string) => {
+  if (number.length <= 4) {
+    return number;
+  }
+  return `••••${number.slice(-4)}`;
+};
+
+const maskCardNumber = (number: string) => {
+  if (number.length <= 4) {
+    return number;
+  }
+  return `•••• •••• •••• ${number.slice(-4)}`;
+};
 
 export function PaymentMethodSelection() {
   const { formData, setFormData } = useOnboardingStore();
 
   const paymentData = formData.paymentMethod || {
-    method: null,
-    accountNumber: '',
-    accountTitle: '',
-    cardNumber: '',
-    cardExpiry: '',
-    cardCvv: '',
+    savedAccounts: [],
+    selectedAccountId: null,
   };
 
-  const handleMethodChange = (value: string) => {
+  const {
+    register,
+    handleSubmit,
+    watch,
+    reset,
+    setValue,
+    formState: { errors, isValid },
+    trigger,
+  } = useForm<PaymentFormInput>({
+    resolver: zodResolver(paymentFormSchema),
+    defaultValues: {
+      selectedMethod: null,
+      accountNumber: '',
+      accountTitle: '',
+      cardNumber: '',
+      cardExpiry: '',
+      cardCvv: '',
+    },
+    mode: 'onChange',
+  });
+
+  const selectedMethod = watch('selectedMethod');
+
+  const handleAddAccount = handleSubmit((data) => {
+    if (!data.selectedMethod) {
+      toast.error('Please select a payment method');
+      return;
+    }
+
+    if (paymentData.savedAccounts && paymentData.savedAccounts.length > 0) {
+      toast.error('You can only add one payment method');
+      return;
+    }
+
+    const newAccount: SavedPaymentAccount = {
+      id: Date.now().toString(),
+      method: data.selectedMethod,
+      ...(data.selectedMethod === PaymentMethod.CARD
+        ? {
+            accountTitle: data.accountTitle || '',
+            cardNumber: data.cardNumber || '',
+            cardExpiry: data.cardExpiry || '',
+          }
+        : { accountNumber: data.accountNumber || '' }),
+    };
+
     setFormData('paymentMethod', {
-      ...paymentData,
-      method: value as PaymentMethod,
+      savedAccounts: [newAccount],
+      selectedAccountId: newAccount.id,
     });
+
+    toast.success('Payment method added');
+    reset();
+  });
+
+  const handleRemoveAccount = () => {
+    setFormData('paymentMethod', {
+      savedAccounts: [],
+      selectedAccountId: null,
+    });
+
+    toast.success('Payment method removed');
   };
 
-  const handleFieldChange = (field: string, value: string) => {
+  const handleSelectAccount = (accountId: string) => {
     setFormData('paymentMethod', {
       ...paymentData,
-      [field]: value,
+      selectedAccountId: accountId,
     });
   };
 
   const renderPaymentFields = () => {
-    if (!paymentData.method) {
+    if (!selectedMethod) {
       return null;
     }
 
-    if (paymentData.method === PaymentMethod.CARD) {
+    const isFormValid =
+      selectedMethod === PaymentMethod.CARD
+        ? isValid &&
+          watch('accountTitle') &&
+          watch('cardNumber') &&
+          watch('cardExpiry') &&
+          watch('cardCvv')
+        : isValid && watch('accountNumber');
+
+    if (selectedMethod === PaymentMethod.CARD) {
       return (
         <div className="mt-6 space-y-4">
           <div>
             <Input
               placeholder="Enter Card Holder Name"
-              value={paymentData.accountTitle || ''}
-              onChange={(e) => handleFieldChange('accountTitle', e.target.value)}
-              className="h-12 rounded-full border-gray-300 px-4"
+              {...register('accountTitle')}
+              className={`h-12 rounded-full border-gray-300 px-4 ${
+                errors.accountTitle ? 'border-red-500' : ''
+              }`}
+              onBlur={() => trigger('accountTitle')}
             />
+            {errors.accountTitle && (
+              <p className="mt-1 text-sm text-red-500">{errors.accountTitle.message}</p>
+            )}
           </div>
           <div>
             <Input
               placeholder="Enter Card Number"
-              value={paymentData.cardNumber || ''}
-              onChange={(e) => handleFieldChange('cardNumber', e.target.value)}
-              className="h-12 rounded-full border-gray-300 px-4"
+              {...register('cardNumber')}
+              className={`h-12 rounded-full border-gray-300 px-4 ${
+                errors.cardNumber ? 'border-red-500' : ''
+              }`}
+              onBlur={() => trigger('cardNumber')}
             />
+            {errors.cardNumber && (
+              <p className="mt-1 text-sm text-red-500">{errors.cardNumber.message}</p>
+            )}
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input
-              placeholder="Expiry Date"
-              value={paymentData.cardExpiry || ''}
-              onChange={(e) => handleFieldChange('cardExpiry', e.target.value)}
-              className="h-12 rounded-full border-gray-300 px-4"
-            />
-            <Input
-              placeholder="CVV"
-              type="password"
-              value={paymentData.cardCvv || ''}
-              onChange={(e) => handleFieldChange('cardCvv', e.target.value)}
-              className="h-12 rounded-full border-gray-300 px-4"
-            />
+            <div>
+              <Input
+                placeholder="MM/YY"
+                {...register('cardExpiry')}
+                className={`h-12 rounded-full border-gray-300 px-4 ${
+                  errors.cardExpiry ? 'border-red-500' : ''
+                }`}
+                onBlur={() => trigger('cardExpiry')}
+              />
+              {errors.cardExpiry && (
+                <p className="mt-1 text-sm text-red-500">{errors.cardExpiry.message}</p>
+              )}
+            </div>
+            <div>
+              <Input
+                placeholder="CVV"
+                type="password"
+                {...register('cardCvv')}
+                className={`h-12 rounded-full border-gray-300 px-4 ${
+                  errors.cardCvv ? 'border-red-500' : ''
+                }`}
+                onBlur={() => trigger('cardCvv')}
+              />
+              {errors.cardCvv && (
+                <p className="mt-1 text-sm text-red-500">{errors.cardCvv.message}</p>
+              )}
+            </div>
           </div>
+          {errors.root && <p className="text-sm text-red-500">{errors.root.message}</p>}
           <Button
             type="button"
-            className="bg-gray-light h-12 w-full rounded-full text-white hover:bg-gray-700"
+            onClick={handleAddAccount}
+            disabled={!isFormValid}
+            className={`h-12 w-full rounded-full text-white transition-colors ${
+              isFormValid ? 'bg-gray-800 hover:bg-gray-900' : 'cursor-not-allowed bg-gray-300'
+            }`}
           >
             Add Account
           </Button>
@@ -95,18 +210,29 @@ export function PaymentMethodSelection() {
       );
     }
 
-    // Mobile wallet fields (Easypaisa, JazzCash, MyPay)
     return (
       <div className="mt-6 flex flex-col gap-4 space-y-4">
-        <Input
-          placeholder="Account Number"
-          value={paymentData.accountNumber || ''}
-          onChange={(e) => handleFieldChange('accountNumber', e.target.value)}
-          className="h-12 rounded-full border-gray-300 px-4"
-        />
+        <div>
+          <Input
+            placeholder="Account Number"
+            {...register('accountNumber')}
+            className={`h-12 rounded-full border-gray-300 px-4 ${
+              errors.accountNumber ? 'border-red-500' : ''
+            }`}
+            onBlur={() => trigger('accountNumber')}
+          />
+          {errors.accountNumber && (
+            <p className="mt-1 text-sm text-red-500">{errors.accountNumber.message}</p>
+          )}
+        </div>
+        {errors.root && <p className="text-sm text-red-500">{errors.root.message}</p>}
         <Button
           type="button"
-          className="bg-gray-light h-12 w-full rounded-full text-white hover:bg-gray-700"
+          onClick={handleAddAccount}
+          disabled={!isFormValid}
+          className={`h-12 w-full rounded-full text-white transition-colors ${
+            isFormValid ? 'bg-gray-800 hover:bg-gray-900' : 'cursor-not-allowed bg-gray-300'
+          }`}
         >
           Add Account
         </Button>
@@ -114,43 +240,124 @@ export function PaymentMethodSelection() {
     );
   };
 
+  const renderSavedAccounts = () => {
+    const hasSavedAccount = paymentData.savedAccounts && paymentData.savedAccounts.length > 0;
+
+    if (!hasSavedAccount) {
+      return null;
+    }
+
+    return (
+      <div className="mt-8">
+        <h3 className="mb-4 text-lg font-semibold">Payment Method</h3>
+        <div className="space-y-3">
+          {paymentData.savedAccounts?.map((account) => (
+            <div
+              key={account.id}
+              onClick={() => handleSelectAccount(account.id)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleSelectAccount(account.id);
+                }
+              }}
+              role="button"
+              tabIndex={0}
+              className={`flex cursor-pointer items-center justify-between rounded-xl border p-4 transition-colors ${
+                paymentData.selectedAccountId === account.id
+                  ? 'border-amber-400 bg-amber-50'
+                  : 'border-gray-200 hover:border-gray-300'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <div
+                  className={`h-4 w-4 rounded-full border-2 ${
+                    paymentData.selectedAccountId === account.id
+                      ? 'border-amber-400 bg-amber-400'
+                      : 'border-gray-300'
+                  }`}
+                />
+                <div>
+                  <p className="font-medium">{getMethodLabel(account.method)}</p>
+                  <p className="text-sm text-gray-500">
+                    {account.method === PaymentMethod.CARD
+                      ? `${account.accountTitle} - ${maskCardNumber(account.cardNumber || '')}`
+                      : maskAccountNumber(account.accountNumber || '')}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleRemoveAccount();
+                }}
+                className="rounded-full p-2 text-gray-400 hover:bg-gray-100 hover:text-red-500"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  };
+
+  const hasSavedAccount = paymentData.savedAccounts && paymentData.savedAccounts.length > 0;
+
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
-      <StepHeader title="Select Payment Method" centered={true} />
+      <StepHeader title="Select Payment Method" />
 
-      <div className="mt-6">
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="outline"
-              className="h-12 w-full justify-between rounded-full border-gray-300 px-4"
-            >
-              <span>
-                {paymentData.method
-                  ? PAYMENT_OPTIONS.find((opt) => opt.value === paymentData.method)?.label
-                  : 'Select Payment Method'}
-              </span>
-              <ChevronDown className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent
-            className="w-[var(--radix-dropdown-menu-trigger-width)]"
-            align="start"
-          >
-            {PAYMENT_OPTIONS.map((option) => (
-              <DropdownMenuItem
-                key={option.value}
-                onClick={() => handleMethodChange(option.value)}
-                className="w-full"
+      {renderSavedAccounts()}
+
+      {!hasSavedAccount && (
+        <div className="mt-6">
+          {/* <h3 className="mb-4 text-lg font-semibold">Add Payment Method</h3> */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                className="h-12 w-full justify-between rounded-full border-gray-300 px-4"
               >
-                {option.label}
-              </DropdownMenuItem>
-            ))}
-          </DropdownMenuContent>
-        </DropdownMenu>
+                <span>
+                  {selectedMethod
+                    ? PAYMENT_OPTIONS.find((opt) => opt.value === selectedMethod)?.label
+                    : 'Select Payment Method'}
+                </span>
+                <ChevronDown className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent
+              className="w-[var(--radix-dropdown-menu-trigger-width)]"
+              align="start"
+            >
+              {PAYMENT_OPTIONS.map((option) => (
+                <DropdownMenuItem
+                  key={option.value}
+                  onClick={() => {
+                    setValue('selectedMethod', option.value);
+                    // Reset form fields when method changes
+                    reset({
+                      selectedMethod: option.value,
+                      accountNumber: '',
+                      accountTitle: '',
+                      cardNumber: '',
+                      cardExpiry: '',
+                      cardCvv: '',
+                    });
+                  }}
+                  className="w-full"
+                >
+                  {option.label}
+                </DropdownMenuItem>
+              ))}
+            </DropdownMenuContent>
+          </DropdownMenu>
 
-        {renderPaymentFields()}
-      </div>
+          {renderPaymentFields()}
+        </div>
+      )}
     </div>
   );
 }

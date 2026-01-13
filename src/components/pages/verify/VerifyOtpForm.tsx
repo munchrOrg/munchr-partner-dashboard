@@ -8,7 +8,9 @@ import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useSignupStore } from '@/stores/signup-store';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
@@ -41,10 +43,9 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   );
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const email = searchParams.get('email');
-  const phone = searchParams.get('phone');
+  const { formData } = useSignupStore();
   const flowType = searchParams.get('type');
-  const destination = type === 'email' ? email : phone;
+  const destination = type === 'email' ? formData.email : formData.phoneNumber;
 
   const config = CONFIG[type];
 
@@ -91,54 +92,29 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     }
   };
 
-  const onSubmit = async (data: OTPInput) => {
+  const onSubmit = async (_data: OTPInput) => {
     try {
-      console.log('OTP Verification:', { type, destination, otp: data.otp });
-
       toast.success(config.successMessage);
+
+      if (flowType === 'login') {
+        const { completedPhases } = useOnboardingStore.getState();
+
+        if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+          router.push(`/onboarding/${OnboardingStep.OPEN_BUSINESS_INTRO}`);
+        } else {
+          router.push('/dashboard');
+        }
+        return;
+      }
 
       if (type === 'email') {
         const { setEmailVerified } = useSignupStore.getState();
         setEmailVerified(true);
-        router.push(`/verify-phone?phone=${encodeURIComponent(phone ?? '')}`);
+        router.push('/verify-phone?type=signup');
       } else {
-        if (flowType === 'login') {
-          const { accountStatus, isEmailVerified, isPhoneVerified, formData } =
-            useSignupStore.getState();
-
-          if (!isEmailVerified || !isPhoneVerified) {
-            if (!formData.email) {
-              toast.error('Please complete signup first');
-              router.push('/sign-up');
-            } else if (!isEmailVerified) {
-              toast.info('Please verify your email to continue');
-              router.push(
-                `/verify-email?email=${encodeURIComponent(formData.email)}&phone=${encodeURIComponent(formData.phoneNumber)}`
-              );
-            } else {
-              toast.info('Please verify your phone to continue');
-              router.push(`/verify-phone?phone=${encodeURIComponent(formData.phoneNumber)}`);
-            }
-            return;
-          }
-
-          if (accountStatus === 'in_review') {
-            toast.info('Your account is under review. You will be notified when approved.');
-            router.push('/onboarding/portal-setup-complete');
-            return;
-          }
-
-          if (accountStatus === 'approved') {
-            router.push('/dashboard');
-            return;
-          }
-
-          router.push('/onboarding/welcome');
-        } else {
-          const { setPhoneVerified } = useSignupStore.getState();
-          setPhoneVerified(true);
-          router.push('/onboarding/welcome');
-        }
+        const { setPhoneVerified } = useSignupStore.getState();
+        setPhoneVerified(true);
+        router.push('/onboarding/welcome');
       }
     } catch {
       setError('otp', { message: 'An unexpected error occurred' });
@@ -151,7 +127,6 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     }
 
     try {
-      console.log('Resend OTP:', { type, destination });
       toast.success(`OTP sent to your ${type}!`);
       setResendTimer(60);
     } catch {
@@ -166,6 +141,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   };
 
   if (!destination) {
+    router.push('/sign-up');
     return null;
   }
 
@@ -183,7 +159,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
         <div className="flex items-center justify-center gap-2 sm:gap-3">
           {digits.map((digit, index) => (
-            <div key={index} className="flex items-center gap-2 sm:gap-3">
+            <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
               <input
                 ref={(el) => {
                   inputRefs.current[index] = el;

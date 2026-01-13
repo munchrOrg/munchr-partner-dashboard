@@ -11,7 +11,9 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useSignupStore } from '@/stores/signup-store';
+import { OnboardingPhase } from '@/types/onboarding';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
@@ -37,39 +39,47 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
     setError(null);
 
     try {
-      console.log({ data });
+      const {
+        formData,
+        isEmailVerified,
+        isPhoneVerified,
+        reset: resetSignup,
+      } = useSignupStore.getState();
+      const { completedPhases, reset: resetOnboarding } = useOnboardingStore.getState();
 
-      const { accountStatus, isEmailVerified, isPhoneVerified, formData } =
-        useSignupStore.getState();
+      if (!formData.email || !formData.phoneNumber) {
+        resetSignup();
+        resetOnboarding();
+        toast.error('Please complete signup first');
+        router.push('/sign-up');
+        return;
+      }
+
+      const isMatchingUser = formData.email.toLowerCase() === data.email.toLowerCase();
+
+      if (!isMatchingUser) {
+        resetSignup();
+        resetOnboarding();
+        toast.error('Please complete signup first');
+        router.push('/sign-up');
+        return;
+      }
 
       if (!isEmailVerified || !isPhoneVerified) {
-        if (!formData.email) {
-          toast.error('Please complete signup first');
-          router.push('/sign-up');
-        } else if (!isEmailVerified) {
-          toast.info('Please verify your email to continue');
-          router.push(
-            `/verify-email?email=${encodeURIComponent(formData.email)}&phone=${encodeURIComponent(formData.phoneNumber)}`
-          );
+        if (!isEmailVerified) {
+          router.push('/verify-email?type=signup');
         } else {
-          toast.info('Please verify your phone to continue');
-          router.push(`/verify-phone?phone=${encodeURIComponent(formData.phoneNumber)}`);
+          router.push('/verify-phone?type=signup');
         }
         return;
       }
 
-      if (accountStatus === 'in_review') {
-        toast.info('Your account is under review. You will be notified when admin approves.');
-        router.push('/onboarding/portal-setup-complete');
+      if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+        router.push('/verify-email?type=login');
         return;
       }
 
-      if (accountStatus === 'approved') {
-        router.push('/dashboard');
-        return;
-      }
-
-      router.push('/onboarding/welcome');
+      router.push('/verify-email?type=login');
     } catch {
       setError('An unexpected error occurred');
     } finally {

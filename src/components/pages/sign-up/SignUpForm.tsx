@@ -60,7 +60,6 @@ const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
 export function SignUpForm() {
   const router = useRouter();
-  const [logoFile, setLogoFile] = useState<File | null>(null);
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
 
@@ -110,7 +109,6 @@ export function SignUpForm() {
       return;
     }
 
-    setLogoFile(file);
     const reader = new FileReader();
     reader.onload = (event) => {
       setLogoPreview(event.target?.result as string);
@@ -119,20 +117,17 @@ export function SignUpForm() {
   }, []);
 
   const handleRemoveLogo = useCallback(() => {
-    setLogoFile(null);
     setLogoPreview(null);
     setLogoError(null);
   }, []);
 
   const onSubmit = async (data: SignUpInput) => {
-    // Validate phone number
     if (!isValidPhoneNumber(data.phoneNumber)) {
       setError('phoneNumber', { message: 'Invalid phone number' });
       return;
     }
 
     try {
-      // Persist signup data to store
       const { setFormData } = useSignupStore.getState();
       setFormData({
         serviceProviderType: data.serviceProviderType,
@@ -144,21 +139,7 @@ export function SignUpForm() {
         logoUrl: logoPreview,
       });
 
-      // Log data for now
-      console.log('Sign up data:', {
-        serviceProviderType: data.serviceProviderType,
-        businessName: data.businessName,
-        businessDescription: data.businessDescription,
-        email: data.email,
-        phoneNumber: data.phoneNumber,
-        cuisines: data.cuisines,
-        logoFile,
-      });
-
-      // Navigate to verify-email with email and phone in query params
-      router.push(
-        `/verify-email?email=${encodeURIComponent(data.email)}&phone=${encodeURIComponent(data.phoneNumber)}`
-      );
+      router.push('/verify-email?type=signup');
     } catch {
       setError('root', { message: 'An unexpected error occurred' });
     }

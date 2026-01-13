@@ -2,9 +2,13 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
+import { OnboardingPhase } from '@/types/onboarding';
 import { FormFooter } from './FormFooter';
 
 type PhoneLoginFormProps = {
@@ -23,7 +27,48 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
     setError(null);
 
     try {
-      router.push(`/verify-phone?phone=${encodeURIComponent(phoneNumber)}&type=login`);
+      const {
+        formData,
+        isEmailVerified,
+        isPhoneVerified,
+        reset: resetSignup,
+      } = useSignupStore.getState();
+      const { completedPhases, reset: resetOnboarding } = useOnboardingStore.getState();
+
+      if (!formData.email || !formData.phoneNumber) {
+        resetSignup();
+        resetOnboarding();
+        toast.error('Please complete signup first');
+        router.push('/sign-up');
+        return;
+      }
+
+      const normalizePhone = (phone: string) => phone.replace(/[\s\-()]/g, '');
+      const isMatchingUser = normalizePhone(formData.phoneNumber) === normalizePhone(phoneNumber);
+
+      if (!isMatchingUser) {
+        resetSignup();
+        resetOnboarding();
+        toast.error('Please complete signup first');
+        router.push('/sign-up');
+        return;
+      }
+
+      if (!isEmailVerified || !isPhoneVerified) {
+        if (!isEmailVerified) {
+          router.push('/verify-email?type=signup');
+        } else {
+          router.push('/verify-phone?type=signup');
+        }
+        return;
+      }
+
+      if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+        router.push('/verify-phone?type=login');
+        return;
+      }
+
+      router.push('/verify-phone?type=login');
     } catch {
       setError('An unexpected error occurred');
     } finally {

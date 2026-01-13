@@ -7,7 +7,6 @@ import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Icon } from '@/components/ui/icon';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { useSignupStore } from '@/stores/signup-store';
 
 const NEXT_STEPS = [
   "Open the email and Click 'Create Password'",
@@ -15,48 +14,28 @@ const NEXT_STEPS = [
   'Add opening hours, Menu and dish photos',
 ];
 
-const ACCOUNT_STATUS_MESSAGES = {
-  pending: 'Your account is pending. You will be notified when admin reviews your application.',
-  in_review: 'Your account is under review. You will be notified when admin approves.',
-  approved: 'Your account has been approved! You can now proceed to set up your business hours.',
-};
-
 export function PortalSetupComplete() {
   const { formData } = useOnboardingStore();
-  const { accountStatus, setAccountStatus } = useSignupStore();
   const router = useRouter();
   const hasShownToast = useRef(false);
 
   const email = formData.businessInfo?.email || 'your@email.com';
 
   useEffect(() => {
-    if (accountStatus === 'pending') {
-      setAccountStatus('in_review');
-    }
-  }, []);
-
-  useEffect(() => {
     if (hasShownToast.current) {
-      return;
+      return undefined;
     }
 
-    const message = ACCOUNT_STATUS_MESSAGES[accountStatus];
+    toast.success('Phase 2 completed! Your application is under review.', { duration: 5000 });
+    hasShownToast.current = true;
 
-    if (accountStatus === 'in_review' || accountStatus === 'pending') {
-      toast.info(message, { duration: 5000 });
-      hasShownToast.current = true;
+    const timer = setTimeout(() => {
+      signOut({ redirect: false });
+      router.push('/sign-in');
+    }, 5000);
 
-      const timer = setTimeout(() => {
-        signOut({ redirect: false });
-        router.push('/sign-in');
-      }, 5000);
-
-      return () => clearTimeout(timer);
-    } else if (accountStatus === 'approved') {
-      toast.success(message, { duration: 4000 });
-      hasShownToast.current = true;
-    }
-  }, [accountStatus, router]);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
     <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">

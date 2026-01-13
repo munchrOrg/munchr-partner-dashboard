@@ -136,13 +136,18 @@ export type PackageFormData = {
   selectedPackageId: string;
 };
 
-export type PaymentMethodFormData = {
-  method: PaymentMethod | null;
+export type SavedPaymentAccount = {
+  id: string;
+  method: PaymentMethod;
   accountNumber?: string;
   accountTitle?: string;
   cardNumber?: string;
   cardExpiry?: string;
-  cardCvv?: string;
+};
+
+export type PaymentMethodFormData = {
+  savedAccounts: SavedPaymentAccount[];
+  selectedAccountId: string | null;
 };
 
 export type MenuFormData = {

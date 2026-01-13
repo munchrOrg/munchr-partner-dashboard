@@ -118,6 +118,7 @@ export function OnboardingFeePayment() {
               <HoverBorderGradient
                 containerClassName="rounded-full w-fit"
                 as="button"
+                onClick={() => fileUploadRef.current?.click()}
                 className="text-purple-dark flex min-w-xs cursor-pointer items-center space-x-2 bg-white"
               >
                 <Plus className="size-6" />
@@ -128,13 +129,7 @@ export function OnboardingFeePayment() {
                   onChange={handleFileUpload}
                   className="hidden"
                 />
-                <button
-                  type="button"
-                  onClick={() => fileUploadRef.current?.click()}
-                  className="cursor-pointer text-inherit"
-                >
-                  Upload a screenshot
-                </button>
+                <span className="cursor-pointer text-inherit">Upload a screenshot</span>
               </HoverBorderGradient>
             )}
           </div>

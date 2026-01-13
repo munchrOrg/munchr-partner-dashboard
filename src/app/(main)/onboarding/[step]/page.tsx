@@ -4,10 +4,9 @@ import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { STEP_ORDER } from '@/config/onboarding-steps';
+import { STEP_ORDER, STEP_PHASE_MAP } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { useSignupStore } from '@/stores/signup-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 const stepComponents: Record<OnboardingStep, React.ComponentType> = {
   [OnboardingStep.WELCOME]: dynamic(
@@ -78,7 +77,6 @@ const stepComponents: Record<OnboardingStep, React.ComponentType> = {
     { ssr: false }
   ),
 
-  // Phase 2
   [OnboardingStep.VERIFY_BUSINESS_INTRO]: dynamic(
     () =>
       import('@/components/onboarding/steps/phase2/VerifyBusinessIntro').then(
@@ -122,7 +120,6 @@ const stepComponents: Record<OnboardingStep, React.ComponentType> = {
     { ssr: false }
   ),
 
-  // Phase 3
   [OnboardingStep.OPEN_BUSINESS_INTRO]: dynamic(
     () =>
       import('@/components/onboarding/steps/phase3/OpenBusinessIntro').then(
@@ -144,41 +141,27 @@ export default function OnboardingPage() {
   const params = useParams();
   const step = params.step as string;
 
-  const { completedSteps, currentStep, goToStep } = useOnboardingStore();
-  const { accountStatus } = useSignupStore();
+  const { completedSteps, completedPhases, currentStep, goToStep } = useOnboardingStore();
 
   useEffect(() => {
     const stepEnum = step as OnboardingStep;
-
-    const phase3Steps = [OnboardingStep.OPEN_BUSINESS_INTRO, OnboardingStep.BUSINESS_HOURS_SETUP];
-
-    if (accountStatus === 'in_review' || accountStatus === 'pending') {
-      if (stepEnum !== OnboardingStep.PORTAL_SETUP_COMPLETE) {
-        router.replace(`/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`);
-        return;
-      }
-    }
-
-    if (phase3Steps.includes(stepEnum) && accountStatus !== 'approved') {
-      router.replace(`/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`);
-      return;
-    }
 
     if (!STEP_ORDER.includes(stepEnum)) {
       router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
       return;
     }
 
-    // Guard: Prevent jumping ahead
-    // NOTE: Backend not ready - routing managed via Zustand stores (signup-store, onboarding-store)
-    // TODO: Uncomment this when backend is ready
-    // if (!canAccessStep(stepEnum, completedSteps)) {
-    //   router.replace(`/onboarding/${currentStep}`);
-    //   return;
-    // }
+    const stepPhase = STEP_PHASE_MAP[stepEnum];
+
+    if (stepPhase === OnboardingPhase.OPEN_BUSINESS) {
+      if (!completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+        router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
+        return;
+      }
+    }
 
     goToStep(stepEnum);
-  }, [step, completedSteps, currentStep, goToStep, router, accountStatus]);
+  }, [step, completedSteps, completedPhases, currentStep, goToStep, router]);
 
   const StepComponent = stepComponents[step as OnboardingStep];
 
