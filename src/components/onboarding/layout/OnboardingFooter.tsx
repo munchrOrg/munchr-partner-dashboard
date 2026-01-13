@@ -1,8 +1,9 @@
 'use client';
 
 import type { ConfirmModalConfig } from '@/types/onboarding';
-import { useParams, useRouter } from 'next/navigation';
+import { signOut } from 'next-auth/react';
 
+import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -80,6 +81,7 @@ const STEP_BEHAVIORS: Partial<Record<OnboardingStep, StepBehavior>> = {
 export function OnboardingFooter() {
   const router = useRouter();
   const params = useParams();
+
   const currentStep = params.step as OnboardingStep;
 
   const {
@@ -186,6 +188,13 @@ export function OnboardingFooter() {
 
     executeNavigation(currentStep);
   };
+  if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
+    setTimeout(() => {
+      signOut({ redirect: false });
+      router.push('/sign-in');
+    }, 3000);
+    return null;
+  }
 
   return (
     <footer className="fixed right-0 bottom-0 left-0 border-t bg-white px-4 py-4 sm:px-8">

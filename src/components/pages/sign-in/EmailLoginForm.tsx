@@ -2,7 +2,6 @@
 
 import type { SignInInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
@@ -36,17 +35,20 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
     setError(null);
 
     try {
-      const result = await signIn('login', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+      //  TODO: Uncomment this when the backend is ready
+      console.log({ data });
+      router.push('/dashboard');
+      // const result = await signIn('login', {
+      //   email: data.email,
+      //   password: data.password,
+      //   redirect: false,
+      // });
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push('/dashboard');
-      }
+      // if (result?.error) {
+      //   setError(result.error);
+      // } else {
+      //   router.push('/dashboard');
+      // }
     } catch {
       setError('An unexpected error occurred');
     } finally {
