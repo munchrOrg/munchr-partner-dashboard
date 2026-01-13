@@ -48,16 +48,15 @@ export function HoverBorderGradient({
     'radial-gradient(75% 181.15942028985506% at 50% 50%, #FFBE0D 0%, rgba(255, 255, 255, 0) 100%)';
 
   useEffect(() => {
-    if (!hovered) {
-      const interval = setInterval(() => {
-        setDirection((prevState) => rotateDirection(prevState));
-      }, duration * 1000);
-      return () => clearInterval(interval);
-    }
+    if (hovered) return;
+    const interval = setInterval(() => {
+      setDirection((prevState) => rotateDirection(prevState));
+    }, duration * 1000);
+    return () => clearInterval(interval);
   }, [hovered]);
   return (
     <Tag
-      onMouseEnter={(event: React.MouseEvent<HTMLDivElement>) => {
+      onMouseEnter={(_event: React.MouseEvent<HTMLDivElement>) => {
         setHovered(true);
       }}
       onMouseLeave={() => setHovered(false)}
