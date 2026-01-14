@@ -17,6 +17,7 @@ export const signUpSchema = z.object({
     .min(10, 'Description must be at least 10 characters')
     .max(500, 'Description must be under 500 characters'),
   email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
   phoneNumber: z.string().min(1, 'Phone number is required'),
   cuisines: z.array(z.string()).min(1, 'Please select at least one cuisine'),
 });

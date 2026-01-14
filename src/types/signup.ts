@@ -3,6 +3,7 @@ export type SignupFormData = {
   businessName: string;
   businessDescription: string;
   email: string;
+  password?: string;
   phoneNumber: string;
   cuisines: string[];
   logoUrl: string | null;
@@ -15,6 +16,7 @@ export type SignupState = {
   accountStatus: AccountStatus;
   isEmailVerified: boolean;
   isPhoneVerified: boolean;
+  partnerId?: string | null;
 };
 
 export type SignupActions = {
@@ -22,6 +24,7 @@ export type SignupActions = {
   setAccountStatus: (status: AccountStatus) => void;
   setEmailVerified: (verified: boolean) => void;
   setPhoneVerified: (verified: boolean) => void;
+  setPartnerId: (id: string | null) => void;
   reset: () => void;
 };
 

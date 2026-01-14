@@ -41,3 +41,23 @@ export type ResendOtpRequest = {
 export type ResendOtpResponse = {
   message: string;
 };
+
+export type VerifyEmailRequest = {
+  partnerId: string;
+  token: string; // 6-digit OTP sent to user's email
+};
+
+export type VerifyEmailResponse = {
+  success: boolean;
+  message?: string;
+};
+
+export type VerifyPhoneRequest = {
+  partnerId: string;
+  otp: string; // 6-digit OTP sent to user's phone
+};
+
+export type VerifyPhoneResponse = {
+  success: boolean;
+  message?: string;
+};

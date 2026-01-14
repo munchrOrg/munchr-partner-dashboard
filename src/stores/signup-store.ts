@@ -7,6 +7,7 @@ const initialFormData: SignupFormData = {
   businessName: '',
   businessDescription: '',
   email: '',
+  password: undefined,
   phoneNumber: '',
   cuisines: [],
   logoUrl: null,
@@ -19,6 +20,7 @@ export const useSignupStore = create<SignupStore>()(
       accountStatus: 'pending',
       isEmailVerified: false,
       isPhoneVerified: false,
+      partnerId: null,
 
       setFormData: (data: Partial<SignupFormData>) =>
         set((state) => ({
@@ -30,6 +32,7 @@ export const useSignupStore = create<SignupStore>()(
       setEmailVerified: (verified: boolean) => set({ isEmailVerified: verified }),
 
       setPhoneVerified: (verified: boolean) => set({ isPhoneVerified: verified }),
+      setPartnerId: (id: string | null) => set({ partnerId: id }),
 
       reset: () =>
         set({
@@ -37,6 +40,7 @@ export const useSignupStore = create<SignupStore>()(
           accountStatus: 'pending',
           isEmailVerified: false,
           isPhoneVerified: false,
+          partnerId: null,
         }),
     }),
     {

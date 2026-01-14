@@ -39,12 +39,7 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
     setError(null);
 
     try {
-      const {
-        formData,
-        isEmailVerified,
-        isPhoneVerified,
-        reset: resetSignup,
-      } = useSignupStore.getState();
+      const { formData, isPhoneVerified, reset: resetSignup } = useSignupStore.getState();
       const { completedPhases, reset: resetOnboarding } = useOnboardingStore.getState();
 
       if (!formData.email || !formData.phoneNumber) {
@@ -65,21 +60,17 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
         return;
       }
 
-      if (!isEmailVerified || !isPhoneVerified) {
-        if (!isEmailVerified) {
-          router.push('/verify-email?type=signup');
-        } else {
-          router.push('/verify-phone?type=signup');
-        }
+      if (!isPhoneVerified) {
+        router.push('/verify-phone?type=signup');
         return;
       }
 
       if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
-        router.push('/verify-email?type=login');
+        router.push('/verify-phone?type=login');
         return;
       }
 
-      router.push('/verify-email?type=login');
+      router.push('/verify-phone?type=login');
     } catch {
       setError('An unexpected error occurred');
     } finally {

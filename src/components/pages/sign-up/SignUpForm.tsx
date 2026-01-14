@@ -3,12 +3,12 @@
 import type { Option } from '@/components/ui/multi-select';
 import type { SignUpInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { isValidPhoneNumber } from 'libphonenumber-js';
+import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
 import { X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import PhoneInput from 'react-phone-number-input';
 import { toast } from 'sonner';
@@ -28,35 +28,6 @@ import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
 import 'react-phone-number-input/style.css';
 
-const CUISINE_OPTIONS: Option[] = [
-  { value: 'italian', label: 'Italian', group: 'Cuisines' },
-  { value: 'chinese', label: 'Chinese', group: 'Cuisines' },
-  { value: 'indian', label: 'Indian', group: 'Cuisines' },
-  { value: 'mexican', label: 'Mexican', group: 'Cuisines' },
-  { value: 'japanese', label: 'Japanese', group: 'Cuisines' },
-  { value: 'thai', label: 'Thai', group: 'Cuisines' },
-  { value: 'american', label: 'American', group: 'Cuisines' },
-  { value: 'mediterranean', label: 'Mediterranean', group: 'Cuisines' },
-  { value: 'french', label: 'French', group: 'Cuisines' },
-  { value: 'korean', label: 'Korean', group: 'Cuisines' },
-  { value: 'vietnamese', label: 'Vietnamese', group: 'Cuisines' },
-  { value: 'greek', label: 'Greek', group: 'Cuisines' },
-  { value: 'middle-eastern', label: 'Middle Eastern', group: 'Cuisines' },
-  { value: 'caribbean', label: 'Caribbean', group: 'Cuisines' },
-  { value: 'african', label: 'African', group: 'Cuisines' },
-  { value: 'vegan', label: 'Vegan', group: 'Dietary' },
-  { value: 'vegetarian', label: 'Vegetarian', group: 'Dietary' },
-  { value: 'gluten-free', label: 'Gluten-Free', group: 'Dietary' },
-  { value: 'halal', label: 'Halal', group: 'Dietary' },
-  { value: 'kosher', label: 'Kosher', group: 'Dietary' },
-  { value: 'keto', label: 'Keto', group: 'Dietary' },
-  { value: 'dairy-free', label: 'Dairy-Free', group: 'Dietary' },
-  { value: 'nut-free', label: 'Nut-Free', group: 'Dietary' },
-  { value: 'organic', label: 'Organic', group: 'Dietary' },
-  { value: 'low-carb', label: 'Low-Carb', group: 'Dietary' },
-  { value: 'paleo', label: 'Paleo', group: 'Dietary' },
-];
-
 const ALLOWED_FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 
@@ -64,18 +35,8 @@ export function SignUpForm() {
   const router = useRouter();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
-  const { mutate } = useSignUp({
-    options: {
-      onSuccess: (data) => {
-        if (data.success) {
-          router.push('/verify-email?type=signup');
-        }
-      },
-      onError: (error) => {
-        toast.error(error.message);
-      },
-    },
-  });
+  const [logoFile, setLogoFile] = useState<File | null>(null);
+  const [cuisineOptions, setCuisineOptions] = useState<Option[]>([]);
 
   const {
     register,
@@ -104,6 +65,64 @@ export function SignUpForm() {
     }
     return 'Enter your Business/Kitchen Name *';
   };
+  useEffect(() => {
+    let mounted = true;
+    const fetchCuisines = async () => {
+      try {
+        const base = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+        const r = await fetch(`${base}partner/cuisines`);
+        if (!r.ok) {
+          throw new Error('Failed to fetch');
+        }
+        const resJson = await r.json();
+        const items = Array.isArray(resJson)
+          ? resJson
+          : Array.isArray(resJson?.data)
+            ? resJson.data
+            : [];
+        const opts = items.map((c: any) => ({ value: c.id, label: c.name, group: 'Cuisines' }));
+        if (mounted) {
+          setCuisineOptions(opts);
+        }
+      } catch {}
+    };
+    fetchCuisines();
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  const signUpMutation = useSignUp({
+    options: {
+      onSuccess: (resp) => {
+        if (resp.success) {
+          toast.success(resp.message || 'Registration successful');
+          const { setPartnerId } = useSignupStore.getState();
+          if (resp.partnerId) {
+            setPartnerId(resp.partnerId);
+          }
+          router.push('/verify-email?type=signup');
+        } else {
+          toast.error(resp.message || 'Registration failed');
+        }
+      },
+      onError: (err: any) => {
+        const status = err?.response?.status;
+        const serverMsg = err?.response?.data?.message || err?.message || 'Registration failed';
+        if (status === 400) {
+          setError('root', { message: serverMsg });
+          toast.error(serverMsg);
+          return;
+        }
+        if (status === 409) {
+          setError('email', { message: serverMsg });
+          toast.error(serverMsg);
+          return;
+        }
+        toast.error(serverMsg);
+      },
+    },
+  });
 
   const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -128,11 +147,13 @@ export function SignUpForm() {
       setLogoPreview(event.target?.result as string);
     };
     reader.readAsDataURL(file);
+    setLogoFile(file);
   }, []);
 
   const handleRemoveLogo = useCallback(() => {
     setLogoPreview(null);
     setLogoError(null);
+    setLogoFile(null);
   }, []);
 
   const onSubmit = async (data: SignUpInput) => {
@@ -148,22 +169,36 @@ export function SignUpForm() {
         businessName: data.businessName,
         businessDescription: data.businessDescription,
         email: data.email,
+        password: (data as any).password || undefined,
         phoneNumber: data.phoneNumber,
         cuisines: data.cuisines,
         logoUrl: logoPreview,
       });
-      mutate({
-        businessDescription: data.businessDescription,
-        businessName: data.businessName,
-        cuisines: data.cuisines,
-        email: data.email,
-        logoUrl: logoPreview || 'http://localhost:3000/logo.png',
-        phoneNumber: data.phoneNumber,
-        serviceProviderType: data.serviceProviderType,
-        password: '123456',
-      });
 
-      router.push('/verify-email?type=signup');
+      const phoneRaw = (data.phoneNumber ?? '').toString();
+      const phone = phoneRaw.slice(0, 20);
+      const parsed = parsePhoneNumberFromString(phoneRaw);
+      const countryCode = parsed ? `+${parsed.countryCallingCode}` : '';
+
+      const payload = {
+        email: data.email,
+        phone,
+        countryCode,
+        password: (data as any).password || '',
+        serviceProviderType: data.serviceProviderType.replace('-', '_'),
+        businessName: data.businessName,
+        cuisineIds: data.cuisines,
+        description: data.businessDescription,
+        resturantLogo: {
+          url: logoPreview || 'http://localhost:3000/logo.png',
+          width: 0,
+          height: 0,
+          size: logoFile?.size ?? 0,
+          fileName: logoFile?.name ?? '',
+        },
+      };
+
+      signUpMutation.mutate(payload as any);
     } catch {
       setError('root', { message: 'An unexpected error occurred' });
     }
@@ -280,7 +315,7 @@ export function SignUpForm() {
             control={control}
             render={({ field }) => (
               <MultiSelect
-                options={CUISINE_OPTIONS}
+                options={cuisineOptions}
                 selected={field.value}
                 onChange={field.onChange}
                 placeholder="Select cuisines *"
@@ -290,6 +325,18 @@ export function SignUpForm() {
           />
           {errors.cuisines && (
             <p className="mt-1 ml-4 text-sm text-red-500">{errors.cuisines.message}</p>
+          )}
+        </div>
+
+        <div>
+          <Input
+            type="password"
+            placeholder="Enter password *"
+            className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
+            {...register('password')}
+          />
+          {errors.password && (
+            <p className="mt-1 ml-4 text-sm text-red-500">{errors.password.message}</p>
           )}
         </div>
 

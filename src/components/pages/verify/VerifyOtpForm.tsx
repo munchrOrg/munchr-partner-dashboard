@@ -2,7 +2,7 @@
 
 import type { OTPInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signOut } from 'next-auth/react';
+import { signIn, signOut } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -17,6 +17,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
+import { useVerifyEmail, useVerifyPhone } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
@@ -69,6 +70,17 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     defaultValues: { otp: '' },
   });
 
+  const verifyEmailMutation = useVerifyEmail();
+  const verifyPhoneMutation = useVerifyPhone();
+  const urlPartnerId =
+    searchParams.get('partnerId') ??
+    (typeof window !== 'undefined'
+      ? new URLSearchParams(window.location.search).get('partnerId')
+      : null);
+  const [partnerIdState] = useState<string | null>(
+    urlPartnerId ?? useSignupStore.getState().partnerId ?? null
+  );
+
   useEffect(() => {
     if (resendTimer > 0) {
       const timer = setTimeout(() => setResendTimer(resendTimer - 1), 1000);
@@ -104,7 +116,59 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
   const onSubmit = async (_data: OTPInput) => {
     try {
-      toast.success(config.successMessage);
+      if (type === 'email') {
+        const partnerId = partnerIdState;
+        if (!partnerId) {
+          setError('otp', { message: 'Missing partnerId. Please provide it.' });
+          return;
+        }
+        try {
+          const token = digits.join('');
+          toast('Verifying email...');
+          const json = await verifyEmailMutation.mutateAsync({ partnerId, token });
+          if (!json || !json.success) {
+            setError('otp', { message: json?.message || 'Email verification failed' });
+            return;
+          }
+          toast.success(json.message || config.successMessage);
+        } catch {
+          setError('otp', { message: 'Failed to verify email' });
+          return;
+        }
+      } else {
+        const partnerId = partnerIdState;
+        if (!partnerId) {
+          setError('otp', { message: 'Missing partnerId. Please provide it.' });
+          return;
+        }
+        try {
+          const otp = digits.join('');
+          toast('Verifying phone...');
+          const json = await verifyPhoneMutation.mutateAsync({ partnerId, otp });
+          if (!json || !json.success) {
+            setError('otp', { message: json?.message || 'Phone verification failed' });
+            return;
+          }
+          toast.success(json.message || config.successMessage);
+        } catch {
+          setError('otp', { message: 'Failed to verify phone' });
+          return;
+        }
+      }
+      if (type === 'phone') {
+        try {
+          const { email, password } = useSignupStore.getState().formData;
+          if (email && password) {
+            const deviceInfo = typeof navigator !== 'undefined' ? navigator.userAgent : 'web';
+            const res = await signIn('login', { redirect: false, email, password, deviceInfo });
+            if (res?.error) {
+              toast.error(res.error || 'Login failed after verification');
+            } else {
+              toast.success('Logged in successfully');
+            }
+          }
+        } catch {}
+      }
 
       if (flowType === 'login') {
         const { completedPhases } = useOnboardingStore.getState();
@@ -190,6 +254,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           )}
 
           <div className="flex items-center justify-center gap-2 sm:gap-3">
+            {/** eslint-disable-next-line react/no-array-index-key -- fixed size OTP inputs */}
             {digits.map((digit, index) => (
               <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
                 <input
@@ -211,7 +276,9 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
           <Button
             type="submit"
-            disabled={isSubmitting || digits.some((d) => !d)}
+            disabled={
+              isSubmitting || digits.some((d) => !d) || (type === 'email' && !partnerIdState)
+            }
             className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
           >
             {isSubmitting ? 'Verifying...' : 'Submit'}

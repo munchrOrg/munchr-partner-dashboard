@@ -1,5 +1,12 @@
 import type { UseMutationOptions } from '@tanstack/react-query';
-import type { ResendOtpRequest, SignUpRequest, SignUpResponse, VerifyOtpRequest } from './types';
+import type {
+  ResendOtpRequest,
+  SignUpRequest,
+  SignUpResponse,
+  VerifyEmailRequest,
+  VerifyOtpRequest,
+  VerifyPhoneRequest,
+} from './types';
 import { useMutation } from '@tanstack/react-query';
 import { authService } from './service';
 
@@ -17,6 +24,18 @@ export const useSignUp = ({
 export const useVerifyOtp = () => {
   return useMutation({
     mutationFn: (data: VerifyOtpRequest) => authService.verifyOtp(data),
+  });
+};
+
+export const useVerifyEmail = () => {
+  return useMutation({
+    mutationFn: (data: VerifyEmailRequest) => authService.verifyEmail(data),
+  });
+};
+
+export const useVerifyPhone = () => {
+  return useMutation({
+    mutationFn: (data: VerifyPhoneRequest) => authService.verifyPhone(data),
   });
 };
 

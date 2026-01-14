@@ -27,12 +27,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
     setError(null);
 
     try {
-      const {
-        formData,
-        isEmailVerified,
-        isPhoneVerified,
-        reset: resetSignup,
-      } = useSignupStore.getState();
+      const { formData, isPhoneVerified, reset: resetSignup } = useSignupStore.getState();
       const { completedPhases, reset: resetOnboarding } = useOnboardingStore.getState();
 
       if (!formData.email || !formData.phoneNumber) {
@@ -54,12 +49,8 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
         return;
       }
 
-      if (!isEmailVerified || !isPhoneVerified) {
-        if (!isEmailVerified) {
-          router.push('/verify-email?type=signup');
-        } else {
-          router.push('/verify-phone?type=signup');
-        }
+      if (!isPhoneVerified) {
+        router.push('/verify-phone?type=signup');
         return;
       }
 
