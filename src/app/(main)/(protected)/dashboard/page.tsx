@@ -4,21 +4,26 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useSignupStore } from '@/stores/signup-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 export default function DashboardPage() {
   const { data: session } = useSession();
-  const { accountStatus } = useSignupStore();
+  const { completedPhases } = useOnboardingStore();
   const router = useRouter();
 
-  useEffect(() => {
-    if (accountStatus !== 'approved') {
-      router.replace(`/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`);
-    }
-  }, [accountStatus, router]);
+  const allPhasesCompleted =
+    completedPhases.includes(OnboardingPhase.ADD_BUSINESS) &&
+    completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) &&
+    completedPhases.includes(OnboardingPhase.OPEN_BUSINESS);
 
-  if (accountStatus !== 'approved') {
+  useEffect(() => {
+    if (!allPhasesCompleted) {
+      router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
+    }
+  }, [allPhasesCompleted, router]);
+
+  if (!allPhasesCompleted) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Loading...</p>

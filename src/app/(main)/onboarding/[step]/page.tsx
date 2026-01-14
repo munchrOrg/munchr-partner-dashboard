@@ -6,6 +6,7 @@ import { useEffect } from 'react';
 
 import { STEP_ORDER, STEP_PHASE_MAP } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 const stepComponents: Record<OnboardingStep, React.ComponentType> = {
@@ -142,6 +143,7 @@ export default function OnboardingPage() {
   const step = params.step as string;
 
   const { completedSteps, completedPhases, currentStep, goToStep } = useOnboardingStore();
+  const { accountStatus } = useSignupStore();
 
   useEffect(() => {
     const stepEnum = step as OnboardingStep;
@@ -153,15 +155,19 @@ export default function OnboardingPage() {
 
     const stepPhase = STEP_PHASE_MAP[stepEnum];
 
+    // Block step 3 access if phase 2 not completed OR account not approved
     if (stepPhase === OnboardingPhase.OPEN_BUSINESS) {
-      if (!completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+      if (
+        !completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) ||
+        accountStatus !== 'approved'
+      ) {
         router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
         return;
       }
     }
 
     goToStep(stepEnum);
-  }, [step, completedSteps, completedPhases, currentStep, goToStep, router]);
+  }, [step, completedSteps, completedPhases, currentStep, goToStep, router, accountStatus]);
 
   const StepComponent = stepComponents[step as OnboardingStep];
 
