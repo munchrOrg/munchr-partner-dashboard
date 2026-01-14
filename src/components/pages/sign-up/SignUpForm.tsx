@@ -11,6 +11,7 @@ import { useRouter } from 'next/navigation';
 import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import PhoneInput from 'react-phone-number-input';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -22,6 +23,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+import { useSignUp } from '@/react-query/auth/mutations';
 import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
 import 'react-phone-number-input/style.css';
@@ -62,6 +64,18 @@ export function SignUpForm() {
   const router = useRouter();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const { mutate } = useSignUp({
+    options: {
+      onSuccess: (data) => {
+        if (data.success) {
+          router.push('/verify-email?type=signup');
+        }
+      },
+      onError: (error) => {
+        toast.error(error.message);
+      },
+    },
+  });
 
   const {
     register,
@@ -137,6 +151,16 @@ export function SignUpForm() {
         phoneNumber: data.phoneNumber,
         cuisines: data.cuisines,
         logoUrl: logoPreview,
+      });
+      mutate({
+        businessDescription: data.businessDescription,
+        businessName: data.businessName,
+        cuisines: data.cuisines,
+        email: data.email,
+        logoUrl: logoPreview || 'http://localhost:3000/logo.png',
+        phoneNumber: data.phoneNumber,
+        serviceProviderType: data.serviceProviderType,
+        password: '123456',
       });
 
       router.push('/verify-email?type=signup');

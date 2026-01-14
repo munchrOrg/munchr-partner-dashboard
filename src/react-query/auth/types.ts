@@ -1,11 +1,22 @@
 export type SignUpRequest = {
   email: string;
   password: string;
+  serviceProviderType: string;
+  businessName: string;
+  businessDescription: string;
+  phoneNumber: string;
+  cuisines: string[];
+  logoUrl: string;
 };
 
 export type SignUpResponse = {
+  success: boolean;
+  partnerId: string;
   message: string;
-  userId: string;
+  requiresVerfication: {
+    email: boolean;
+    phone: boolean;
+  };
 };
 
 export type VerifyOtpRequest = {
