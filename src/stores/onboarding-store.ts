@@ -12,6 +12,7 @@ import { persist } from 'zustand/middleware';
 import { OnboardingStep as Step } from '@/types/onboarding';
 
 const initialFormData: OnboardingFormData = {
+  businessInfo: null,
   location: null,
   ownerIdentity: null,
   legalTax: null,
@@ -28,27 +29,27 @@ const initialFormData: OnboardingFormData = {
 export const useOnboardingStore = create<OnboardingStore>()(
   persist(
     (set) => ({
-      // Navigation State
       currentStep: Step.WELCOME,
       completedSteps: [],
       completedPhases: [],
       formData: initialFormData,
 
-      // UI State
       isProgressDrawerOpen: false,
       isExampleDrawerOpen: false,
       isMapDrawerOpen: false,
       isConfirmModalOpen: false,
+      isEmailConfirmModalOpen: false,
       exampleDrawerConfig: null,
       confirmModalConfig: null,
 
-      // Form Data Actions
+      shouldNavigate: false,
+      navigationStep: null,
+
       setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) =>
         set((state) => ({
           formData: { ...state.formData, [key]: data },
         })),
 
-      // Navigation Actions
       completeStep: (step: OnboardingStep) =>
         set((state) => ({
           completedSteps: state.completedSteps.includes(step)
@@ -65,7 +66,6 @@ export const useOnboardingStore = create<OnboardingStore>()(
 
       goToStep: (step: OnboardingStep) => set({ currentStep: step }),
 
-      // UI Actions
       openProgressDrawer: () => set({ isProgressDrawerOpen: true }),
       closeProgressDrawer: () => set({ isProgressDrawerOpen: false }),
 
@@ -80,7 +80,13 @@ export const useOnboardingStore = create<OnboardingStore>()(
         set({ isConfirmModalOpen: true, confirmModalConfig: config }),
       closeConfirmModal: () => set({ isConfirmModalOpen: false, confirmModalConfig: null }),
 
-      // Reset
+      openEmailConfirmModal: () => set({ isEmailConfirmModalOpen: true }),
+      closeEmailConfirmModal: () => set({ isEmailConfirmModalOpen: false }),
+
+      triggerNavigation: (step: OnboardingStep) =>
+        set({ shouldNavigate: true, navigationStep: step }),
+      clearNavigation: () => set({ shouldNavigate: false, navigationStep: null }),
+
       reset: () =>
         set({
           currentStep: Step.WELCOME,
@@ -91,8 +97,11 @@ export const useOnboardingStore = create<OnboardingStore>()(
           isExampleDrawerOpen: false,
           isMapDrawerOpen: false,
           isConfirmModalOpen: false,
+          isEmailConfirmModalOpen: false,
           exampleDrawerConfig: null,
           confirmModalConfig: null,
+          shouldNavigate: false,
+          navigationStep: null,
         }),
     }),
     {

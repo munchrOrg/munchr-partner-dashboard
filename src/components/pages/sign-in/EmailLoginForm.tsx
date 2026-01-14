@@ -2,15 +2,18 @@
 
 import type { SignInInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn } from 'next-auth/react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
+import { OnboardingPhase } from '@/types/onboarding';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
@@ -36,17 +39,47 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
     setError(null);
 
     try {
-      const result = await signIn('login', {
-        email: data.email,
-        password: data.password,
-        redirect: false,
-      });
+      const {
+        formData,
+        isEmailVerified,
+        isPhoneVerified,
+        reset: resetSignup,
+      } = useSignupStore.getState();
+      const { completedPhases, reset: resetOnboarding } = useOnboardingStore.getState();
 
-      if (result?.error) {
-        setError(result.error);
-      } else {
-        router.push('/dashboard');
+      if (!formData.email || !formData.phoneNumber) {
+        resetSignup();
+        resetOnboarding();
+        toast.error('Please complete signup first');
+        router.push('/sign-up');
+        return;
       }
+
+      const isMatchingUser = formData.email.toLowerCase() === data.email.toLowerCase();
+
+      if (!isMatchingUser) {
+        resetSignup();
+        resetOnboarding();
+        toast.error('Please complete signup first');
+        router.push('/sign-up');
+        return;
+      }
+
+      if (!isEmailVerified || !isPhoneVerified) {
+        if (!isEmailVerified) {
+          router.push('/verify-email?type=signup');
+        } else {
+          router.push('/verify-phone?type=signup');
+        }
+        return;
+      }
+
+      if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+        router.push('/verify-email?type=login');
+        return;
+      }
+
+      router.push('/verify-email?type=login');
     } catch {
       setError('An unexpected error occurred');
     } finally {

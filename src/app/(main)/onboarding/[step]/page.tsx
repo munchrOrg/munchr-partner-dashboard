@@ -4,13 +4,12 @@ import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { canAccessStep, STEP_ORDER } from '@/config/onboarding-steps';
+import { STEP_ORDER, STEP_PHASE_MAP } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { useSignupStore } from '@/stores/signup-store';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
-// Dynamic imports for all step components
 const stepComponents: Record<OnboardingStep, React.ComponentType> = {
-  // Phase 1
   [OnboardingStep.WELCOME]: dynamic(
     () => import('@/components/onboarding/steps/phase1/Welcome').then((mod) => mod.Welcome),
     { ssr: false }
@@ -79,7 +78,6 @@ const stepComponents: Record<OnboardingStep, React.ComponentType> = {
     { ssr: false }
   ),
 
-  // Phase 2
   [OnboardingStep.VERIFY_BUSINESS_INTRO]: dynamic(
     () =>
       import('@/components/onboarding/steps/phase2/VerifyBusinessIntro').then(
@@ -123,7 +121,6 @@ const stepComponents: Record<OnboardingStep, React.ComponentType> = {
     { ssr: false }
   ),
 
-  // Phase 3
   [OnboardingStep.OPEN_BUSINESS_INTRO]: dynamic(
     () =>
       import('@/components/onboarding/steps/phase3/OpenBusinessIntro').then(
@@ -145,26 +142,32 @@ export default function OnboardingPage() {
   const params = useParams();
   const step = params.step as string;
 
-  const { completedSteps, currentStep, goToStep } = useOnboardingStore();
+  const { completedSteps, completedPhases, currentStep, goToStep } = useOnboardingStore();
+  const { accountStatus } = useSignupStore();
 
   useEffect(() => {
     const stepEnum = step as OnboardingStep;
 
-    // Validate step exists
     if (!STEP_ORDER.includes(stepEnum)) {
       router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
       return;
     }
 
-    // Guard: Prevent jumping ahead
-    if (!canAccessStep(stepEnum, completedSteps)) {
-      router.replace(`/onboarding/${currentStep}`);
-      return;
+    const stepPhase = STEP_PHASE_MAP[stepEnum];
+
+    // Block step 3 access if phase 2 not completed OR account not approved
+    if (stepPhase === OnboardingPhase.OPEN_BUSINESS) {
+      if (
+        !completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) ||
+        accountStatus !== 'approved'
+      ) {
+        router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
+        return;
+      }
     }
 
-    // Sync current step
     goToStep(stepEnum);
-  }, [step, completedSteps, currentStep, goToStep, router]);
+  }, [step, completedSteps, completedPhases, currentStep, goToStep, router, accountStatus]);
 
   const StepComponent = stepComponents[step as OnboardingStep];
 

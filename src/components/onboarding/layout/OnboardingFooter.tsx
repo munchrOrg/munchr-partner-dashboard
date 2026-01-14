@@ -1,7 +1,10 @@
 'use client';
 
-import { useParams, useRouter } from 'next/navigation';
+import type { ConfirmModalConfig } from '@/types/onboarding';
 
+import { useParams, useRouter } from 'next/navigation';
+import { useCallback, useEffect } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
@@ -10,26 +13,160 @@ import {
   getNextStep,
   getPrevStep,
   isLastStepOfPhase,
+  PHASE_ENTRY_STEP,
   STEP_PHASE_MAP,
 } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
-// Steps that have forms that need to be submitted
 const STEPS_WITH_FORMS: Record<string, string> = {
   [OnboardingStep.BUSINESS_LOCATION]: 'location-form',
+  [OnboardingStep.LEGAL_TAX_DETAILS]: 'legal-tax-form',
+  [OnboardingStep.BANKING_DETAILS]: 'banking-form',
+};
+
+type StepBehavior = {
+  type: 'modal' | 'emailConfirm' | 'default';
+  modalConfig?: Omit<ConfirmModalConfig, 'onConfirm'>;
+  validate?: (formData: any) => string | null;
+};
+
+const STEP_BEHAVIORS: Partial<Record<OnboardingStep, StepBehavior>> = {
+  [OnboardingStep.BUSINESS_INFO_REVIEW]: {
+    type: 'emailConfirm',
+  },
+  [OnboardingStep.DINE_IN_MENU_UPLOAD]: {
+    type: 'modal',
+    modalConfig: {
+      title: 'Does your menu meet the requirements?',
+      description:
+        'If the menu fails to meet the conditions, we cannot process your request to join munchr.',
+      bulletPoints: [
+        'A minimum of menu items for Regular Restaurants, or 18 items for Home Chefs.',
+        'All menu items have a price',
+      ],
+      confirmText: 'Yes, Continue',
+      cancelText: 'No, Re-upload Menu',
+    },
+    validate: (formData) => {
+      if (!formData.menu?.menuFile) {
+        return 'Please upload your menu before continuing.';
+      }
+      return null;
+    },
+  },
+  [OnboardingStep.OWNER_IDENTITY_UPLOAD]: {
+    type: 'default',
+    validate: (formData) => {
+      const ownerIdentity = formData.ownerIdentity;
+      if (ownerIdentity?.hasSNTN === null || ownerIdentity?.hasSNTN === undefined) {
+        return 'Please select whether you have a Sales Tax Registration Number (SNTN).';
+      }
+      if (ownerIdentity.hasSNTN && !ownerIdentity.sntnFile) {
+        return 'Please upload your SNTN document.';
+      }
+      if (!ownerIdentity.hasSNTN) {
+        if (!ownerIdentity.idCardFrontFile) {
+          return 'Please upload the front of your ID card.';
+        }
+        if (!ownerIdentity.idCardBackFile) {
+          return 'Please upload the back of your ID card.';
+        }
+      }
+      return null;
+    },
+  },
+  [OnboardingStep.BUSINESS_HOURS_SETUP]: {
+    type: 'default',
+    validate: (formData) => {
+      if (!formData.businessHours) {
+        return 'Please configure your business hours.';
+      }
+
+      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
+
+      const hasOpenDay = days.some((day) => formData.businessHours[day].isOpen);
+      if (!hasOpenDay) {
+        return 'Please mark at least one day as open.';
+      }
+
+      for (const day of days) {
+        const schedule = formData.businessHours[day];
+
+        if (schedule.isOpen && schedule.slots.length === 0) {
+          return 'Please add time slots for all open days or mark them as closed.';
+        }
+      }
+
+      return null;
+    },
+  },
 };
 
 export function OnboardingFooter() {
   const router = useRouter();
   const params = useParams();
+
   const currentStep = params.step as OnboardingStep;
 
-  const { completeStep, completePhase, openProgressDrawer } = useOnboardingStore();
+  const {
+    formData,
+    completeStep,
+    completePhase,
+    completedPhases,
+    openProgressDrawer,
+    openEmailConfirmModal,
+    openConfirmModal,
+    shouldNavigate,
+    navigationStep,
+    clearNavigation,
+  } = useOnboardingStore();
 
   const showBack = canGoBack(currentStep);
   const formId = STEPS_WITH_FORMS[currentStep];
   const hasForm = Boolean(formId);
+
+  const executeNavigation = useCallback(
+    (step: OnboardingStep) => {
+      completeStep(step);
+
+      if (isLastStepOfPhase(step)) {
+        const phase = STEP_PHASE_MAP[step];
+        completePhase(phase);
+
+        const nextPhase = getNextPhase(phase);
+        if (nextPhase) {
+          router.push(`/onboarding/${OnboardingStep.WELCOME}`);
+        } else {
+          router.push('/dashboard');
+        }
+        return;
+      }
+
+      const nextStep = getNextStep(step);
+      if (nextStep) {
+        router.push(`/onboarding/${nextStep}`);
+      }
+    },
+    [completeStep, completePhase, router]
+  );
+
+  const getNextPhaseEntryStep = useCallback((): OnboardingStep => {
+    if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+      return PHASE_ENTRY_STEP[OnboardingPhase.OPEN_BUSINESS];
+    }
+    if (completedPhases.includes(OnboardingPhase.ADD_BUSINESS)) {
+      return PHASE_ENTRY_STEP[OnboardingPhase.VERIFY_BUSINESS];
+    }
+    return PHASE_ENTRY_STEP[OnboardingPhase.ADD_BUSINESS];
+  }, [completedPhases]);
+
+  useEffect(() => {
+    if (shouldNavigate && navigationStep) {
+      executeNavigation(navigationStep);
+      clearNavigation();
+    }
+  }, [shouldNavigate, navigationStep, executeNavigation, clearNavigation]);
 
   const handleBack = () => {
     const prevStep = getPrevStep(currentStep);
@@ -39,32 +176,42 @@ export function OnboardingFooter() {
   };
 
   const handleContinue = () => {
-    // Mark current step as completed
-    completeStep(currentStep);
-
-    // Check if this is the last step of a phase
-    if (isLastStepOfPhase(currentStep)) {
-      const currentPhase = STEP_PHASE_MAP[currentStep];
-      completePhase(currentPhase);
-
-      // Go back to welcome with phase completed
-      const nextPhase = getNextPhase(currentPhase);
-      if (nextPhase) {
-        // Go to welcome first, then user clicks continue to go to next phase
-        router.push(`/onboarding/${OnboardingStep.WELCOME}`);
-      } else {
-        // All phases complete, go to dashboard
-        router.push('/dashboard');
-      }
+    if (currentStep === OnboardingStep.WELCOME) {
+      router.push(`/onboarding/${getNextPhaseEntryStep()}`);
       return;
     }
 
-    // Regular navigation to next step
-    const nextStep = getNextStep(currentStep);
-    if (nextStep) {
-      router.push(`/onboarding/${nextStep}`);
+    const stepBehavior = STEP_BEHAVIORS[currentStep];
+
+    if (stepBehavior?.validate) {
+      const error = stepBehavior.validate(formData);
+      if (error) {
+        toast.error(error);
+        return;
+      }
     }
+
+    if (stepBehavior) {
+      switch (stepBehavior.type) {
+        case 'emailConfirm':
+          openEmailConfirmModal();
+          return;
+        case 'modal':
+          if (stepBehavior.modalConfig) {
+            openConfirmModal({
+              ...stepBehavior.modalConfig,
+              onConfirm: () => executeNavigation(currentStep),
+            });
+          }
+          return;
+      }
+    }
+
+    executeNavigation(currentStep);
   };
+  if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
+    return null;
+  }
 
   return (
     <footer className="fixed right-0 bottom-0 left-0 border-t bg-white px-4 py-4 sm:px-8">

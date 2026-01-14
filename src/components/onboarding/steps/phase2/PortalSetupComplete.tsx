@@ -1,49 +1,84 @@
 'use client';
 
-import { CheckCircle } from 'lucide-react';
-
+import { signOut } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
+import { Icon } from '@/components/ui/icon';
+import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
+import { OnboardingPhase } from '@/types/onboarding';
 
-const PORTAL_FEATURES = [
-  'Manage your menu and pricing',
-  'View and accept incoming orders',
-  'Track your earnings and payouts',
-  'Access customer insights and analytics',
-  'Update your business information',
+const NEXT_STEPS = [
+  "Open the email and Click 'Create Password'",
+  'Set your Partner Portal password',
+  'Add opening hours, Menu and dish photos',
 ];
 
 export function PortalSetupComplete() {
+  const { formData, completePhase, reset: resetOnboarding } = useOnboardingStore();
+  const resetSignup = useSignupStore((state) => state.reset);
+  const router = useRouter();
+  const hasRun = useRef(false);
+
+  const email = formData.businessInfo?.email || 'your@email.com';
+
+  useEffect(() => {
+    if (hasRun.current) {
+      return undefined;
+    }
+    hasRun.current = true;
+
+    completePhase(OnboardingPhase.VERIFY_BUSINESS);
+
+    toast.success('Your application is under review. You will be notified once approved.', {
+      duration: 5000,
+    });
+
+    const timer = setTimeout(() => {
+      // TODO: Uncomment this when backend is ready
+      // resetOnboarding();
+      // resetSignup();
+
+      signOut({ redirect: false });
+      router.push('/sign-in');
+    }, 5000);
+    // NOTE: This has been added to allow timer to run as react in strict mode while development runs twice and when effect runs twice it finds hasRun.current and returns early without allowing timer to run which was not allowing user to logout (Once backend is ready and app is set for production , comment the hasRun line in effect cleanup function  )
+    return () => {
+      clearTimeout(timer);
+      hasRun.current = false;
+    };
+  }, [completePhase, resetOnboarding, resetSignup, router]);
+
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
-      <div className="text-center">
-        <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-          <CheckCircle className="h-10 w-10 text-green-600" />
-        </div>
-
-        <div className="mt-6">
+    <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">
+      <div className="flex w-full max-w-6xl flex-col gap-8 lg:flex-row lg:items-center lg:gap-16">
+        <div className="flex-1">
           <StepHeader
-            title="Portal setup complete!"
-            description="Your partner portal is ready. You can now access all features to manage your restaurant."
+            phase="Next Step!"
+            title="Setup your Partner Portal account"
+            description={`We've sent an email to set up your Partner Portal Account at ${email}`}
           />
+
+          <div className="mt-6">
+            <p className="mb-4 text-lg font-bold">What to do next:</p>
+            <ul className="space-y-5">
+              {NEXT_STEPS.map((step, index) => (
+                <li key={step} className="flex items-start gap-3">
+                  <span className="bg-purple-dark flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white">
+                    {index + 1}
+                  </span>
+                  <span className="text-base font-medium">{step}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
         </div>
-      </div>
 
-      <div className="mt-8">
-        <h3 className="mb-4 font-medium text-gray-900">What you can do now:</h3>
-        <ul className="space-y-3">
-          {PORTAL_FEATURES.map((feature) => (
-            <li key={feature} className="flex items-start gap-3">
-              <CheckCircle className="mt-0.5 h-5 w-5 shrink-0 text-green-600" />
-              <span className="text-gray-700">{feature}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-
-      <div className="mt-8 rounded-lg bg-purple-50 p-4 text-center">
-        <p className="text-sm text-purple-700">
-          Continue to the final step to set your business hours and start receiving orders.
-        </p>
+        <div className="flex justify-end lg:w-1/2">
+          <Icon name="developerThumbnail" className="h-64 w-64 sm:h-80 sm:w-80" />
+        </div>
       </div>
     </div>
   );

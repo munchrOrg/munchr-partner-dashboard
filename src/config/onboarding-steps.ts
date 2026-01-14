@@ -1,5 +1,3 @@
-import type { ComponentType } from 'react';
-
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 // Step order for navigation
@@ -129,9 +127,9 @@ export function canAccessStep(step: OnboardingStep, completedSteps: OnboardingSt
   return completedSteps.includes(prevStep);
 }
 
-export function getCurrentPhase(step: OnboardingStep): OnboardingPhase {
-  return STEP_PHASE_MAP[step];
-}
+// export function getCurrentPhase(step: OnboardingStep): OnboardingPhase {
+//   return STEP_PHASE_MAP[step];
+// }
 
 export function getNextPhase(currentPhase: OnboardingPhase): OnboardingPhase | null {
   const index = PHASE_ORDER.indexOf(currentPhase);
@@ -143,21 +141,21 @@ export function isLastStepOfPhase(step: OnboardingStep): boolean {
   return PHASE_LAST_STEP[phase] === step;
 }
 
-export function getStepNumber(step: OnboardingStep): number {
-  return STEP_ORDER.indexOf(step);
-}
+// export function getStepNumber(step: OnboardingStep): number {
+//   return STEP_ORDER.indexOf(step);
+// }
 
-export function getTotalSteps(): number {
-  return STEP_ORDER.length;
-}
+// export function getTotalSteps(): number {
+//   return STEP_ORDER.length;
+// }
 
 // Step mapper will be populated with lazy imports
-export const STEP_MAPPER: Record<OnboardingStep, ComponentType> = {} as Record<
-  OnboardingStep,
-  ComponentType
->;
+// export const STEP_MAPPER: Record<OnboardingStep, ComponentType> = {} as Record<
+//   OnboardingStep,
+//   ComponentType
+// >;
 
 // Function to register step components (called from each step file)
-export function registerStep(step: OnboardingStep, component: ComponentType) {
-  STEP_MAPPER[step] = component;
-}
+// export function registerStep(step: OnboardingStep, component: ComponentType) {
+//   STEP_MAPPER[step] = component;
+// }

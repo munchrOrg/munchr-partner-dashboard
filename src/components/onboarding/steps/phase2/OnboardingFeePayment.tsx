@@ -1,19 +1,19 @@
 'use client';
 
 import type { FileUpload } from '@/types/onboarding';
-import { Check, Copy } from 'lucide-react';
+import { Copy, Plus } from 'lucide-react';
 
-import { useState } from 'react';
-import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
+import { useRef, useState } from 'react';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
+import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 const PAYMENT_DETAILS = {
-  bankName: 'Meezan Bank',
-  accountTitle: 'Munchr Technologies (Pvt) Ltd',
-  iban: 'PK36MEZN0001234567890123',
-  amount: 'PKR 25,000',
+  accountName: 'Food for more',
+  accountNumber: '0940310003232003',
+  iban: 'PK66HA0A043100332200',
+  amount: '10000 PKR',
 };
 
 export function OnboardingFeePayment() {
@@ -30,71 +30,109 @@ export function OnboardingFeePayment() {
     }
   };
 
-  const handleFileChange = (file: FileUpload | null) => {
-    setFormData('onboardingFee', { paymentScreenshot: file });
+  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      const fileUpload: FileUpload = {
+        name: file.name,
+        url: URL.createObjectURL(file),
+        size: file.size,
+      };
+      setFormData('onboardingFee', { paymentScreenshot: fileUpload });
+    }
   };
 
+  const fileUploadRef = useRef<HTMLInputElement>(null);
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
       <StepHeader
-        title="Pay onboarding fee"
-        description="Transfer the one-time onboarding fee to complete your registration."
+        title="Pay one-time onboarding fee"
+        description="On average, restaurant recoup this payment from 12 new orders."
       />
 
-      <div className="mt-6 space-y-6">
-        {/* Payment Amount */}
-        <div className="rounded-lg bg-purple-50 p-4 text-center">
-          <p className="text-sm text-purple-700">One-time onboarding fee</p>
-          <p className="mt-1 text-3xl font-bold text-purple-900">{PAYMENT_DETAILS.amount}</p>
+      <div className="mt-8 space-y-6">
+        {/* Step 1: Bank Details */}
+        <div className="space-y-3 rounded-2xl border-2 border-gray-200 bg-gray-50 p-6">
+          <div className="text-purple-dark text-lg font-bold">Step 1</div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Pay {PAYMENT_DETAILS.amount} from your bank
+          </h3>
+
+          <ul className="ml-3 list-inside list-disc space-y-2">
+            <li>
+              <span className="">Account name:</span>
+              <span className="ml-2">{PAYMENT_DETAILS.accountName}</span>
+            </li>
+            <li>
+              <span className="">Account number:</span>
+              <span className="ml-2">{PAYMENT_DETAILS.accountNumber}</span>
+            </li>
+            <li>
+              <span className="">IBAN:</span>
+              <span className="ml-2">{PAYMENT_DETAILS.iban}</span>
+            </li>
+          </ul>
+
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            onClick={handleCopyIban}
+            className="text-purple-dark mt-4 gap-2 text-lg font-bold"
+          >
+            <Copy className="size-6" />
+            {copied ? 'Copied!' : 'Copy IBAN'}
+          </Button>
         </div>
 
-        {/* Bank Details */}
-        <div className="rounded-lg border p-4">
-          <h3 className="mb-4 font-medium text-gray-900">Bank Transfer Details</h3>
+        {/* Step 2: Upload Screenshot */}
+        <div className="space-y-3 rounded-2xl border-2 border-gray-200 bg-gray-50 p-6">
+          <div className="text-purple-dark text-lg font-bold">Step 2</div>
+          <h3 className="text-lg font-semibold text-gray-900">
+            Upload a screenshot of your payment
+          </h3>
 
-          <div className="space-y-3 text-sm">
-            <div className="flex justify-between">
-              <span className="text-gray-600">Bank Name</span>
-              <span className="font-medium text-gray-900">{PAYMENT_DETAILS.bankName}</span>
-            </div>
-            <div className="flex justify-between">
-              <span className="text-gray-600">Account Title</span>
-              <span className="font-medium text-gray-900">{PAYMENT_DETAILS.accountTitle}</span>
-            </div>
-            <div className="flex items-center justify-between">
-              <span className="text-gray-600">IBAN</span>
-              <div className="flex items-center gap-2">
-                <span className="font-mono font-medium text-gray-900">{PAYMENT_DETAILS.iban}</span>
+          <p className="text-base text-gray-600">
+            Once you've paid, upload a screenshot here as proof.
+          </p>
+
+          <div>
+            <p className="mb-2 block text-lg font-bold">Upload a screenshot*</p>
+
+            {formData.onboardingFee?.paymentScreenshot ? (
+              <div className="flex items-center justify-between rounded-lg border border-gray-300 bg-white p-4">
+                <span className="text-gray-light text-base font-semibold">
+                  {formData.onboardingFee.paymentScreenshot.name}
+                </span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
-                  onClick={handleCopyIban}
-                  className="h-8 w-8 p-0"
+                  role="button"
+                  onClick={() => setFormData('onboardingFee', { paymentScreenshot: null })}
                 >
-                  {copied ? (
-                    <Check className="h-4 w-4 text-green-600" />
-                  ) : (
-                    <Copy className="h-4 w-4 text-gray-500" />
-                  )}
+                  Remove
                 </Button>
               </div>
-            </div>
+            ) : (
+              <HoverBorderGradient
+                containerClassName="rounded-full w-fit"
+                as="button"
+                onClick={() => fileUploadRef.current?.click()}
+                className="text-purple-dark flex min-w-xs cursor-pointer items-center space-x-2 bg-white"
+              >
+                <Plus className="size-6" />
+                <input
+                  ref={fileUploadRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleFileUpload}
+                  className="hidden"
+                />
+                <span className="cursor-pointer text-inherit">Upload a screenshot</span>
+              </HoverBorderGradient>
+            )}
           </div>
-        </div>
-
-        {/* Screenshot Upload */}
-        <div>
-          <p className="mb-3 font-medium text-gray-900">Upload payment screenshot</p>
-          <FileUploadBox
-            label="Payment Screenshot"
-            value={formData.onboardingFee?.paymentScreenshot || null}
-            onChange={handleFileChange}
-            acceptedFormats=".jpg,.jpeg,.png"
-          />
-          <p className="mt-2 text-xs text-gray-500">
-            Please upload a clear screenshot of your payment confirmation.
-          </p>
         </div>
       </div>
     </div>

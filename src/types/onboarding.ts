@@ -67,17 +67,26 @@ export enum NetworkProvider {
   TELENOR = 'telenor',
 }
 
-export enum DayOfWeek {
-  MONDAY = 'monday',
-  TUESDAY = 'tuesday',
-  WEDNESDAY = 'wednesday',
-  THURSDAY = 'thursday',
-  FRIDAY = 'friday',
-  SATURDAY = 'saturday',
-  SUNDAY = 'sunday',
-}
+// export enum DayOfWeek {
+//   MONDAY = 'monday',
+//   TUESDAY = 'tuesday',
+//   WEDNESDAY = 'wednesday',
+//   THURSDAY = 'thursday',
+//   FRIDAY = 'friday',
+//   SATURDAY = 'saturday',
+//   SUNDAY = 'sunday',
+// }
 
 // ===== Form Data Types =====
+export type BusinessInfoFormData = {
+  serviceProviderType: 'restaurant' | 'home-chef';
+  businessName: string;
+  businessDescription: string;
+  email: string;
+  phoneNumber: string;
+  cuisines: string[];
+};
+
 export type LocationFormData = {
   buildingName: string;
   street: string;
@@ -98,19 +107,24 @@ export type OwnerIdentityFormData = {
 };
 
 export type LegalTaxFormData = {
-  businessRegistrationNumber: string;
-  ntnNumber: string;
-  stnNumber: string;
+  cnicNumber: string;
+  taxRegistrationNumber: string;
+  firstAndMiddleName: string;
+  lastName: string;
 };
 
 export type BankingFormData = {
   accountTitle: string;
   bankName: string;
-  accountNumber: string;
   iban: string;
-  billingAddress: string;
-  billingCity: string;
+  sameAsBusinessAddress: boolean;
+  enterAddress?: string;
+  buildingName?: string;
+  street: string;
+  houseNumber: string;
   billingState: string;
+  billingCity?: string;
+  area?: string;
   billingPostalCode: string;
 };
 
@@ -122,13 +136,18 @@ export type PackageFormData = {
   selectedPackageId: string;
 };
 
-export type PaymentMethodFormData = {
-  method: PaymentMethod | null;
+export type SavedPaymentAccount = {
+  id: string;
+  method: PaymentMethod;
   accountNumber?: string;
   accountTitle?: string;
   cardNumber?: string;
   cardExpiry?: string;
-  cardCvv?: string;
+};
+
+export type PaymentMethodFormData = {
+  savedAccounts: SavedPaymentAccount[];
+  selectedAccountId: string | null;
 };
 
 export type MenuFormData = {
@@ -157,6 +176,7 @@ export type BusinessHoursFormData = {
 
 // ===== Store Types =====
 export type OnboardingFormData = {
+  businessInfo: BusinessInfoFormData | null;
   location: LocationFormData | null;
   ownerIdentity: OwnerIdentityFormData | null;
   legalTax: LegalTaxFormData | null;
@@ -170,7 +190,7 @@ export type OnboardingFormData = {
   businessHours: BusinessHoursFormData | null;
 };
 
-export type OnboardingState = {
+type OnboardingState = {
   currentStep: OnboardingStep;
   completedSteps: OnboardingStep[];
   completedPhases: OnboardingPhase[];
@@ -181,11 +201,16 @@ export type OnboardingState = {
   isExampleDrawerOpen: boolean;
   isMapDrawerOpen: boolean;
   isConfirmModalOpen: boolean;
+  isEmailConfirmModalOpen: boolean;
   exampleDrawerConfig: ExampleDrawerConfig | null;
   confirmModalConfig: ConfirmModalConfig | null;
+
+  // Navigation State
+  shouldNavigate: boolean;
+  navigationStep: OnboardingStep | null;
 };
 
-export type OnboardingActions = {
+type OnboardingActions = {
   setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) => void;
   completeStep: (step: OnboardingStep) => void;
   completePhase: (phase: OnboardingPhase) => void;
@@ -200,6 +225,12 @@ export type OnboardingActions = {
   closeMapDrawer: () => void;
   openConfirmModal: (config: ConfirmModalConfig) => void;
   closeConfirmModal: () => void;
+  openEmailConfirmModal: () => void;
+  closeEmailConfirmModal: () => void;
+
+  // Navigation Actions
+  triggerNavigation: (step: OnboardingStep) => void;
+  clearNavigation: () => void;
 
   reset: () => void;
 };
@@ -210,13 +241,17 @@ export type OnboardingStore = OnboardingState & OnboardingActions;
 export type ExampleDrawerConfig = {
   title: string;
   images: { label: string; src: string }[];
+  imageContainerClass?: string;
 };
 
 export type ConfirmModalConfig = {
   title: string;
   description: string;
+  bulletPoints?: string[];
   confirmText?: string;
+  cancelText?: string;
   onConfirm: () => void;
+  onCancel?: () => void;
 };
 
 // ===== Component Props =====

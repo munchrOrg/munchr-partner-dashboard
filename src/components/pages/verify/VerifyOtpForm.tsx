@@ -2,12 +2,24 @@
 
 import type { OTPInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { signOut } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
@@ -38,11 +50,12 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   const [digits, setDigits] = useState<string[]>(
     Array.from({ length: OTP_LENGTH }).fill('') as string[]
   );
+  const [showReviewDialog, setShowReviewDialog] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const email = searchParams.get('email');
-  const phone = searchParams.get('phone');
-  const destination = type === 'email' ? email : phone;
+  const { formData } = useSignupStore();
+  const flowType = searchParams.get('type');
+  const destination = type === 'email' ? formData.email : formData.phoneNumber;
 
   const config = CONFIG[type];
 
@@ -89,34 +102,54 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     }
   };
 
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData('text').replace(/\D/g, '').slice(0, OTP_LENGTH);
-    const newDigits = [...digits];
-    pastedData.split('').forEach((char, i) => {
-      newDigits[i] = char;
-    });
-    updateOtpValue(newDigits);
-    inputRefs.current[Math.min(pastedData.length, OTP_LENGTH - 1)]?.focus();
-  };
-
-  const onSubmit = async (data: OTPInput) => {
+  const onSubmit = async (_data: OTPInput) => {
     try {
-      // For now: log data and navigate
-      console.log('OTP Verification:', { type, destination, otp: data.otp });
-
       toast.success(config.successMessage);
 
+      if (flowType === 'login') {
+        const { completedPhases } = useOnboardingStore.getState();
+        const { accountStatus: currentAccountStatus } = useSignupStore.getState();
+
+        if (
+          completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) &&
+          currentAccountStatus !== 'approved'
+        ) {
+          setShowReviewDialog(true);
+          return;
+        }
+
+        if (completedPhases.includes(OnboardingPhase.OPEN_BUSINESS)) {
+          router.push('/dashboard');
+          return;
+        }
+
+        if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+          router.push(`/onboarding/${OnboardingStep.OPEN_BUSINESS_INTRO}`);
+          return;
+        }
+
+        router.push(`/onboarding/${OnboardingStep.WELCOME}`);
+        return;
+      }
+
       if (type === 'email') {
-        // After email verification, go to phone verification
-        router.push(`/verify-phone?phone=${encodeURIComponent(phone ?? '')}`);
+        const { setEmailVerified } = useSignupStore.getState();
+        setEmailVerified(true);
+        router.push('/verify-phone?type=signup');
       } else {
-        // After phone verification, go to dashboard
-        router.push('/dashboard');
+        const { setPhoneVerified } = useSignupStore.getState();
+        setPhoneVerified(true);
+        router.push('/onboarding/welcome');
       }
     } catch {
       setError('otp', { message: 'An unexpected error occurred' });
     }
+  };
+
+  const handleReviewDialogClose = () => {
+    setShowReviewDialog(false);
+    signOut({ redirect: false });
+    router.push('/sign-in');
   };
 
   const handleResend = async () => {
@@ -125,8 +158,6 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     }
 
     try {
-      // For now: just log and reset timer
-      console.log('Resend OTP:', { type, destination });
       toast.success(`OTP sent to your ${type}!`);
       setResendTimer(60);
     } catch {
@@ -140,88 +171,84 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     return `${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const maskDestination = (value: string | null) => {
-    if (!value) {
-      return '';
-    }
-    if (type === 'email') {
-      const [local, domain] = value.split('@');
-      if (!local || !domain) {
-        return value;
-      }
-      const maskedLocal =
-        local.length > 2
-          ? `${local[0]}${'*'.repeat(local.length - 2)}${local[local.length - 1]}`
-          : local;
-      return `${maskedLocal}@${domain}`;
-    }
-    // Phone masking
-    if (value.length > 4) {
-      return `${'*'.repeat(value.length - 4)}${value.slice(-4)}`;
-    }
-    return value;
-  };
-
   if (!destination) {
+    router.push('/sign-up');
     return null;
   }
 
   return (
-    <div className="w-full">
-      <h1 className="mb-2 text-xl font-semibold sm:text-2xl">{config.title}</h1>
-      <p className="mb-6 text-sm text-gray-600">
-        {config.getDescription(maskDestination(destination))}
-      </p>
+    <>
+      <div className="w-full">
+        <h1 className="mb-2 text-xl font-semibold sm:text-2xl">{config.title}</h1>
+        <p className="mb-6 text-sm text-gray-600">{config.getDescription(destination)}</p>
 
-      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-        {errors.otp && (
-          <Alert variant="destructive">
-            <AlertDescription>{errors.otp.message}</AlertDescription>
-          </Alert>
-        )}
-
-        <div className="flex items-center justify-center gap-2 sm:gap-3" onPaste={handlePaste}>
-          {digits.map((digit, index) => (
-            <div key={index} className="flex items-center gap-2 sm:gap-3">
-              <input
-                ref={(el) => {
-                  inputRefs.current[index] = el;
-                }}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                className="h-12 w-10 rounded-lg border border-gray-300 text-center text-lg font-medium outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 sm:h-14 sm:w-12 sm:text-xl"
-              />
-              {index === 2 && <span className="text-xl text-gray-400">—</span>}
-            </div>
-          ))}
-        </div>
-
-        <Button
-          type="submit"
-          disabled={isSubmitting || digits.some((d) => !d)}
-          className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
-        >
-          {isSubmitting ? 'Verifying...' : 'Submit'}
-        </Button>
-
-        <div className="text-center">
-          {resendTimer > 0 ? (
-            <p className="text-sm text-gray-500">Re-send in -{formatTime(resendTimer)}</p>
-          ) : (
-            <button
-              type="button"
-              onClick={handleResend}
-              className="text-sm font-medium text-amber-500 hover:underline"
-            >
-              {config.resendText}
-            </button>
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          {errors.otp && (
+            <Alert variant="destructive">
+              <AlertDescription>{errors.otp.message}</AlertDescription>
+            </Alert>
           )}
-        </div>
-      </form>
-    </div>
+
+          <div className="flex items-center justify-center gap-2 sm:gap-3">
+            {digits.map((digit, index) => (
+              <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
+                <input
+                  ref={(el) => {
+                    inputRefs.current[index] = el;
+                  }}
+                  type="text"
+                  inputMode="numeric"
+                  maxLength={1}
+                  value={digit}
+                  onChange={(e) => handleChange(index, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  className="h-12 w-10 rounded-lg border border-gray-300 text-center text-lg font-medium outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 sm:h-14 sm:w-12 sm:text-xl"
+                />
+                {index === 2 && <span className="text-xl text-gray-400">—</span>}
+              </div>
+            ))}
+          </div>
+
+          <Button
+            type="submit"
+            disabled={isSubmitting || digits.some((d) => !d)}
+            className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
+          >
+            {isSubmitting ? 'Verifying...' : 'Submit'}
+          </Button>
+
+          <div className="text-center">
+            {resendTimer > 0 ? (
+              <p className="text-sm text-gray-500">Re-send in -{formatTime(resendTimer)}</p>
+            ) : (
+              <button
+                type="button"
+                onClick={handleResend}
+                className="text-sm font-medium text-amber-500 hover:underline"
+              >
+                {config.resendText}
+              </button>
+            )}
+          </div>
+        </form>
+      </div>
+
+      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Account Under Review</DialogTitle>
+            <DialogDescription>
+              Your application is currently under review. You will be notified once your account has
+              been approved and you can proceed to set up your business hours.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button onClick={handleReviewDialogClose} className="bg-gradient-yellow text-black">
+              OK
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }

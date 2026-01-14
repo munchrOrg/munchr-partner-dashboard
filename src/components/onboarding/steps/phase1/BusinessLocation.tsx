@@ -58,6 +58,7 @@ export function BusinessLocation() {
       postalCode: formData.location?.postalCode || '',
       comment: formData.location?.comment || '',
     },
+    mode: 'all',
   });
 
   const onSubmit = (data: LocationInput) => {
