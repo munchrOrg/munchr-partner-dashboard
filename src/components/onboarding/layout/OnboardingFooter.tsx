@@ -101,6 +101,60 @@ const STEP_BEHAVIORS: Partial<Record<OnboardingStep, StepBehavior>> = {
       return null;
     },
   },
+  [OnboardingStep.PARTNERSHIP_PACKAGE]: {
+    type: 'default',
+    validate: (formData) => {
+      if (!formData.package?.selectedPackageId) {
+        return 'Please select a partnership package before continuing.';
+      }
+      return null;
+    },
+  },
+  [OnboardingStep.PAYMENT_METHOD_SELECTION]: {
+    type: 'default',
+    validate: (formData) => {
+      if (!formData.paymentMethod?.savedAccounts?.length) {
+        return 'Please add a payment method before continuing.';
+      }
+      if (!formData.paymentMethod.selectedAccountId) {
+        return 'Please select a payment method before continuing.';
+      }
+      return null;
+    },
+  },
+  [OnboardingStep.BANK_STATEMENT_UPLOAD]: {
+    type: 'default',
+    validate: (formData) => {
+      if (!formData.bankStatement?.statementFile) {
+        return 'Please upload your bank statement before continuing.';
+      }
+      return null;
+    },
+  },
+  [OnboardingStep.TRAINING_CALL_PREFERENCE]: {
+    type: 'default',
+    validate: (formData) => {
+      if (!formData.trainingCall?.networkProvider) {
+        return 'Please select your mobile network provider.';
+      }
+      if (!formData.trainingCall.preferredTime) {
+        return 'Please select your preferred time for the training call.';
+      }
+      if (!formData.trainingCall.preferredDate) {
+        return 'Please select your preferred date for the training call.';
+      }
+      return null;
+    },
+  },
+  [OnboardingStep.ONBOARDING_FEE_PAYMENT]: {
+    type: 'default',
+    validate: (formData) => {
+      if (!formData.onboardingFee?.paymentScreenshot) {
+        return 'Please upload your payment screenshot before continuing.';
+      }
+      return null;
+    },
+  },
 };
 
 export function OnboardingFooter() {
