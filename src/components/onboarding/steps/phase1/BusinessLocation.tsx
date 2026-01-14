@@ -1,13 +1,18 @@
 'use client';
 
-import type { LocationFormData } from '@/types/onboarding';
+import type { Coordinates, LocationFormData } from '@/types/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
+import { Search } from 'lucide-react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+
+const libraries: 'places'[] = ['places'];
 
 const locationSchema = z.object({
   buildingName: z.string().optional(),
@@ -41,10 +46,21 @@ const fieldConfigs: FieldConfig[] = [
 
 export function BusinessLocation() {
   const { formData, setFormData, openMapDrawer } = useOnboardingStore();
+  const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
+  const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinates | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const { isLoaded } = useJsApiLoader({
+    id: 'google-map-script',
+    googleMapsApiKey: process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '',
+    libraries,
+  });
 
   const {
     register,
     handleSubmit,
+    setValue,
+    reset,
     formState: { errors },
   } = useForm<LocationInput>({
     resolver: zodResolver(locationSchema),
@@ -61,6 +77,88 @@ export function BusinessLocation() {
     mode: 'all',
   });
 
+  const prevLocationRef = useRef(formData.location);
+  useEffect(() => {
+    const location = formData.location;
+    if (location && location !== prevLocationRef.current) {
+      const timeoutId = setTimeout(() => {
+        reset({
+          buildingName: location.buildingName || '',
+          street: location.street || '',
+          houseNumber: location.houseNumber || '',
+          state: location.state || '',
+          city: location.city || '',
+          area: location.area || '',
+          postalCode: location.postalCode || '',
+          comment: location.comment || '',
+        });
+        if (location.coordinates) {
+          setSelectedCoordinates(location.coordinates);
+        }
+        prevLocationRef.current = location;
+      }, 0);
+      return () => clearTimeout(timeoutId);
+    }
+    return undefined;
+  }, [formData.location, reset]);
+
+  const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+    }
+  }, []);
+
+  const onPlaceChanged = () => {
+    if (!autocomplete) {
+      return;
+    }
+
+    const place = autocomplete.getPlace();
+    if (!place.geometry?.location || !place.address_components) {
+      return;
+    }
+
+    const coordinates: Coordinates = {
+      lat: place.geometry.location.lat(),
+      lng: place.geometry.location.lng(),
+    };
+    setSelectedCoordinates(coordinates);
+
+    let street = '';
+    let houseNumber = '';
+    let area = '';
+    let city = '';
+    let state = '';
+    let postalCode = '';
+    const buildingName = place.name || '';
+
+    place.address_components.forEach((component) => {
+      const types = component.types;
+
+      if (types.includes('street_number')) {
+        houseNumber = component.long_name;
+      } else if (types.includes('route')) {
+        street = component.long_name;
+      } else if (types.includes('sublocality') || types.includes('neighborhood')) {
+        area = component.long_name;
+      } else if (types.includes('locality')) {
+        city = component.long_name;
+      } else if (types.includes('administrative_area_level_1')) {
+        state = component.long_name;
+      } else if (types.includes('postal_code')) {
+        postalCode = component.long_name;
+      }
+    });
+
+    setValue('buildingName', buildingName, { shouldValidate: true });
+    setValue('street', street, { shouldValidate: true });
+    setValue('houseNumber', houseNumber, { shouldValidate: true });
+    setValue('area', area, { shouldValidate: true });
+    setValue('city', city, { shouldValidate: true });
+    setValue('state', state, { shouldValidate: true });
+    setValue('postalCode', postalCode, { shouldValidate: true });
+  };
+
   const onSubmit = (data: LocationInput) => {
     const locationData: LocationFormData = {
       buildingName: data.buildingName || '',
@@ -71,7 +169,7 @@ export function BusinessLocation() {
       area: data.area || '',
       postalCode: data.postalCode,
       comment: data.comment || '',
-      coordinates: null,
+      coordinates: selectedCoordinates,
     };
 
     setFormData('location', locationData);
@@ -87,6 +185,26 @@ export function BusinessLocation() {
         />
 
         <form id="location-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+          {/* Google Places Autocomplete Search */}
+          {isLoaded && (
+            <Autocomplete
+              onLoad={setAutocomplete}
+              onPlaceChanged={onPlaceChanged}
+              options={{ types: ['establishment', 'geocode'] }}
+            >
+              <div className="relative">
+                <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-gray-400" />
+                <Input
+                  ref={searchInputRef}
+                  type="text"
+                  placeholder="Search for your address or place"
+                  className="h-12 rounded-full border-gray-300 px-6 py-7 pl-12"
+                  onKeyDown={handleSearchKeyDown}
+                />
+              </div>
+            </Autocomplete>
+          )}
+
           {fieldConfigs.map((field) => (
             <div key={field.name} className="relative">
               <Input
