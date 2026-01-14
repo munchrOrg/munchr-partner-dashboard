@@ -11,7 +11,7 @@ export default function DashboardPage() {
   const { data: session } = useSession();
   const { completedPhases } = useOnboardingStore();
   const router = useRouter();
-
+  console.log(session);
   const allPhasesCompleted =
     completedPhases.includes(OnboardingPhase.ADD_BUSINESS) &&
     completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) &&

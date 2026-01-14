@@ -118,11 +118,17 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           return;
         }
 
+        if (completedPhases.includes(OnboardingPhase.OPEN_BUSINESS)) {
+          router.push('/dashboard');
+          return;
+        }
+
         if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
           router.push(`/onboarding/${OnboardingStep.OPEN_BUSINESS_INTRO}`);
-        } else {
-          router.push('/dashboard');
+          return;
         }
+
+        router.push(`/onboarding/${OnboardingStep.WELCOME}`);
         return;
       }
 
