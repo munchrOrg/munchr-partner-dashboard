@@ -285,6 +285,24 @@ export function OnboardingFooter() {
 
         await updateProfileMutation.mutateAsync(payload);
       }
+    } else if (currentStep === OnboardingStep.BANK_STATEMENT_UPLOAD) {
+      const { bankStatement } = formData;
+      if (bankStatement && bankStatement.statementFile) {
+        const file: any = bankStatement.statementFile;
+        const payload: any = {
+          currentPage: currentStep,
+          checkBookImage: {
+            url: file.url,
+            width: file.width || 0,
+            height: file.height || 0,
+            size: file.size || 0,
+            fileName: file.name || '',
+          },
+        };
+        await updateProfileMutation.mutateAsync(payload);
+      } else {
+        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+      }
     } else {
       await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
     }
