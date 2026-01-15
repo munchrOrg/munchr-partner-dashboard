@@ -234,9 +234,59 @@ export function OnboardingFooter() {
   const getProfileMutation = useGetProfile();
 
   const handleContinue = async () => {
+    await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
     if (currentStep === OnboardingStep.WELCOME) {
       router.push(`/onboarding/${getNextPhaseEntryStep()}`);
       return;
+    }
+    if (currentStep === OnboardingStep.OWNER_IDENTITY_UPLOAD) {
+      const { ownerIdentity } = formData;
+      if (ownerIdentity) {
+        const payload: any = {
+          sntn: ownerIdentity.hasSNTN,
+          currentPage: currentStep,
+        };
+
+        if (ownerIdentity.hasSNTN) {
+          const file: any = ownerIdentity.sntnFile;
+          if (file) {
+            payload.sntnImage = {
+              url: file.url,
+              width: file.width || 0,
+              height: file.height || 0,
+              size: file.size || 0,
+              fileName: file.name || '',
+            };
+          }
+        } else {
+          const front: any = ownerIdentity.idCardFrontFile;
+          const back: any = ownerIdentity.idCardBackFile;
+
+          if (front) {
+            payload.frontNic = {
+              url: front.url,
+              width: front.width || 0,
+              height: front.height || 0,
+              size: front.size || 0,
+              fileName: front.name || '',
+            };
+          }
+
+          if (back) {
+            payload.backNic = {
+              url: back.url,
+              width: back.width || 0,
+              height: back.height || 0,
+              size: back.size || 0,
+              fileName: back.name || '',
+            };
+          }
+        }
+
+        await updateProfileMutation.mutateAsync(payload);
+      }
+    } else {
+      await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
     }
     try {
       await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);

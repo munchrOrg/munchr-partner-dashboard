@@ -3,18 +3,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 const legalTaxSchema = z.object({
   cnicNumber: z.string().max(13).min(13, 'CNIC number is required'),
-  taxRegistrationNumber: z.string().min(1, 'Tax registration number is required'),
-  firstAndMiddleName: z.string().min(1, 'First and middle name is required'),
-  lastName: z.string().min(1, 'Last name is required'),
+  taxRegistrationNo: z.string().min(1, 'Tax registration number is required'),
+  firstAndMiddleNameForNic: z.string().min(1, 'First and middle name is required'),
+  lastNameForNic: z.string().min(1, 'Last name is required'),
 });
 
 type LegalTaxInput = z.infer<typeof legalTaxSchema>;
@@ -30,24 +32,46 @@ export function LegalTaxDetails() {
     resolver: zodResolver(legalTaxSchema),
     defaultValues: {
       cnicNumber: formData.legalTax?.cnicNumber || '',
-      taxRegistrationNumber: formData.legalTax?.taxRegistrationNumber || '',
-      firstAndMiddleName: formData.legalTax?.firstAndMiddleName || '',
-      lastName: formData.legalTax?.lastName || '',
+      taxRegistrationNo: formData.legalTax?.taxRegistrationNo || '',
+      firstAndMiddleNameForNic: formData.legalTax?.firstAndMiddleNameForNic || '',
+      lastNameForNic: formData.legalTax?.lastNameForNic || '',
     },
     mode: 'all',
   });
 
-  const onSubmit = (data: LegalTaxInput) => {
-    // Save form data
+  const updateProfileMutation = useUpdateProfile();
+  const onSubmit = async (data: LegalTaxInput) => {
     setFormData('legalTax', {
       cnicNumber: data.cnicNumber,
-      taxRegistrationNumber: data.taxRegistrationNumber,
-      firstAndMiddleName: data.firstAndMiddleName,
-      lastName: data.lastName,
+      taxRegistrationNo: data.taxRegistrationNo,
+      firstAndMiddleNameForNic: data.firstAndMiddleNameForNic,
+      lastNameForNic: data.lastNameForNic,
     });
 
-    // Trigger navigation (Footer will handle it)
-    triggerNavigation(OnboardingStep.LEGAL_TAX_DETAILS);
+    const { legalTax } = formData;
+    if (legalTax) {
+      const payload: any = {
+        currentPage: OnboardingStep.LEGAL_TAX_DETAILS,
+        cnicNumber: legalTax.cnicNumber || '',
+        taxRegistrationNo: legalTax.taxRegistrationNo || '',
+        firstAndMiddleNameForNic: legalTax.firstAndMiddleNameForNic || '',
+        lastNameForNic: legalTax.lastNameForNic || '',
+      };
+
+      try {
+        const resp = await updateProfileMutation.mutateAsync(payload);
+
+        if (!resp || !resp.success) {
+          toast.error(resp?.message || 'Failed to save legal & tax details');
+          return;
+        }
+
+        triggerNavigation(OnboardingStep.LEGAL_TAX_DETAILS);
+      } catch (err) {
+        toast.error('Something went wrong while saving legal & tax details');
+        console.error(err);
+      }
+    }
   };
 
   const showNameExample = () => {
@@ -79,33 +103,33 @@ export function LegalTaxDetails() {
         <div>
           <Input
             placeholder="Tax Registration Number *"
-            {...register('taxRegistrationNumber')}
+            {...register('taxRegistrationNo')}
             className="h-12 rounded-full border-gray-300 px-4"
           />
-          {errors.taxRegistrationNumber && (
-            <p className="mt-1 text-sm text-red-500">{errors.taxRegistrationNumber.message}</p>
+          {errors.taxRegistrationNo && (
+            <p className="mt-1 text-sm text-red-500">{errors.taxRegistrationNo.message}</p>
           )}
         </div>
 
         <div>
           <Input
             placeholder="First and Middle Name *"
-            {...register('firstAndMiddleName')}
+            {...register('firstAndMiddleNameForNic')}
             className="h-12 rounded-full border-gray-300 px-4"
           />
-          {errors.firstAndMiddleName && (
-            <p className="mt-1 text-sm text-red-500">{errors.firstAndMiddleName.message}</p>
+          {errors.firstAndMiddleNameForNic && (
+            <p className="mt-1 text-sm text-red-500">{errors.firstAndMiddleNameForNic.message}</p>
           )}
         </div>
 
         <div>
           <Input
             placeholder="Last Name *"
-            {...register('lastName')}
+            {...register('lastNameForNic')}
             className="h-12 rounded-full border-gray-300 px-4"
           />
-          {errors.lastName && (
-            <p className="mt-1 text-sm text-red-500">{errors.lastName.message}</p>
+          {errors.lastNameForNic && (
+            <p className="mt-1 text-sm text-red-500">{errors.lastNameForNic.message}</p>
           )}
         </div>
       </form>

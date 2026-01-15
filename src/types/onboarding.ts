@@ -108,9 +108,9 @@ export type OwnerIdentityFormData = {
 
 export type LegalTaxFormData = {
   cnicNumber: string;
-  taxRegistrationNumber: string;
-  firstAndMiddleName: string;
-  lastName: string;
+  taxRegistrationNo: string;
+  firstAndMiddleNameForNic: string;
+  lastNameForNic: string;
 };
 
 export type BankingFormData = {
@@ -118,7 +118,7 @@ export type BankingFormData = {
   bankName: string;
   iban: string;
   sameAsBusinessAddress: boolean;
-  enterAddress?: string;
+  address?: string;
   buildingName?: string;
   street: string;
   houseNumber: string;

@@ -3,11 +3,13 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { z } from 'zod';
+import { toast } from 'sonner';
 
+import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
@@ -16,7 +18,7 @@ const bankingSchema = z.object({
   bankName: z.string().min(1, 'Bank name is required'),
   iban: z.string().min(1, 'IBAN is required'),
   sameAsBusinessAddress: z.boolean(),
-  enterAddress: z.string().optional(),
+  address: z.string().optional(),
   buildingName: z.string().optional(),
   street: z.string().min(1, 'Street is required'),
   houseNumber: z.string().min(1, 'House number is required'),
@@ -44,7 +46,7 @@ export function BankingDetails() {
       bankName: formData.banking?.bankName || '',
       iban: formData.banking?.iban || '',
       sameAsBusinessAddress: formData.banking?.sameAsBusinessAddress || false,
-      enterAddress: formData.banking?.enterAddress || '',
+      address: formData.banking?.address || '',
       buildingName: formData.banking?.buildingName || '',
       street: formData.banking?.street || '',
       houseNumber: formData.banking?.houseNumber || '',
@@ -57,26 +59,57 @@ export function BankingDetails() {
   });
 
   const sameAsBusinessAddress = watch('sameAsBusinessAddress');
+  const updateProfileMutation = useUpdateProfile();
 
-  const onSubmit = (data: BankingInput) => {
-    // Save form data
+  const onSubmit = async (data: BankingInput) => {
     setFormData('banking', {
       accountTitle: data.accountTitle,
       bankName: data.bankName,
       iban: data.iban,
       sameAsBusinessAddress: data.sameAsBusinessAddress,
-      enterAddress: data.enterAddress || '',
+      address: data.address || '',
       buildingName: data.buildingName || '',
-      street: data.street,
-      houseNumber: data.houseNumber,
-      billingState: data.billingState,
+      street: data.street || '',
+      houseNumber: data.houseNumber || '',
+      billingState: data.billingState || '',
       billingCity: data.billingCity || '',
       area: data.area || '',
-      billingPostalCode: data.billingPostalCode,
+      billingPostalCode: data.billingPostalCode || '',
     });
 
-    // Trigger navigation (Footer will handle it)
-    triggerNavigation(OnboardingStep.BANKING_DETAILS);
+    const { banking } = formData;
+    if (!banking) {
+      return;
+    }
+
+    const payload: any = {
+      currentPage: OnboardingStep.BANKING_DETAILS,
+    };
+
+    if (!banking.sameAsBusinessAddress) {
+      payload.address = banking.address || '';
+      payload.landName = banking.buildingName || '';
+      payload.street = banking.street || '';
+      payload.houseNumber = banking.houseNumber || '';
+      payload.state = banking.billingState || '';
+      payload.city = banking.billingCity || '';
+      payload.area = banking.area || '';
+      payload.postalCode = banking.billingPostalCode || '';
+    }
+    try {
+      const resp = await updateProfileMutation.mutateAsync(payload);
+
+      if (!resp || !resp.success) {
+        toast.error(resp?.message || 'Failed to save banking details');
+        return;
+      }
+
+      // 4️⃣ Trigger navigation to next step
+      triggerNavigation(OnboardingStep.BANKING_DETAILS); // next step
+    } catch (err) {
+      toast.error('Something went wrong while saving banking details');
+      console.error(err);
+    }
   };
 
   return (
@@ -162,7 +195,7 @@ export function BankingDetails() {
         <div>
           <Input
             placeholder="Enter Address"
-            {...register('enterAddress')}
+            {...register('address')}
             className="h-12 rounded-full border-gray-300 px-4"
           />
         </div>

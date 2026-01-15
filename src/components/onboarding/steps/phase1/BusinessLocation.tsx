@@ -161,47 +161,6 @@ export function BusinessLocation() {
     setValue('postalCode', postalCode, { shouldValidate: true });
   };
 
-  // const onSubmit = (data: LocationInput) => {
-  //   const locationData: LocationFormData = {
-  //     buildingName: data.buildingName || '',
-  //     street: data.street,
-  //     houseNumber: data.houseNumber,
-  //     state: data.state,
-  //     city: data.city || '',
-  //     area: data.area || '',
-  //     postalCode: data.postalCode,
-  //     comment: data.comment || '',
-  //     coordinates: selectedCoordinates,
-  //   };
-
-  //   (async () => {
-  //     try {
-  //       const payload = {
-  //         buildingPlaceName: locationData.buildingName,
-  //         street: locationData.street,
-  //         houseNumber: locationData.houseNumber,
-  //         state: locationData.state,
-  //         city: locationData.city,
-  //         area: locationData.area,
-  //         postalCode: locationData.postalCode,
-  //         addCommentAboutLocation: locationData.comment,
-  //       };
-
-  //       const resp = await updateProfileMutation.mutateAsync(payload);
-  //       if (!resp || !resp.success) {
-  //         toast.error(resp?.message || 'Failed to save address');
-  //         return;
-  //       }
-
-  //       setFormData('location', locationData);
-  //       openMapDrawer();
-  //     } catch {
-  //       toast.error('Failed to save address');
-  //     }
-  //   })();
-  // };
-
-  // const updateProfileMutation = useUpdateProfile();
   const updateProfileMutation = useUpdateProfile();
 
   const onSubmit = (data: LocationInput) => {

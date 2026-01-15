@@ -187,12 +187,14 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">First & Middle Name Per CNIC</span>
               <span className="font-medium">
-                {formData.legalTax?.firstAndMiddleName || 'Not provided'}
+                {formData.legalTax?.firstAndMiddleNameForNic || 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Last Name Per CNIC</span>
-              <span className="font-medium">{formData.legalTax?.lastName || 'Not provided'}</span>
+              <span className="font-medium">
+                {formData.legalTax?.lastNameForNic || 'Not provided'}
+              </span>
             </div>
           </div>
         </div>
