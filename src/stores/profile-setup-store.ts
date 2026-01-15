@@ -1,0 +1,85 @@
+import type { ProfileSetupFormData, ProfileSetupStore } from '@/types/profile-setup';
+import { create } from 'zustand';
+import { persist } from 'zustand/middleware';
+import { ProfileSetupStep } from '@/types/profile-setup';
+
+const initialFormData: ProfileSetupFormData = {
+  step1: null,
+  step2: null,
+  step3: null,
+  step4: null,
+};
+
+export const useProfileSetupStore = create<ProfileSetupStore>()(
+  persist(
+    (set) => ({
+      currentStep: ProfileSetupStep.STEP_1,
+      completedSteps: [],
+      formData: initialFormData,
+      isCompleted: false,
+      isProgressDrawerOpen: false,
+      isMapDrawerOpen: false,
+      isSubmitting: false,
+
+      setStepData: <K extends keyof ProfileSetupFormData>(key: K, data: ProfileSetupFormData[K]) =>
+        set((state) => ({
+          formData: { ...state.formData, [key]: data },
+        })),
+
+      nextStep: () =>
+        set((state) => {
+          const nextStepNumber = state.currentStep + 1;
+          if (nextStepNumber <= ProfileSetupStep.STEP_4) {
+            return { currentStep: nextStepNumber as ProfileSetupStep };
+          }
+          return state;
+        }),
+
+      previousStep: () =>
+        set((state) => {
+          const prevStepNumber = state.currentStep - 1;
+          if (prevStepNumber >= ProfileSetupStep.STEP_1) {
+            return { currentStep: prevStepNumber as ProfileSetupStep };
+          }
+          return state;
+        }),
+
+      goToStep: (step: ProfileSetupStep) => set({ currentStep: step }),
+
+      completeStep: (step: ProfileSetupStep) =>
+        set((state) => ({
+          completedSteps: state.completedSteps.includes(step)
+            ? state.completedSteps
+            : [...state.completedSteps, step],
+        })),
+
+      completeSetup: () => set({ isCompleted: true }),
+
+      openProgressDrawer: () => set({ isProgressDrawerOpen: true }),
+      closeProgressDrawer: () => set({ isProgressDrawerOpen: false }),
+      openMapDrawer: () => set({ isMapDrawerOpen: true }),
+      closeMapDrawer: () => set({ isMapDrawerOpen: false }),
+      setIsSubmitting: (isSubmitting: boolean) => set({ isSubmitting }),
+
+      reset: () =>
+        set({
+          currentStep: ProfileSetupStep.STEP_1,
+          completedSteps: [],
+          formData: initialFormData,
+          isCompleted: false,
+          isProgressDrawerOpen: false,
+          isMapDrawerOpen: false,
+          isSubmitting: false,
+        }),
+    }),
+    {
+      name: 'profile-setup-storage',
+      partialize: (state) => ({
+        currentStep: state.currentStep,
+        completedSteps: state.completedSteps,
+        formData: state.formData,
+        isCompleted: state.isCompleted,
+      }),
+    }
+  )
+);
