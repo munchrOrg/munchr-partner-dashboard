@@ -72,20 +72,22 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
           Authorization: `Bearer ${accessToken}`,
         },
       });
-      // if (profileResp.status === 401) {
-      //   handleUnauthorized(onboardingStore, signupStore);
-      //   throw new Error('Unauthorized: Cleared local data');
-      // }
       if (!profileResp.ok) {
         throw new Error('Failed to fetch profile');
       }
       const profileData = await profileResp.json();
-      if (profileData?.currentPage) {
-        router.push(profileData.currentPage);
-      } else {
-        router.push('/');
-        // router.push('/verify-phone?type=login');
-      }
+      const step2 = profileData?.step2;
+      const step3 = profileData?.step3;
+      const businessProfile: any = profileData?.partner?.businessProfile;
+      router.push(
+        !step2
+          ? `/onboarding/${businessProfile?.currentPage || ''}`
+          : businessProfile?.active && !step3
+            ? '/onboarding/business-hours-setup'
+            : step3
+              ? '/dashboard'
+              : '/onboarding/welcome'
+      );
     } catch (err: any) {
       setError(err.message || 'Login failed');
     } finally {
