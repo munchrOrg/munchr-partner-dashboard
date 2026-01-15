@@ -19,7 +19,7 @@ const PAYMENT_DETAILS = {
 export function OnboardingFeePayment() {
   const { formData, setFormData } = useOnboardingStore();
   const [copied, setCopied] = useState(false);
-
+  const [paymentTransactionId, setPaymentTransactionId] = useState('');
   const handleCopyIban = async () => {
     try {
       await navigator.clipboard.writeText(PAYMENT_DETAILS.iban);
@@ -38,7 +38,7 @@ export function OnboardingFeePayment() {
         url: URL.createObjectURL(file),
         size: file.size,
       };
-      setFormData('onboardingFee', { paymentScreenshot: fileUpload });
+      setFormData('onboardingFee', { paymentScreenshot: fileUpload, paymentTransactionId });
     }
   };
 
@@ -109,7 +109,9 @@ export function OnboardingFeePayment() {
                   variant="ghost"
                   size="sm"
                   role="button"
-                  onClick={() => setFormData('onboardingFee', { paymentScreenshot: null })}
+                  onClick={() =>
+                    setFormData('onboardingFee', { paymentScreenshot: null, paymentTransactionId })
+                  }
                 >
                   Remove
                 </Button>
@@ -132,6 +134,33 @@ export function OnboardingFeePayment() {
                 <span className="cursor-pointer text-inherit">Upload a screenshot</span>
               </HoverBorderGradient>
             )}
+          </div>
+        </div>
+
+        <div className="space-y-3 rounded-2xl border-2 border-gray-200 bg-gray-50 p-6">
+          <div className="text-purple-dark text-lg font-bold">Step 3</div>
+          <h3 className="text-lg font-semibold text-gray-900">Add your transition ID</h3>
+
+          <p className="text-base text-gray-600">
+            This helps us track your payment. You can usually find it on your payment receipt or
+            confirmation.
+          </p>
+
+          <div>
+            <input
+              type="text"
+              placeholder="Your transaction ID"
+              className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+              value={paymentTransactionId}
+              onChange={(e) => {
+                const value = e.target.value;
+                setPaymentTransactionId(value);
+                setFormData('onboardingFee', {
+                  paymentScreenshot: formData.onboardingFee?.paymentScreenshot || null,
+                  paymentTransactionId: value,
+                });
+              }}
+            />
           </div>
         </div>
       </div>

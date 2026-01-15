@@ -327,6 +327,7 @@ export function OnboardingFooter() {
         const file: any = onboardingFee.paymentScreenshot;
         const payload: any = {
           currentPage: currentStep,
+          paymentTransactionId: onboardingFee.paymentTransactionId,
           uploadScreenshotImage: {
             url: file.url,
             width: file.width || 0,

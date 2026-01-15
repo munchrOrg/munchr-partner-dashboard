@@ -162,6 +162,7 @@ export type TrainingCallFormData = {
 
 export type OnboardingFeeFormData = {
   paymentScreenshot: FileUpload | null;
+  paymentTransactionId: string;
 };
 
 export type BusinessHoursFormData = {
