@@ -6,25 +6,28 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { useSignupStore } from '@/stores/signup-store';
-import { OnboardingPhase } from '@/types/onboarding';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
-type EmailLoginFormProps = {
-  onSwitchToPhone: () => void;
-};
+// function handleUnauthorized(onboardingStore: any, signupStore: any) {
+//   localStorage.clear();
+//   sessionStorage.clear();
+//   onboardingStore.reset();
+//   signupStore.reset();
+// }
 
-export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
+export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => void }) {
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  // const [email, setEmail] = useState('');
+  // const [password, setPassword] = useState('');
+  // const onboardingStore = useOnboardingStore();
+  // const signupStore = useSignupStore();
 
   const {
     register,
@@ -39,40 +42,52 @@ export function EmailLoginForm({ onSwitchToPhone }: EmailLoginFormProps) {
     setError(null);
 
     try {
-      const { formData, isPhoneVerified, reset: resetSignup } = useSignupStore.getState();
-      const { completedPhases, reset: resetOnboarding } = useOnboardingStore.getState();
-
-      if (!formData.email || !formData.phoneNumber) {
-        resetSignup();
-        resetOnboarding();
-        toast.error('Please complete signup first');
-        router.push('/sign-up');
-        return;
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: data.email, password: data.password }),
+      });
+      const loginBody = await resp
+        .clone()
+        .json()
+        .catch(() => null);
+      console.log('Login response headers:', Array.from(resp.headers.entries()));
+      console.log('Login response body:', loginBody);
+      // if (!resp.ok) {
+      //   if (resp.status === 401) {
+      //     handleUnauthorized(onboardingStore, signupStore);
+      //     throw new Error('Unauthorized: Cleared local data');
+      //   }
+      //   throw new Error('Login failed');
+      // }
+      const accessToken = loginBody?.accessToken;
+      if (!accessToken) {
+        throw new Error('No access token received');
       }
-
-      const isMatchingUser = formData.email.toLowerCase() === data.email.toLowerCase();
-
-      if (!isMatchingUser) {
-        resetSignup();
-        resetOnboarding();
-        toast.error('Please complete signup first');
-        router.push('/sign-up');
-        return;
+      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/profile`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      // if (profileResp.status === 401) {
+      //   handleUnauthorized(onboardingStore, signupStore);
+      //   throw new Error('Unauthorized: Cleared local data');
+      // }
+      if (!profileResp.ok) {
+        throw new Error('Failed to fetch profile');
       }
-
-      if (!isPhoneVerified) {
-        router.push('/verify-phone?type=signup');
-        return;
+      const profileData = await profileResp.json();
+      if (profileData?.currentPage) {
+        router.push(profileData.currentPage);
+      } else {
+        router.push('/');
+        // router.push('/verify-phone?type=login');
       }
-
-      if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
-        router.push('/verify-phone?type=login');
-        return;
-      }
-
-      router.push('/verify-phone?type=login');
-    } catch {
-      setError('An unexpected error occurred');
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }

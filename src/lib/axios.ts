@@ -1,6 +1,8 @@
 import type { Session } from 'next-auth';
 import axios from 'axios';
 import { getSession, signOut } from 'next-auth/react';
+import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
@@ -17,6 +19,7 @@ apiClient.interceptors.request.use(
       const session = (await getSession()) as Session | null;
       if (session?.accessToken) {
         config.headers.Authorization = `Bearer ${session.accessToken}`;
+        console.log('Sending Authorization header:', config.headers.Authorization);
       }
     }
     return config;
@@ -28,18 +31,22 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    // Handle 401 - token expired or unauthorized
     const status = error?.response?.status || error?.request?.status;
     if (status === 401) {
-      // avoid redirect loop if already on sign-in page
-      if (typeof window !== 'undefined' && window.location.pathname !== '/sign-in') {
+      if (typeof window !== 'undefined') {
+        localStorage.clear();
+        sessionStorage.clear();
         try {
-          // attempt to sign out client session (clears cookies/local state)
-          // use redirect: false because we will handle navigation here
-
-          await signOut({ redirect: false });
-        } catch {
-          // ignore
+          const onboardingStore = useOnboardingStore.getState();
+          const signupStore = useSignupStore.getState();
+          onboardingStore.reset();
+          signupStore.reset();
+        } catch {}
+        if (window.location.pathname !== '/sign-in') {
+          try {
+            await signOut({ redirect: false });
+          } catch {}
+          window.location.href = '/sign-in';
         }
         window.location.href = '/sign-in';
       }
