@@ -14,20 +14,21 @@ export const step1Schema = z.object({
 });
 
 export const step2Schema = z.object({
-  phoneNumber: z
-    .string()
-    .min(1, 'Phone number is required')
-    .min(10, 'Phone number must be at least 10 digits'),
-  address: z.string().min(1, 'Address is required').min(5, 'Address must be at least 5 characters'),
-  city: z.string().min(1, 'City is required').min(2, 'City must be at least 2 characters'),
+  bankProofFiles: z
+    .array(
+      z.object({
+        name: z.string(),
+        url: z.string(),
+        size: z.number().optional(),
+      })
+    )
+    .min(1, 'At least one bank proof file is required'),
 });
 
 export const step3Schema = z.object({
-  languagePreference: z.string().min(1, 'Please select a language preference'),
-  timezone: z.string().min(1, 'Please select a timezone'),
-  notificationPreferences: z
-    .array(z.string())
-    .min(1, 'Please select at least one notification preference'),
+  accountTitle: z.string().min(1, 'Account title is required'),
+  bankName: z.string().min(1, 'Bank name is required'),
+  iban: z.string().min(1, 'IBAN is required'),
 });
 
 export const step4Schema = z.object({

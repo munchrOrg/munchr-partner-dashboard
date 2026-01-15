@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -58,7 +58,7 @@ export function BankingDetails() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<BankingInput>({
@@ -67,7 +67,7 @@ export function BankingDetails() {
     mode: 'all',
   });
 
-  const sameAsBusinessAddress = watch('sameAsBusinessAddress');
+  const sameAsBusinessAddress = useWatch({ control, name: 'sameAsBusinessAddress' });
 
   useEffect(() => {
     if (sameAsBusinessAddress) {

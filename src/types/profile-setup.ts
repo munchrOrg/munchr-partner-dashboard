@@ -1,4 +1,4 @@
-import type { Coordinates } from '@/types/onboarding';
+import type { Coordinates, FileUpload } from '@/types/onboarding';
 
 // ===== Enums =====
 export enum ProfileSetupStep {
@@ -19,15 +19,13 @@ export type Step1FormData = {
 };
 
 export type Step2FormData = {
-  phoneNumber: string;
-  address: string;
-  city: string;
+  bankProofFiles: FileUpload[];
 };
 
 export type Step3FormData = {
-  languagePreference: string;
-  timezone: string;
-  notificationPreferences: string[];
+  accountTitle: string;
+  bankName: string;
+  iban: string;
 };
 
 export type Step4FormData = {
@@ -51,17 +49,23 @@ export const STEP_INFO: Record<ProfileSetupStep, { title: string; description: s
     description: 'Provide your basic personal information',
   },
   [ProfileSetupStep.STEP_2]: {
-    title: 'Contact Details',
-    description: 'Provide your contact information',
+    title: 'Bank Proof',
+    description: 'Upload your bank proof documents',
   },
   [ProfileSetupStep.STEP_3]: {
-    title: 'Preferences',
-    description: 'Customize your preferences',
+    title: 'Banking Details',
+    description: '',
   },
   [ProfileSetupStep.STEP_4]: {
     title: 'Review & Complete',
     description: 'Review and accept terms to complete',
   },
+};
+
+export type ExampleDrawerConfig = {
+  title: string;
+  images: Array<{ label: string; src: string }>;
+  imageContainerClass?: string;
 };
 
 type ProfileSetupState = {
@@ -71,6 +75,8 @@ type ProfileSetupState = {
   isCompleted: boolean;
   isProgressDrawerOpen: boolean;
   isMapDrawerOpen: boolean;
+  isExampleDrawerOpen: boolean;
+  exampleDrawerConfig: ExampleDrawerConfig | null;
   isSubmitting: boolean;
 };
 
@@ -88,6 +94,8 @@ type ProfileSetupActions = {
   closeProgressDrawer: () => void;
   openMapDrawer: () => void;
   closeMapDrawer: () => void;
+  openExampleDrawer: (config: ExampleDrawerConfig) => void;
+  closeExampleDrawer: () => void;
   setIsSubmitting: (isSubmitting: boolean) => void;
   reset: () => void;
 };

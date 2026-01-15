@@ -1,4 +1,8 @@
-import type { ProfileSetupFormData, ProfileSetupStore } from '@/types/profile-setup';
+import type {
+  ExampleDrawerConfig,
+  ProfileSetupFormData,
+  ProfileSetupStore,
+} from '@/types/profile-setup';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { ProfileSetupStep } from '@/types/profile-setup';
@@ -19,6 +23,8 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
       isCompleted: false,
       isProgressDrawerOpen: false,
       isMapDrawerOpen: false,
+      isExampleDrawerOpen: false,
+      exampleDrawerConfig: null,
       isSubmitting: false,
 
       setStepData: <K extends keyof ProfileSetupFormData>(key: K, data: ProfileSetupFormData[K]) =>
@@ -59,6 +65,9 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
       closeProgressDrawer: () => set({ isProgressDrawerOpen: false }),
       openMapDrawer: () => set({ isMapDrawerOpen: true }),
       closeMapDrawer: () => set({ isMapDrawerOpen: false }),
+      openExampleDrawer: (config: ExampleDrawerConfig) =>
+        set({ isExampleDrawerOpen: true, exampleDrawerConfig: config }),
+      closeExampleDrawer: () => set({ isExampleDrawerOpen: false, exampleDrawerConfig: null }),
       setIsSubmitting: (isSubmitting: boolean) => set({ isSubmitting }),
 
       reset: () =>
@@ -69,6 +78,8 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
           isCompleted: false,
           isProgressDrawerOpen: false,
           isMapDrawerOpen: false,
+          isExampleDrawerOpen: false,
+          exampleDrawerConfig: null,
           isSubmitting: false,
         }),
     }),
