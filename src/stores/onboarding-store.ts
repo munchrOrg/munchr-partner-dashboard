@@ -44,6 +44,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
 
       shouldNavigate: false,
       navigationStep: null,
+      profile: null,
 
       setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) =>
         set((state) => ({
@@ -86,6 +87,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
       triggerNavigation: (step: OnboardingStep) =>
         set({ shouldNavigate: true, navigationStep: step }),
       clearNavigation: () => set({ shouldNavigate: false, navigationStep: null }),
+      setProfile: (profileData: any) => set({ profile: profileData }),
 
       reset: () =>
         set({

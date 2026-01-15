@@ -2,10 +2,13 @@
 
 import { IntroStep } from '@/components/onboarding/shared/IntroStep';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingPhase } from '@/types/onboarding';
+// import { OnboardingPhase } from '@/types/onboarding';
 
 export function Welcome() {
-  const { completedPhases } = useOnboardingStore();
+  // const { completedPhases } = useOnboardingStore();
+
+  const { profile } = useOnboardingStore();
+  console.log('Profile data in Welcome component:', profile);
   // const getProfileMutation = useGetProfile();
 
   // useEffect(() => {
@@ -15,15 +18,18 @@ export function Welcome() {
   const steps = [
     {
       label: 'Add your business',
-      completed: completedPhases.includes(OnboardingPhase.ADD_BUSINESS),
+      completed: !!profile?.step1,
+      // completed: completedPhases.includes(OnboardingPhase.ADD_BUSINESS),
     },
     {
       label: 'Verify your business',
-      completed: completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS),
+      completed: !!profile?.step2,
+      // completed: completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS),
     },
     {
       label: 'Open your business',
-      completed: completedPhases.includes(OnboardingPhase.OPEN_BUSINESS),
+      completed: !!profile?.step3,
+      // completed: completedPhases.includes(OnboardingPhase.OPEN_BUSINESS),
     },
   ];
 

@@ -10,6 +10,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { useOnboardingStore } from '@/stores/onboarding-store';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
@@ -24,10 +25,9 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  // const [email, setEmail] = useState('');
-  // const [password, setPassword] = useState('');
-  // const onboardingStore = useOnboardingStore();
-  // const signupStore = useSignupStore();
+  const [profile, setProfile] = useState<any>(null); // Profile data state
+  const onboardingStore = useOnboardingStore();
+  console.log(profile);
 
   const {
     register,
@@ -76,6 +76,8 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
         throw new Error('Failed to fetch profile');
       }
       const profileData = await profileResp.json();
+      setProfile(profileData); // Save profile data in local state
+      onboardingStore.setProfile(profileData); // Save profile data in global store
       const step2 = profileData?.step2;
       const step3 = profileData?.step3;
       const businessProfile: any = profileData?.partner?.businessProfile;

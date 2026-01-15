@@ -232,6 +232,8 @@ type OnboardingActions = {
   // Navigation Actions
   triggerNavigation: (step: OnboardingStep) => void;
   clearNavigation: () => void;
+  profile: any;
+  setProfile: (profileData: any) => void;
 
   reset: () => void;
 };
