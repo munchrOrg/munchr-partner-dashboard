@@ -161,6 +161,15 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
           Log in with phone number
         </Button>
 
+        <Button
+          type="button"
+          variant="outline"
+          className="h-11 w-full rounded-full border-gray-300 sm:h-12"
+          onClick={() => router.push('/profile-setup')}
+        >
+          Go to Profile Setup
+        </Button>
+
         <FormFooter />
       </form>
     </div>

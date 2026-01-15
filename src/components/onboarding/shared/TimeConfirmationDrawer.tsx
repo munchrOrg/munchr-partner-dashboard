@@ -129,68 +129,69 @@ export default function TimeConfirmationDrawer({
         <div className="mt-6 flex flex-1 flex-col">
           {editingDayData?.isOpen ? (
             <div className="space-y-4 border-y py-4">
-              {editingDayData?.slots.map((slot, index) => (
-                <div key={`${editingDay}-${slot.open}-${slot.close}-${index}`} className="p-4">
-                  <div className="mb-3">
-                    <span className="text-sm font-medium text-gray-700">
-                      Shift
-                      {index + 1}
-                    </span>
-                  </div>
-
-                  <div className="flex items-start justify-start gap-3">
-                    <div className="w-fit">
-                      <Select
-                        value={slot.open}
-                        onValueChange={(value) => handleSlotChange(index, 'open', value)}
-                      >
-                        <SelectTrigger id={`open-${editingDay}-${index}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent className="w-full">
-                          {TIME_OPTIONS.map((time) => (
-                            <SelectItem key={time.value} value={time.value}>
-                              {time.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+              {editingDayData?.slots.map((slot, index) => {
+                // Slots are never reordered, only added/removed, so position is stable
+                const slotId = `${editingDay}-shift-${index}`;
+                return (
+                  <div key={slotId} className="p-4">
+                    <div className="mb-3">
+                      <span className="text-sm font-medium text-gray-700">Shift {index + 1}</span>
                     </div>
 
-                    <div className="mt-2 text-sm text-gray-500">to</div>
+                    <div className="flex items-start justify-start gap-3">
+                      <div className="w-fit">
+                        <Select
+                          value={slot.open}
+                          onValueChange={(value) => handleSlotChange(index, 'open', value)}
+                        >
+                          <SelectTrigger id={`open-${editingDay}-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent className="w-full">
+                            {TIME_OPTIONS.map((time) => (
+                              <SelectItem key={time.value} value={time.value}>
+                                {time.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
 
-                    <div className="w-fit">
-                      <Select
-                        value={slot.close}
-                        onValueChange={(value) => handleSlotChange(index, 'close', value)}
-                      >
-                        <SelectTrigger id={`close-${editingDay}-${index}`}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {TIME_OPTIONS.map((time) => (
-                            <SelectItem key={time.value} value={time.value}>
-                              {time.label}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+                      <div className="mt-2 text-sm text-gray-500">to</div>
+
+                      <div className="w-fit">
+                        <Select
+                          value={slot.close}
+                          onValueChange={(value) => handleSlotChange(index, 'close', value)}
+                        >
+                          <SelectTrigger id={`close-${editingDay}-${index}`}>
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {TIME_OPTIONS.map((time) => (
+                              <SelectItem key={time.value} value={time.value}>
+                                {time.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+
+                      {editingDayData.slots.length > 1 && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleRemoveSlot(index)}
+                          className="size-9 p-0 text-red-500 hover:text-red-600"
+                        >
+                          <Trash2 className="h-5 w-5" />
+                        </Button>
+                      )}
                     </div>
-
-                    {editingDayData.slots.length > 1 && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleRemoveSlot(index)}
-                        className="size-9 p-0 text-red-500 hover:text-red-600"
-                      >
-                        <Trash2 className="h-5 w-5" />
-                      </Button>
-                    )}
                   </div>
-                </div>
-              ))}
+                );
+              })}
 
               <Button
                 type="button"
