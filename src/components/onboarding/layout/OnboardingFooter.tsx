@@ -303,6 +303,27 @@ export function OnboardingFooter() {
       } else {
         await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
       }
+    } else if (currentStep === OnboardingStep.PAYMENT_METHOD_SELECTION) {
+      const { paymentMethod } = formData;
+      if (paymentMethod && paymentMethod.selectedAccountId && paymentMethod.savedAccounts?.length) {
+        const selected = paymentMethod.savedAccounts.find(
+          (acc) => acc.id === paymentMethod.selectedAccountId
+        );
+        if (selected) {
+          const payload: any = {
+            currentPage: currentStep,
+            paymentMethod: {
+              paymentMethod: selected.method,
+              accountNumber: selected.accountNumber,
+            },
+          };
+          await updateProfileMutation.mutateAsync(payload);
+        } else {
+          await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+        }
+      } else {
+        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+      }
     } else {
       await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
     }

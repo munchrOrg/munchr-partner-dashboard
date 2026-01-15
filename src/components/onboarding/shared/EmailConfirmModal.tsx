@@ -14,11 +14,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 export function EmailConfirmModal() {
   const router = useRouter();
+  const updateProfileMutation = useUpdateProfile();
   const {
     formData,
     setFormData,
@@ -41,13 +43,21 @@ export function EmailConfirmModal() {
     }
   };
 
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     // Update email in formData if it was changed
     if (email !== formData.businessInfo?.email && formData.businessInfo) {
       setFormData('businessInfo', {
         ...formData.businessInfo,
         email,
       });
+    }
+    try {
+      await updateProfileMutation.mutateAsync({
+        currentPage: OnboardingStep.BUSINESS_INFO_REVIEW,
+        email,
+      } as any);
+    } catch (err) {
+      console.error('Failed to update profile with email:', err);
     }
 
     // Complete the step
