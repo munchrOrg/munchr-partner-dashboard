@@ -16,10 +16,16 @@ const apiClient = axios.create({
 apiClient.interceptors.request.use(
   async (config) => {
     if (typeof window !== 'undefined') {
-      const session = (await getSession()) as Session | null;
-      if (session?.accessToken) {
-        config.headers.Authorization = `Bearer ${session.accessToken}`;
-        console.log('Sending Authorization header:', config.headers.Authorization);
+      let accessToken = localStorage.getItem('accessToken');
+      if (!accessToken) {
+        accessToken = sessionStorage.getItem('accessToken');
+      }
+      if (!accessToken) {
+        const session = (await getSession()) as Session | null;
+        accessToken = session?.accessToken || '';
+      }
+      if (accessToken) {
+        config.headers.Authorization = `Bearer ${accessToken}`;
       }
     }
     return config;

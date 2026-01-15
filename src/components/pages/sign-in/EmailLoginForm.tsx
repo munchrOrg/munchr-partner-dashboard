@@ -65,6 +65,8 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       if (!accessToken) {
         throw new Error('No access token received');
       }
+      localStorage.setItem('accessToken', accessToken);
+      sessionStorage.setItem('accessToken', accessToken);
       const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/profile`, {
         method: 'GET',
         headers: {
