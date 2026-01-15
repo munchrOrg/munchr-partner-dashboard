@@ -16,6 +16,7 @@ import {
   PHASE_ENTRY_STEP,
   STEP_PHASE_MAP,
 } from '@/config/onboarding-steps';
+import { useGetProfile, useUpdateProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
@@ -229,10 +230,69 @@ export function OnboardingFooter() {
     }
   };
 
-  const handleContinue = () => {
+  const updateProfileMutation = useUpdateProfile();
+  const getProfileMutation = useGetProfile();
+
+  const handleContinue = async () => {
     if (currentStep === OnboardingStep.WELCOME) {
       router.push(`/onboarding/${getNextPhaseEntryStep()}`);
       return;
+    }
+    try {
+      await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+      try {
+        const profileResp = await getProfileMutation.mutateAsync();
+        const profileData = (profileResp as any)?.data;
+        if (profileData) {
+          if (
+            profileData.businessName ||
+            profileData.businessDescription ||
+            profileData.cuisines ||
+            profileData.email ||
+            profileData.phoneNumber
+          ) {
+            const businessInfo = {
+              serviceProviderType:
+                (profileData.serviceProviderType as any) ||
+                (useOnboardingStore.getState().formData.businessInfo?.serviceProviderType ??
+                  'restaurant'),
+              businessName: profileData.businessName || '',
+              businessDescription: profileData.businessDescription || '',
+              email:
+                profileData.email ||
+                useOnboardingStore.getState().formData.businessInfo?.email ||
+                '',
+              phoneNumber:
+                profileData.phoneNumber ||
+                useOnboardingStore.getState().formData.businessInfo?.phoneNumber ||
+                '',
+              cuisines:
+                profileData.cuisines ||
+                useOnboardingStore.getState().formData.businessInfo?.cuisines ||
+                [],
+            } as any;
+            useOnboardingStore.getState().setFormData('businessInfo', businessInfo);
+          }
+
+          if (profileData.location) {
+            const loc = profileData.location;
+            const locationPayload = {
+              buildingName: loc.buildingName || '',
+              street: loc.street || '',
+              houseNumber: loc.houseNumber || '',
+              state: loc.state || '',
+              city: loc.city || '',
+              area: loc.area || '',
+              postalCode: loc.postalCode || '',
+              comment: loc.comment || '',
+              coordinates: loc.coordinates || null,
+            } as any;
+            useOnboardingStore.getState().setFormData('location', locationPayload);
+          }
+        }
+      } catch {}
+    } catch {
+      toast.error('Failed to report onboarding progress');
     }
 
     const stepBehavior = STEP_BEHAVIORS[currentStep];

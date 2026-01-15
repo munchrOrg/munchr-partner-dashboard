@@ -61,3 +61,41 @@ export type VerifyPhoneResponse = {
   success: boolean;
   message?: string;
 };
+
+export type UpdateProfileRequest = {
+  buildingName?: string;
+  street: string;
+  houseNumber: string;
+  state: string;
+  city?: string;
+  area?: string;
+  postalCode: string;
+  comment?: string;
+};
+
+export type UpdateProfileResponse = {
+  success: boolean;
+  message?: string;
+};
+
+export type ProfileResponse = {
+  success: boolean;
+  data?: {
+    email?: string;
+    phoneNumber?: string;
+    businessName?: string;
+    businessDescription?: string;
+    cuisines?: string[];
+    location?: {
+      buildingName?: string;
+      street?: string;
+      houseNumber?: string;
+      state?: string;
+      city?: string;
+      area?: string;
+      postalCode?: string;
+      comment?: string;
+      coordinates?: { lat: number; lng: number } | null;
+    };
+  };
+};

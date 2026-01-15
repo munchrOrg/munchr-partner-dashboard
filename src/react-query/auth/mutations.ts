@@ -3,6 +3,8 @@ import type {
   ResendOtpRequest,
   SignUpRequest,
   SignUpResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
   VerifyEmailRequest,
   VerifyOtpRequest,
   VerifyPhoneRequest,
@@ -42,5 +44,18 @@ export const useVerifyPhone = () => {
 export const useResendOtp = () => {
   return useMutation({
     mutationFn: (data: ResendOtpRequest) => authService.resendOtp(data),
+  });
+};
+
+export const useUpdateProfile = () => {
+  return useMutation({
+    mutationFn: (data: UpdateProfileRequest) =>
+      authService.updateProfile(data) as Promise<UpdateProfileResponse>,
+  });
+};
+
+export const useGetProfile = () => {
+  return useMutation({
+    mutationFn: () => authService.getProfile() as Promise<import('./types').ProfileResponse>,
   });
 };

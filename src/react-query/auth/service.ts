@@ -1,8 +1,11 @@
 import type {
+  ProfileResponse,
   ResendOtpRequest,
   ResendOtpResponse,
   SignUpRequest,
   SignUpResponse,
+  UpdateProfileRequest,
+  UpdateProfileResponse,
   VerifyEmailRequest,
   VerifyEmailResponse,
   VerifyOtpRequest,
@@ -27,4 +30,7 @@ export const authService = {
 
   verifyPhone: (data: VerifyPhoneRequest) =>
     apiClient.post<VerifyPhoneResponse>('auth/verify-phone', data).then((res) => res.data),
+  updateProfile: (data: UpdateProfileRequest) =>
+    apiClient.put<UpdateProfileResponse>('auth/update/profile', data).then((res) => res.data),
+  getProfile: () => apiClient.get<ProfileResponse>('auth/profile').then((res) => res.data),
 };
