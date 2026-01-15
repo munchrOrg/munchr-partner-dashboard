@@ -67,8 +67,6 @@ export function BankingDetails() {
       bankName: data.bankName,
       iban: data.iban,
       sameAsBusinessAddress: data.sameAsBusinessAddress,
-      address: data.address || '',
-      buildingName: data.buildingName || '',
       street: data.street || '',
       houseNumber: data.houseNumber || '',
       billingState: data.billingState || '',
@@ -77,35 +75,33 @@ export function BankingDetails() {
       billingPostalCode: data.billingPostalCode || '',
     });
 
-    const { banking } = formData;
-    if (!banking) {
-      return;
-    }
-
     const payload: any = {
       currentPage: OnboardingStep.BANKING_DETAILS,
+      billingAddressAreSame: data.sameAsBusinessAddress,
+      bankAccountOwner: data.accountTitle,
+      bankName: data.bankName,
+      IBAN: data.iban,
     };
 
-    if (!banking.sameAsBusinessAddress) {
-      payload.address = banking.address || '';
-      payload.landName = banking.buildingName || '';
-      payload.street = banking.street || '';
-      payload.houseNumber = banking.houseNumber || '';
-      payload.state = banking.billingState || '';
-      payload.city = banking.billingCity || '';
-      payload.area = banking.area || '';
-      payload.postalCode = banking.billingPostalCode || '';
+    if (!data.sameAsBusinessAddress) {
+      payload.billingAddress = {
+        address: data.address || '',
+        street: data.street || '',
+        houseNumber: data.houseNumber || '',
+        state: data.billingState || '',
+        city: data.billingCity || '',
+        area: data.area || '',
+        postalCode: data.billingPostalCode || '',
+      };
     }
+
     try {
       const resp = await updateProfileMutation.mutateAsync(payload);
-
       if (!resp || !resp.success) {
         toast.error(resp?.message || 'Failed to save banking details');
         return;
       }
-
-      // 4️⃣ Trigger navigation to next step
-      triggerNavigation(OnboardingStep.BANKING_DETAILS); // next step
+      triggerNavigation(OnboardingStep.BANKING_DETAILS);
     } catch (err) {
       toast.error('Something went wrong while saving banking details');
       console.error(err);
