@@ -303,6 +303,108 @@ export function OnboardingFooter() {
       } else {
         await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
       }
+    } else if (currentStep === OnboardingStep.DINE_IN_MENU_UPLOAD) {
+      const { menu } = formData;
+      if (menu && menu.menuFile) {
+        const file: any = menu.menuFile;
+        const payload: any = {
+          currentPage: currentStep,
+          menuImage: {
+            url: file.url,
+            width: file.width || 0,
+            height: file.height || 0,
+            size: file.size || 0,
+            fileName: file.name || '',
+          },
+        };
+        await updateProfileMutation.mutateAsync(payload);
+      } else {
+        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+      }
+    } else if (currentStep === OnboardingStep.ONBOARDING_FEE_PAYMENT) {
+      const { onboardingFee } = formData;
+      if (onboardingFee) {
+        const file: any = onboardingFee.paymentScreenshot;
+        const payload: any = {
+          currentPage: currentStep,
+          uploadScreenshotImage: {
+            url: file.url,
+            width: file.width || 0,
+            height: file.height || 0,
+            size: file.size || 0,
+            fileName: file.name || '',
+          },
+        };
+        await updateProfileMutation.mutateAsync(payload);
+      } else {
+        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+      }
+    } else if (currentStep === OnboardingStep.TRAINING_CALL_PREFERENCE) {
+      const { trainingCall } = formData;
+
+      const is24Hour = (t?: string) => /^\d{2}:\d{2}$/.test(t || '');
+
+      const to24HourTime = (time12h?: string): string => {
+        if (!time12h) {
+          return '';
+        }
+
+        const parts = time12h.trim().split(' ');
+        if (parts.length !== 2) {
+          return '';
+        }
+
+        const timePart = parts[0];
+        const modifier = parts[1];
+
+        if (!timePart || !modifier) {
+          return '';
+        }
+
+        const timeParts = timePart.split(':');
+        if (timeParts.length !== 2) {
+          return '';
+        }
+
+        const hours = Number(timeParts[0]);
+        const minutes = Number(timeParts[1]);
+
+        if (Number.isNaN(hours) || Number.isNaN(minutes)) {
+          return '';
+        }
+
+        let h = hours;
+
+        if (modifier === 'PM' && h !== 12) {
+          h += 12;
+        }
+        if (modifier === 'AM' && h === 12) {
+          h = 0;
+        }
+
+        return `${h.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+      };
+
+      if (trainingCall) {
+        const time24 = is24Hour(trainingCall.preferredTime)
+          ? trainingCall.preferredTime
+          : to24HourTime(trainingCall.preferredTime);
+
+        const payload: any = {
+          currentPage: currentStep,
+          bookSlot: {
+            networkPreference: trainingCall.networkProvider,
+            date: trainingCall.preferredDate,
+            time: time24,
+          },
+        };
+
+        await updateProfileMutation.mutateAsync(payload);
+      } else {
+        await updateProfileMutation.mutateAsync({
+          currentPage: currentStep,
+        } as any);
+      }
     } else if (currentStep === OnboardingStep.PAYMENT_METHOD_SELECTION) {
       const { paymentMethod } = formData;
       if (paymentMethod && paymentMethod.selectedAccountId && paymentMethod.savedAccounts?.length) {

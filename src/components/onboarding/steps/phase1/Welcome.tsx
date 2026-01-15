@@ -6,6 +6,11 @@ import { OnboardingPhase } from '@/types/onboarding';
 
 export function Welcome() {
   const { completedPhases } = useOnboardingStore();
+  // const getProfileMutation = useGetProfile();
+
+  // useEffect(() => {
+  //   getProfileMutation.mutateAsync();
+  // }, []);
 
   const steps = [
     {
