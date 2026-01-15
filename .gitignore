@@ -67,3 +67,5 @@ docs/**/*
 .env.development
 
 .env.production
+.env.local
+.env
