@@ -135,7 +135,10 @@ export default function TimeConfirmationDrawer({
                 return (
                   <div key={slotId} className="p-4">
                     <div className="mb-3">
-                      <span className="text-sm font-medium text-gray-700">Shift {index + 1}</span>
+                      <span className="text-sm font-medium text-gray-700">
+                        Shift
+                        {index + 1}
+                      </span>
                     </div>
 
                     <div className="flex items-start justify-start gap-3">

@@ -25,6 +25,7 @@ import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
+const OTP_POSITIONS = Array.from({ length: OTP_LENGTH }, (_, i) => i);
 
 type VerifyOtpFormProps = {
   type: 'email' | 'phone';
@@ -278,21 +279,21 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           )}
 
           <div className="flex items-center justify-center gap-2 sm:gap-3">
-            {digits.map((digit, index) => (
-              <div key={`otp-position-${index}`} className="flex items-center gap-2 sm:gap-3">
+            {OTP_POSITIONS.map((position) => (
+              <div key={`otp-position-${position}`} className="flex items-center gap-2 sm:gap-3">
                 <input
                   ref={(el) => {
-                    inputRefs.current[index] = el;
+                    inputRefs.current[position] = el;
                   }}
                   type="text"
                   inputMode="numeric"
                   maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
+                  value={digits[position]}
+                  onChange={(e) => handleChange(position, e.target.value)}
+                  onKeyDown={(e) => handleKeyDown(position, e)}
                   className="h-12 w-10 rounded-lg border border-gray-300 text-center text-lg font-medium outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 sm:h-14 sm:w-12 sm:text-xl"
                 />
-                {index === 2 && <span className="text-xl text-gray-400">—</span>}
+                {position === 2 && <span className="text-xl text-gray-400">—</span>}
               </div>
             ))}
           </div>
