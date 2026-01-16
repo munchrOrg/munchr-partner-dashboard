@@ -189,6 +189,7 @@ export function SignUpForm() {
         businessName: data.businessName,
         cuisineIds: data.cuisines,
         description: data.businessDescription,
+        // restaurantLogoKey :'http://localhost:3000/logo.png',
         resturantLogo: {
           url: logoPreview || 'http://localhost:3000/logo.png',
           width: 0,

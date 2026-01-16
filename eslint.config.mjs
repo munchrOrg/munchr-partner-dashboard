@@ -27,7 +27,6 @@ export default antfu(
       tsx: true,
       json: true,
     },
-    
 
     // Ignored paths
     ignores: [
