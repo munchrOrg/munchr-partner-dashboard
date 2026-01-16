@@ -4,11 +4,12 @@ import { useRouter } from 'next/navigation';
 import React from 'react';
 import { IntroStep } from '@/components/onboarding/shared/IntroStep';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingPhase } from '@/types/onboarding';
 // import { OnboardingPhase } from '@/types/onboarding';
 
 export function Welcome() {
   const router = useRouter();
-  // const { completedPhases } = useOnboardingStore();
+  const { completedPhases } = useOnboardingStore();
 
   const { profile } = useOnboardingStore();
   console.warn('Profile data in Welcome component:', profile);
@@ -40,18 +41,18 @@ export function Welcome() {
   const steps = [
     {
       label: 'Add your business',
-      completed: !!profile?.step1,
-      // completed: completedPhases.includes(OnboardingPhase.ADD_BUSINESS),
+      // completed: !!profile?.step1,
+      completed: completedPhases.includes(OnboardingPhase.ADD_BUSINESS),
     },
     {
       label: 'Verify your business',
-      completed: !!profile?.step2,
-      // completed: completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS),
+      // completed: !!profile?.step2,
+      completed: completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS),
     },
     {
       label: 'Open your business',
-      completed: !!profile?.step3,
-      // completed: completedPhases.includes(OnboardingPhase.OPEN_BUSINESS),
+      // completed: !!profile?.step3,
+      completed: completedPhases.includes(OnboardingPhase.OPEN_BUSINESS),
     },
   ];
 
