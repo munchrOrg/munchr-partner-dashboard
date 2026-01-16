@@ -28,9 +28,13 @@ export function OwnerIdentityUpload() {
   }, [profile]);
 
   const handleSNTNChange = (value: string) => {
+    // Reset all files when switching SNTN
     setFormData('ownerIdentity', {
       ...ownerIdentity,
       hasSNTN: value === 'yes',
+      sntnFile: null,
+      idCardFrontFile: null,
+      idCardBackFile: null,
     });
   };
 
