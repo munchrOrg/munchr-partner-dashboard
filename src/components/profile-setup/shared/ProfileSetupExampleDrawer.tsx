@@ -15,7 +15,7 @@ export function ProfileSetupExampleDrawer() {
 
   return (
     <Sheet open={isExampleDrawerOpen} onOpenChange={closeExampleDrawer}>
-      <SheetContent side="right" className="w-full max-w-2xl overflow-y-auto p-3">
+      <SheetContent side="right" className="min-w-lg overflow-y-auto p-3">
         <div className="relative mt-20 h-full">
           <div className="rounded-lg bg-white p-6">
             <div className="space-y-4">

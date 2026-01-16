@@ -8,6 +8,7 @@ import { ProfileSetupHeader } from './layout/ProfileSetupHeader';
 import { ProfileSetupExampleDrawer } from './shared/ProfileSetupExampleDrawer';
 import { ProfileSetupMapDrawer } from './shared/ProfileSetupMapDrawer';
 import { ProfileSetupProgressDrawer } from './shared/ProfileSetupProgressDrawer';
+import { ProfileSetupScheduleDrawer } from './shared/ProfileSetupScheduleDrawer';
 import { StepContent } from './StepContent';
 import { Step1 } from './steps/Step1';
 import { Step2 } from './steps/Step2';
@@ -15,17 +16,17 @@ import { Step3 } from './steps/Step3';
 import { Step4 } from './steps/Step4';
 
 export function ProfileSetupStepper() {
-  const { currentStep, openExampleDrawer } = useProfileSetupStore();
+  const { currentStep } = useProfileSetupStore();
 
   const currentStepInfo = STEP_INFO[currentStep];
 
-  const showExample = () => {
-    openExampleDrawer({
-      title: 'Bank Proof Example',
-      images: [{ label: 'Bank Statement / Book', src: '/assets/images/PK_Bank 1.png' }],
-      imageContainerClass: 'w-[400px] h-[250px]',
-    });
-  };
+  const textAlignment =
+    currentStep === ProfileSetupStep.STEP_1 ||
+    currentStep === ProfileSetupStep.STEP_3 ||
+    currentStep === ProfileSetupStep.STEP_4
+      ? 'text-left'
+      : '';
+  const width = currentStep === ProfileSetupStep.STEP_2;
 
   const renderStep = () => {
     switch (currentStep) {
@@ -48,35 +49,36 @@ export function ProfileSetupStepper() {
 
       <main className="flex-1 pb-24">
         <div className="container mx-auto max-w-4xl px-4 py-8">
-          <div className="mt-6 mb-8 md:mt-16">
+          <div className="mt-6 md:mt-16">
             <h1
               className={cn(
-                'text-2xl font-bold',
-                currentStep === ProfileSetupStep.STEP_1 || currentStep === ProfileSetupStep.STEP_3
-                  ? 'text-left'
-                  : 'text-center'
+                'text-2xl leading-none font-bold',
+                textAlignment,
+                width ? 'mx-auto w-[446px]' : ''
               )}
             >
               Set Up your profile (step {currentStep} of 4)
             </h1>
-            {currentStepInfo && currentStep !== ProfileSetupStep.STEP_1 && (
-              <div className="mt-2 flex items-center justify-center gap-2">
-                <p className="text-muted-foreground text-center">{currentStepInfo.description}</p>
-                {currentStep === ProfileSetupStep.STEP_2 && (
-                  <button
-                    type="button"
-                    onClick={showExample}
-                    className="text-sm font-medium text-[#2C2F2E] hover:underline"
-                  >
-                    See example
-                  </button>
-                )}
-              </div>
-            )}
+            {currentStepInfo &&
+              currentStep !== ProfileSetupStep.STEP_1 &&
+              (currentStepInfo.description || currentStep === ProfileSetupStep.STEP_2) && (
+                <div className={cn('flex gap-2', width ? 'mx-auto w-[446px]' : '')}>
+                  {currentStepInfo.description && (
+                    <p
+                      className={cn(
+                        'mt-7 text-lg leading-none font-bold text-black',
+                        textAlignment
+                      )}
+                    >
+                      {currentStepInfo.description}
+                    </p>
+                  )}
+                </div>
+              )}
           </div>
 
           <div className="">
-            {currentStep === ProfileSetupStep.STEP_1 ? (
+            {currentStep === ProfileSetupStep.STEP_1 || currentStep === ProfileSetupStep.STEP_4 ? (
               renderStep()
             ) : (
               <StepContent>{renderStep()}</StepContent>
@@ -89,6 +91,7 @@ export function ProfileSetupStepper() {
       <ProfileSetupProgressDrawer />
       <ProfileSetupMapDrawer />
       <ProfileSetupExampleDrawer />
+      <ProfileSetupScheduleDrawer />
     </div>
   );
 }

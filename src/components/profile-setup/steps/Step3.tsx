@@ -44,7 +44,7 @@ export function Step3() {
   };
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 md:flex-row md:items-center md:gap-12">
+    <div className="mx-auto mt-4 flex max-w-4xl flex-col gap-8 md:flex-row md:items-center md:gap-12">
       <div>
         <Form {...form}>
           <form
@@ -52,10 +52,6 @@ export function Step3() {
             onSubmit={form.handleSubmit(onSubmit)}
             className="space-y-6 md:w-[450px]"
           >
-            <div className="mb-4">
-              <h3 className="mb-4 text-base font-bold">Enter Bank account details</h3>
-            </div>
-
             <FormField
               control={form.control}
               name="bankName"
@@ -144,15 +140,14 @@ export function Step3() {
 
       {/* Illustration Section - Right */}
       <div className="hidden justify-center lg:flex lg:w-1/2 lg:justify-end">
-        <div className="relative h-64 w-64 sm:h-80 sm:w-80">
-          <Image
-            src="/assets/images/step-3-bank.png"
-            alt="Banking details illustration"
-            fill
-            className="object-contain"
-            priority
-          />
-        </div>
+        <Image
+          src="/assets/images/step-3-bank.png"
+          alt="Banking details illustration"
+          width={284}
+          height={300}
+          className="object-cover"
+          priority
+        />
       </div>
     </div>
   );

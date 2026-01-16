@@ -31,15 +31,60 @@ export const step3Schema = z.object({
   iban: z.string().min(1, 'IBAN is required'),
 });
 
-export const step4Schema = z.object({
-  termsAndConditions: z.boolean().refine((val) => val === true, {
-    message: 'You must accept the terms and conditions',
-  }),
-  privacyPolicy: z.boolean().refine((val) => val === true, {
-    message: 'You must accept the privacy policy',
-  }),
-  marketingEmails: z.boolean(),
+const timeSlotSchema = z.object({
+  open: z.string().min(1, 'Open time is required'),
+  close: z.string().min(1, 'Close time is required'),
 });
+
+const dayScheduleSchema = z.object({
+  isOpen: z.boolean(),
+  slots: z.array(timeSlotSchema),
+});
+
+export const step4Schema = z
+  .object({
+    monday: dayScheduleSchema,
+    tuesday: dayScheduleSchema,
+    wednesday: dayScheduleSchema,
+    thursday: dayScheduleSchema,
+    friday: dayScheduleSchema,
+    saturday: dayScheduleSchema,
+    sunday: dayScheduleSchema,
+  })
+  .refine(
+    (data) => {
+      const days = [
+        data.monday,
+        data.tuesday,
+        data.wednesday,
+        data.thursday,
+        data.friday,
+        data.saturday,
+        data.sunday,
+      ];
+      return days.some((day) => day.isOpen);
+    },
+    {
+      message: 'At least one day must be open',
+    }
+  )
+  .refine(
+    (data) => {
+      const days = [
+        data.monday,
+        data.tuesday,
+        data.wednesday,
+        data.thursday,
+        data.friday,
+        data.saturday,
+        data.sunday,
+      ];
+      return days.every((day) => !day.isOpen || day.slots.length > 0);
+    },
+    {
+      message: 'Open days must have at least one time slot',
+    }
+  );
 
 export type Step1Input = z.infer<typeof step1Schema>;
 export type Step2Input = z.infer<typeof step2Schema>;

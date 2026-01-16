@@ -1,4 +1,4 @@
-import type { Coordinates, FileUpload } from '@/types/onboarding';
+import type { BusinessHoursFormData, Coordinates, FileUpload } from '@/types/onboarding';
 
 // ===== Enums =====
 export enum ProfileSetupStep {
@@ -28,11 +28,7 @@ export type Step3FormData = {
   iban: string;
 };
 
-export type Step4FormData = {
-  termsAndConditions: boolean;
-  privacyPolicy: boolean;
-  marketingEmails: boolean;
-};
+export type Step4FormData = BusinessHoursFormData;
 
 // ===== Store Types =====
 export type ProfileSetupFormData = {
@@ -50,15 +46,15 @@ export const STEP_INFO: Record<ProfileSetupStep, { title: string; description: s
   },
   [ProfileSetupStep.STEP_2]: {
     title: 'Bank Proof',
-    description: 'Upload your bank proof documents',
+    description: 'Upload Bank Book / Account Statement',
   },
   [ProfileSetupStep.STEP_3]: {
     title: 'Banking Details',
-    description: '',
+    description: 'Enter Bank account details',
   },
   [ProfileSetupStep.STEP_4]: {
-    title: 'Review & Complete',
-    description: 'Review and accept terms to complete',
+    title: 'Opening Times',
+    description: 'Set up your Opening Times',
   },
 };
 
@@ -77,6 +73,7 @@ type ProfileSetupState = {
   isMapDrawerOpen: boolean;
   isExampleDrawerOpen: boolean;
   exampleDrawerConfig: ExampleDrawerConfig | null;
+  isScheduleDrawerOpen: boolean;
   isSubmitting: boolean;
 };
 
@@ -96,6 +93,8 @@ type ProfileSetupActions = {
   closeMapDrawer: () => void;
   openExampleDrawer: (config: ExampleDrawerConfig) => void;
   closeExampleDrawer: () => void;
+  openScheduleDrawer: () => void;
+  closeScheduleDrawer: () => void;
   setIsSubmitting: (isSubmitting: boolean) => void;
   reset: () => void;
 };
