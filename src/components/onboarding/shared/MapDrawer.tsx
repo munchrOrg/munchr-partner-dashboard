@@ -140,14 +140,14 @@ export function MapDrawer() {
           });
 
           setFormData('location', {
-            buildingName: '',
+            buildingPlaceName: '',
             street,
             houseNumber,
             area,
             city,
             state,
             postalCode,
-            comment: location.comment,
+            addCommentAboutLocation: location.addCommentAboutLocation,
             coordinates: position,
           });
         }
