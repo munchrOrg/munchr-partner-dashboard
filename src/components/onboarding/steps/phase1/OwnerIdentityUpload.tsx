@@ -1,6 +1,7 @@
 'use client';
 
 import type { FileUpload } from '@/types/onboarding';
+import { useEffect } from 'react';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Label } from '@/components/ui/label';
@@ -8,14 +9,23 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 export function OwnerIdentityUpload() {
-  const { formData, setFormData, openExampleDrawer } = useOnboardingStore();
-  // profile
-  const ownerIdentity = formData.ownerIdentity || {
-    hasSNTN: null,
-    idCardFrontFile: null,
-    idCardBackFile: null,
-    sntnFile: null,
+  const { formData, setFormData, openExampleDrawer, profile } = useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile;
+
+  const ownerIdentity = {
+    hasSNTN: businessProfile?.sntn ?? formData.ownerIdentity?.hasSNTN ?? null,
+
+    idCardFrontFile:
+      businessProfile?.idCardFrontFile ?? formData.ownerIdentity?.idCardFrontFile ?? null,
+
+    idCardBackFile:
+      businessProfile?.idCardBackFile ?? formData.ownerIdentity?.idCardBackFile ?? null,
+
+    sntnFile: businessProfile?.ntnImages ?? formData.ownerIdentity?.sntnFile ?? null,
   };
+  useEffect(() => {
+    setFormData('ownerIdentity', ownerIdentity);
+  }, [profile]);
 
   const handleSNTNChange = (value: string) => {
     setFormData('ownerIdentity', {
