@@ -3,6 +3,7 @@
 import { ChevronDown, Clock, HelpCircle } from 'lucide-react';
 import Image from 'next/image';
 
+import { useEffect } from 'react';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -24,37 +25,60 @@ const NETWORK_PROVIDERS = [
 ];
 
 const TIME_SLOTS = [
-  '09:00 AM',
-  '10:00 AM',
-  '11:00 AM',
-  '12:00 PM',
-  '01:00 PM',
-  '02:00 PM',
-  '03:00 PM',
-  '04:00 PM',
-  '05:00 PM',
+  '09:00',
+  '10:00',
+  '11:00',
+  '12:00',
+  '13:00',
+  '14:00',
+  '15:00',
+  '16:00',
+  '17:00',
 ];
 
 export function TrainingCallPreference() {
-  const { formData, setFormData } = useOnboardingStore();
+  const { formData, setFormData, profile } = useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile?.bookSlot;
+  const formatToHHMM = (time: string | undefined) => {
+    if (!time) {
+      return '';
+    }
+    const [hour, minute] = time.split(':');
+    return `${hour}:${minute}`;
+  };
+  useEffect(() => {
+    if (businessProfile && !formData.trainingCall) {
+      setFormData('trainingCall', {
+        networkProvider: businessProfile.networkPreference || '',
+        preferredDate: businessProfile.bookingDate || '',
+        preferredTime: formatToHHMM(businessProfile.bookingTime),
+      });
+    }
+  }, [businessProfile, formData.trainingCall]);
 
-  const trainingData = formData.trainingCall || {
-    networkProvider: null,
-    preferredDate: '',
-    preferredTime: '',
+  const trainingData = {
+    networkProvider:
+      formData.trainingCall?.networkProvider || businessProfile?.networkPreference || null,
+    preferredDate: formData.trainingCall?.preferredDate || businessProfile?.bookingDate || '',
+    preferredTime: formData.trainingCall?.preferredTime || businessProfile?.bookingTime || '',
   };
 
   const handleProviderSelect = (provider: NetworkProvider) => {
     setFormData('trainingCall', {
-      ...trainingData,
+      ...formData.trainingCall,
       networkProvider: provider,
+      preferredDate: formData.trainingCall?.preferredDate || '', // ensure string
+      preferredTime: formData.trainingCall?.preferredTime || '', // ensure string
     });
   };
 
-  const handleFieldChange = (field: string, value: string) => {
+  const handleFieldChange = (field: 'preferredDate' | 'preferredTime', value: string) => {
     setFormData('trainingCall', {
-      ...trainingData,
+      ...formData.trainingCall,
       [field]: value,
+      networkProvider: formData.trainingCall?.networkProvider || null, // ensure networkProvider exists
+      preferredDate: field === 'preferredDate' ? value : formData.trainingCall?.preferredDate || '',
+      preferredTime: field === 'preferredTime' ? value : formData.trainingCall?.preferredTime || '',
     });
   };
 
