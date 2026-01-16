@@ -18,6 +18,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { useVerifyEmail, useVerifyPhone } from '@/react-query/auth/mutations';
+import { useResendEmailOtp, useResendPhoneOtp } from '@/react-query/auth/resendotp';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
@@ -72,6 +73,8 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
   const verifyEmailMutation = useVerifyEmail();
   const verifyPhoneMutation = useVerifyPhone();
+  const resendEmailOtpMutation = useResendEmailOtp();
+  const resendPhoneOtpMutation = useResendPhoneOtp();
   const urlPartnerId =
     searchParams.get('partnerId') ??
     (typeof window !== 'undefined'
@@ -123,9 +126,8 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           return;
         }
         try {
-          const token = digits.join('');
-          toast('Verifying email...');
-          const json = await verifyEmailMutation.mutateAsync({ partnerId, token });
+          const otp = digits.join('');
+          const json = await verifyEmailMutation.mutateAsync({ partnerId, otp });
           if (!json || !json.success) {
             setError('otp', { message: json?.message || 'Email verification failed' });
             return;
@@ -219,6 +221,17 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     if (resendTimer > 0) {
       return;
     }
+    if (type === 'email') {
+      await resendEmailOtpMutation.mutateAsync({
+        partnerId: partnerIdState!,
+        email: destination,
+      });
+    } else {
+      await resendPhoneOtpMutation.mutateAsync({
+        partnerId: partnerIdState!,
+        phone: destination,
+      });
+    }
 
     try {
       toast.success(`OTP sent to your ${type}!`);
@@ -255,7 +268,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           <div className="flex items-center justify-center gap-2 sm:gap-3">
             {/** eslint-disable-next-line react/no-array-index-key -- fixed size OTP inputs */}
             {digits.map((digit, index) => (
-              <div key={`otp-input-${digit}`} className="flex items-center gap-2 sm:gap-3">
+              <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
                 <input
                   ref={(el) => {
                     inputRefs.current[index] = el;
