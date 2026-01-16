@@ -2,12 +2,31 @@
 
 import type { FileUpload } from '@/types/onboarding';
 import { CircleAlert } from 'lucide-react';
+import { useEffect } from 'react';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 export function BankStatementUpload() {
-  const { formData, setFormData, openExampleDrawer } = useOnboardingStore();
+  const { formData, setFormData, openExampleDrawer, profile } = useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
+  const prefilledFile: FileUpload | null =
+    formData.bankStatement?.statementFile ||
+    (businessProfile?.checkBookImage
+      ? {
+          name: businessProfile.checkBookImage.fileName || 'Unknown',
+          size: businessProfile.checkBookImage.size || 0,
+          url: businessProfile.checkBookImage.url || '',
+        }
+      : null);
+
+  const prefilledData = prefilledFile ? { statementFile: prefilledFile } : null;
+
+  useEffect(() => {
+    if (prefilledData) {
+      setFormData('bankStatement', prefilledData);
+    }
+  }, [prefilledData, setFormData]);
 
   const handleFileChange = (file: FileUpload | null) => {
     setFormData('bankStatement', { statementFile: file });
@@ -49,7 +68,7 @@ export function BankStatementUpload() {
       <div className="mt-6">
         <FileUploadBox
           label="Bank Statement"
-          value={formData.bankStatement?.statementFile || null}
+          value={prefilledFile || null}
           onChange={handleFileChange}
         />
       </div>
