@@ -2,9 +2,10 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 
+import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -33,6 +34,7 @@ type BankingInput = z.infer<typeof bankingSchema>;
 export function BankingDetails() {
   const { formData, setFormData, triggerNavigation, profile } = useOnboardingStore();
   const businessProfile = profile?.partner?.businessProfile?.billingInfo;
+  const businessProfileAddressData = profile?.partner?.businessProfile;
   const bankingPrefill = {
     accountTitle: businessProfile?.bankAccountOwner || formData.banking?.accountTitle || '',
     bankName: businessProfile?.bankName || formData.banking?.bankName || '',
@@ -63,6 +65,46 @@ export function BankingDetails() {
   });
 
   const sameAsBusinessAddress = watch('sameAsBusinessAddress');
+
+  // Auto-fill or clear billing address fields when checkbox changes
+  useEffect(() => {
+    if (sameAsBusinessAddress) {
+      // Prefer formData.banking, fallback to businessProfileAddressData
+      setValue('address', formData.banking?.address || businessProfileAddressData?.address || '');
+      setValue(
+        'buildingName',
+        formData.banking?.buildingName || businessProfileAddressData?.buildingPlaceName || ''
+      );
+      setValue('street', formData.banking?.street || businessProfileAddressData?.street || '');
+      setValue(
+        'houseNumber',
+        formData.banking?.houseNumber || businessProfileAddressData?.houseNumber || ''
+      );
+      setValue(
+        'billingState',
+        formData.banking?.billingState || businessProfileAddressData?.state || ''
+      );
+      setValue(
+        'billingCity',
+        formData.banking?.billingCity || businessProfileAddressData?.city || ''
+      );
+      setValue('area', formData.banking?.area || businessProfileAddressData?.area || '');
+      setValue(
+        'billingPostalCode',
+        formData.banking?.billingPostalCode || businessProfileAddressData?.postalCode || ''
+      );
+    } else {
+      // Clear all fields
+      setValue('address', '');
+      setValue('buildingName', '');
+      setValue('street', '');
+      setValue('houseNumber', '');
+      setValue('billingState', '');
+      setValue('billingCity', '');
+      setValue('area', '');
+      setValue('billingPostalCode', '');
+    }
+  }, [sameAsBusinessAddress]);
   const updateProfileMutation = useUpdateProfile();
 
   const onSubmit = async (data: BankingInput) => {

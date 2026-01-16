@@ -14,6 +14,16 @@ const baseConfig: NextConfig = {
   experimental: {
     turbopackFileSystemCacheForDev: true,
   },
+  images: {
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'pub-xxx.r2.dev',
+        port: '',
+        pathname: '/**',
+      },
+    ],
+  },
 };
 
 let configWithPlugins = baseConfig;
