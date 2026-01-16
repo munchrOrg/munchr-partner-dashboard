@@ -4,6 +4,7 @@ import type { SavedPaymentAccount } from '@/types/onboarding';
 import type { PaymentFormInput } from '@/validations/payment';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, Trash2 } from 'lucide-react';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
@@ -45,11 +46,36 @@ const maskCardNumber = (number: string) => {
 };
 
 export function PaymentMethodSelection() {
-  const { formData, setFormData } = useOnboardingStore();
-
-  const paymentData = formData.paymentMethod || {
-    savedAccounts: [],
-    selectedAccountId: null,
+  const { formData, setFormData, profile } = useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
+  const prefilledAccount: SavedPaymentAccount | null =
+    formData.paymentMethod?.savedAccounts?.[0] ||
+    (businessProfile?.paymentMethodType
+      ? {
+          id: Date.now().toString(),
+          method: businessProfile.paymentMethodType,
+          ...(businessProfile.paymentMethodType === PaymentMethod.CARD
+            ? {
+                accountTitle: businessProfile.accountTitle || '',
+                cardNumber: businessProfile.cardNumber || '',
+                cardExpiry: businessProfile.cardExpiry || '',
+              }
+            : {
+                accountNumber: businessProfile.paymentAccountNumber || '',
+              }),
+        }
+      : null);
+  useEffect(() => {
+    if (prefilledAccount) {
+      setFormData('paymentMethod', {
+        savedAccounts: [prefilledAccount],
+        selectedAccountId: prefilledAccount.id,
+      });
+    }
+  }, [profile]);
+  const paymentData = {
+    savedAccounts: formData.paymentMethod?.savedAccounts || [],
+    selectedAccountId: formData.paymentMethod?.selectedAccountId || null,
   };
 
   const {
@@ -63,11 +89,11 @@ export function PaymentMethodSelection() {
   } = useForm<PaymentFormInput>({
     resolver: zodResolver(paymentFormSchema),
     defaultValues: {
-      selectedMethod: null,
-      accountNumber: '',
-      accountTitle: '',
-      cardNumber: '',
-      cardExpiry: '',
+      selectedMethod: prefilledAccount?.method || null,
+      accountNumber: prefilledAccount?.accountNumber || '',
+      accountTitle: prefilledAccount?.accountTitle || '',
+      cardNumber: prefilledAccount?.cardNumber || '',
+      cardExpiry: prefilledAccount?.cardExpiry || '',
       cardCvv: '',
     },
     mode: 'onChange',
@@ -81,7 +107,7 @@ export function PaymentMethodSelection() {
       return;
     }
 
-    if (paymentData.savedAccounts && paymentData.savedAccounts.length > 0) {
+    if (paymentData.savedAccounts.length > 0) {
       toast.error('You can only add one payment method');
       return;
     }
@@ -112,7 +138,6 @@ export function PaymentMethodSelection() {
       savedAccounts: [],
       selectedAccountId: null,
     });
-
     toast.success('Payment method removed');
   };
 
