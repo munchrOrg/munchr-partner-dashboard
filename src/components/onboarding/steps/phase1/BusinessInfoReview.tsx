@@ -26,7 +26,7 @@ export function BusinessInfoReview() {
       return 'Not provided';
     }
     const parts = [
-      loc.buildingName,
+      loc.buildingPlaceName,
       loc.street,
       loc.houseNumber,
       loc.postalCode,
