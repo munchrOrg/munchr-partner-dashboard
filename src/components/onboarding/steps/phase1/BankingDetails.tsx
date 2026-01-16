@@ -31,7 +31,24 @@ const bankingSchema = z.object({
 type BankingInput = z.infer<typeof bankingSchema>;
 
 export function BankingDetails() {
-  const { formData, setFormData, triggerNavigation } = useOnboardingStore();
+  const { formData, setFormData, triggerNavigation, profile } = useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
+  const bankingPrefill = {
+    accountTitle: businessProfile?.bankAccountOwner || formData.banking?.accountTitle || '',
+    bankName: businessProfile?.bankName || formData.banking?.bankName || '',
+    iban: businessProfile?.IBAN || formData.banking?.iban || '',
+    sameAsBusinessAddress:
+      businessProfile?.billingAddressAreSame || formData.banking?.sameAsBusinessAddress || false,
+    address: formData.banking?.address || '',
+    buildingName: businessProfile?.billingBuildingPlaceName || formData.banking?.buildingName || '',
+    street: businessProfile?.billingStreet || formData.banking?.street || '',
+    houseNumber: businessProfile?.billingHouseNumber || formData.banking?.houseNumber || '',
+    billingState: businessProfile?.billingState || formData.banking?.billingState || '',
+    billingCity: businessProfile?.billingCity || formData.banking?.billingCity || '',
+    area: businessProfile?.billingArea || formData.banking?.area || '',
+    billingPostalCode:
+      businessProfile?.billingPostalCode || formData.banking?.billingPostalCode || '',
+  };
 
   const {
     register,
@@ -41,20 +58,7 @@ export function BankingDetails() {
     formState: { errors },
   } = useForm<BankingInput>({
     resolver: zodResolver(bankingSchema),
-    defaultValues: {
-      accountTitle: formData.banking?.accountTitle || '',
-      bankName: formData.banking?.bankName || '',
-      iban: formData.banking?.iban || '',
-      sameAsBusinessAddress: formData.banking?.sameAsBusinessAddress || false,
-      address: formData.banking?.address || '',
-      buildingName: formData.banking?.buildingName || '',
-      street: formData.banking?.street || '',
-      houseNumber: formData.banking?.houseNumber || '',
-      billingState: formData.banking?.billingState || '',
-      billingCity: formData.banking?.billingCity || '',
-      area: formData.banking?.area || '',
-      billingPostalCode: formData.banking?.billingPostalCode || '',
-    },
+    defaultValues: bankingPrefill,
     mode: 'all',
   });
 
