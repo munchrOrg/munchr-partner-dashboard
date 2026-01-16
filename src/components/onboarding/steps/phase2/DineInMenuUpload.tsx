@@ -1,12 +1,25 @@
 'use client';
 
 import type { FileUpload } from '@/types/onboarding';
+import { useEffect } from 'react';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 export function DineInMenuUpload() {
-  const { formData, setFormData, openExampleDrawer } = useOnboardingStore();
+  const { formData, setFormData, openExampleDrawer, profile } = useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile;
+  const prefilledMenuFile = businessProfile?.menuImage
+    ? {
+        name: businessProfile.menuImage.fileName || 'Unknown',
+        size: businessProfile.menuImage.size || 0,
+        url: businessProfile.menuImage.url || '',
+      }
+    : formData.menu?.menuFile || null;
+
+  useEffect(() => {
+    setFormData('menu', { menuFile: prefilledMenuFile });
+  }, [profile]);
 
   const handleFileChange = (file: FileUpload | null) => {
     setFormData('menu', { menuFile: file });
@@ -32,7 +45,7 @@ export function DineInMenuUpload() {
       <div className="mt-8">
         <FileUploadBox
           label="Menu"
-          value={formData.menu?.menuFile || null}
+          value={prefilledMenuFile || null}
           onChange={handleFileChange}
           acceptedFormats=".jpg, .png, .jpeg, .pdf, .tiff, .docx, .xlsx"
           maxSizeMB={4}
