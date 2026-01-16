@@ -17,7 +17,7 @@ export async function DashboardLayout({ children }: Readonly<DashboardLayoutProp
   const user = session?.user ?? dummyUser;
 
   return (
-    <div className="flex h-screen bg-gray-50">
+    <div className="flex h-screen">
       {/* Sidebar */}
       <Sidebar />
 
