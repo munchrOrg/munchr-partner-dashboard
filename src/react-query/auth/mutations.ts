@@ -10,6 +10,7 @@ import type {
   VerifyPhoneRequest,
 } from './types';
 import { useMutation } from '@tanstack/react-query';
+import { useOnboardingStore } from '@/stores/onboarding-store';
 import { authService } from './service';
 
 export const useSignUp = ({
@@ -55,7 +56,12 @@ export const useUpdateProfile = () => {
 };
 
 export const useGetProfile = () => {
+  const onboardingStore = useOnboardingStore.getState();
   return useMutation({
-    mutationFn: () => authService.getProfile() as Promise<import('./types').ProfileResponse>,
+    mutationFn: async () => {
+      const profileData = await authService.getProfile();
+      onboardingStore.setProfile(profileData);
+      return profileData;
+    },
   });
 };

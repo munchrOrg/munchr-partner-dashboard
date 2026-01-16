@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -27,7 +28,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null); // Profile data state
   const onboardingStore = useOnboardingStore();
-  console.log(profile);
+  console.warn(profile);
 
   const {
     register,
@@ -52,8 +53,8 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
         .clone()
         .json()
         .catch(() => null);
-      console.log('Login response headers:', Array.from(resp.headers.entries()));
-      console.log('Login response body:', loginBody);
+      console.warn('Login response headers:', Array.from(resp.headers.entries()));
+      console.warn('Login response body:', loginBody);
       // if (!resp.ok) {
       //   if (resp.status === 401) {
       //     handleUnauthorized(onboardingStore, signupStore);
@@ -63,7 +64,9 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       // }
       const accessToken = loginBody?.accessToken;
       if (!accessToken) {
-        throw new Error('No access token received');
+        toast.error('No access token received');
+        setIsLoading(false);
+        return;
       }
       localStorage.setItem('accessToken', accessToken);
       sessionStorage.setItem('accessToken', accessToken);

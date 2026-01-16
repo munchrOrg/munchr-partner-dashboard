@@ -1,19 +1,41 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
+import React from 'react';
 import { IntroStep } from '@/components/onboarding/shared/IntroStep';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 // import { OnboardingPhase } from '@/types/onboarding';
 
 export function Welcome() {
+  const router = useRouter();
   // const { completedPhases } = useOnboardingStore();
 
   const { profile } = useOnboardingStore();
-  console.log('Profile data in Welcome component:', profile);
+  console.warn('Profile data in Welcome component:', profile);
   // const getProfileMutation = useGetProfile();
 
   // useEffect(() => {
   //   getProfileMutation.mutateAsync();
   // }, []);
+
+  React.useEffect(() => {
+    localStorage.clear();
+    sessionStorage.clear();
+    localStorage.removeItem('onboarding-storage');
+    sessionStorage.removeItem('sentryReplaySession');
+    if (typeof window !== 'undefined') {
+      try {
+        const onboardingStore = useOnboardingStore.getState();
+        onboardingStore.reset();
+      } catch {}
+    }
+    window.onpopstate = () => {
+      router.replace('/sign-up');
+    };
+    return () => {
+      window.onpopstate = null;
+    };
+  }, [router]);
 
   const steps = [
     {

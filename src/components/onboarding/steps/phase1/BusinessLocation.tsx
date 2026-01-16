@@ -17,14 +17,14 @@ import { useOnboardingStore } from '@/stores/onboarding-store';
 const libraries: 'places'[] = ['places'];
 
 const locationSchema = z.object({
-  buildingName: z.string().optional(),
+  buildingPlaceName: z.string().optional(),
   street: z.string().min(1, 'Street is required'),
   houseNumber: z.string().min(1, 'House number is required'),
   state: z.string().min(1, 'State is required'),
   city: z.string().optional(),
   area: z.string().optional(),
   postalCode: z.string().min(1, 'Postal code is required'),
-  comment: z.string().optional(),
+  addCommentAboutLocation: z.string().optional(),
 });
 
 type LocationInput = z.infer<typeof locationSchema>;
@@ -36,21 +36,26 @@ type FieldConfig = {
 };
 
 const fieldConfigs: FieldConfig[] = [
-  { name: 'buildingName', placeholder: 'Building or Place Name' },
+  { name: 'buildingPlaceName', placeholder: 'Building or Place Name' },
   { name: 'street', placeholder: 'Street ', required: true },
   { name: 'houseNumber', placeholder: 'House Number ', required: true },
   { name: 'state', placeholder: 'State ', required: true },
   { name: 'city', placeholder: 'City' },
   { name: 'area', placeholder: 'Area' },
   { name: 'postalCode', placeholder: 'Postal Code ', required: true },
-  { name: 'comment', placeholder: 'Add comment about location' },
+  { name: 'addCommentAboutLocation', placeholder: 'Add comment about location' },
 ];
 
 export function BusinessLocation() {
-  const { formData, setFormData, openMapDrawer } = useOnboardingStore();
+  const { formData, setFormData, openMapDrawer, profile } = useOnboardingStore();
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinates | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+  const addressData: { [key: string]: any } = profile?.partner?.businessProfile || {};
+  const locationData: { [key: string]: any } = formData.location || {};
+  const getDefault = (key: string) => {
+    return locationData[key] ?? addressData[key] ?? '';
+  };
 
   const { isLoaded } = useJsApiLoader({
     id: 'google-map-script',
@@ -67,32 +72,33 @@ export function BusinessLocation() {
   } = useForm<LocationInput>({
     resolver: zodResolver(locationSchema),
     defaultValues: {
-      buildingName: formData.location?.buildingName || '',
-      street: formData.location?.street || '',
-      houseNumber: formData.location?.houseNumber || '',
-      state: formData.location?.state || '',
-      city: formData.location?.city || '',
-      area: formData.location?.area || '',
-      postalCode: formData.location?.postalCode || '',
-      comment: formData.location?.comment || '',
+      buildingPlaceName: getDefault('buildingPlaceName'),
+      street: getDefault('street'),
+      houseNumber: getDefault('houseNumber'),
+      state: getDefault('state'),
+      city: getDefault('city'),
+      area: getDefault('area'),
+      postalCode: getDefault('postalCode'),
+      addCommentAboutLocation: getDefault('addCommentAboutLocation'),
     },
     mode: 'all',
   });
 
+  // ...existing code...
   const prevLocationRef = useRef(formData.location);
   useEffect(() => {
     const location = formData.location;
     if (location && location !== prevLocationRef.current) {
       const timeoutId = setTimeout(() => {
         reset({
-          buildingName: location.buildingName || '',
+          buildingPlaceName: location.buildingPlaceName || '',
           street: location.street || '',
           houseNumber: location.houseNumber || '',
           state: location.state || '',
           city: location.city || '',
           area: location.area || '',
           postalCode: location.postalCode || '',
-          comment: location.comment || '',
+          addCommentAboutLocation: location.addCommentAboutLocation || '',
         });
         if (location.coordinates) {
           setSelectedCoordinates(location.coordinates);
@@ -152,7 +158,7 @@ export function BusinessLocation() {
       }
     });
 
-    setValue('buildingName', buildingName, { shouldValidate: true });
+    setValue('buildingPlaceName', buildingName, { shouldValidate: true });
     setValue('street', street, { shouldValidate: true });
     setValue('houseNumber', houseNumber, { shouldValidate: true });
     setValue('area', area, { shouldValidate: true });
@@ -165,28 +171,28 @@ export function BusinessLocation() {
 
   const onSubmit = (data: LocationInput) => {
     const locationData: LocationFormData = {
-      buildingName: data.buildingName || '',
+      buildingPlaceName: data.buildingPlaceName || '',
       street: data.street,
       houseNumber: data.houseNumber,
       state: data.state,
       city: data.city || '',
       area: data.area || '',
       postalCode: data.postalCode,
-      comment: data.comment || '',
+      addCommentAboutLocation: data.addCommentAboutLocation || '',
       coordinates: selectedCoordinates,
     };
 
     (async () => {
       try {
         const payload = {
-          buildingPlaceName: locationData.buildingName,
+          buildingPlaceName: locationData.buildingPlaceName,
           street: locationData.street,
           houseNumber: locationData.houseNumber,
           state: locationData.state,
           city: locationData.city,
           area: locationData.area,
           postalCode: locationData.postalCode,
-          addCommentAboutLocation: locationData.comment,
+          addCommentAboutLocation: locationData.addCommentAboutLocation,
         };
 
         const resp = await updateProfileMutation.mutateAsync(payload);

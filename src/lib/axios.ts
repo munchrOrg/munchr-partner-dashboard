@@ -2,7 +2,6 @@ import type { Session } from 'next-auth';
 import axios from 'axios';
 import { getSession, signOut } from 'next-auth/react';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { useSignupStore } from '@/stores/signup-store';
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
@@ -42,11 +41,13 @@ apiClient.interceptors.response.use(
       if (typeof window !== 'undefined') {
         localStorage.clear();
         sessionStorage.clear();
+        localStorage.removeItem('onboarding-storage');
+        sessionStorage.removeItem('sentryReplaySession');
         try {
+          // const onboardingStore = require('@/stores/onboarding-store').useOnboardingStore.getState();
+          // onboardingStore.reset();
           const onboardingStore = useOnboardingStore.getState();
-          const signupStore = useSignupStore.getState();
           onboardingStore.reset();
-          signupStore.reset();
         } catch {}
         if (window.location.pathname !== '/sign-in') {
           try {

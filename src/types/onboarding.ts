@@ -88,14 +88,14 @@ export type BusinessInfoFormData = {
 };
 
 export type LocationFormData = {
-  buildingName: string;
+  buildingPlaceName: string;
   street: string;
   houseNumber: string;
   state: string;
   city: string;
   area: string;
   postalCode: string;
-  comment: string;
+  addCommentAboutLocation: string;
   coordinates: Coordinates | null;
 };
 

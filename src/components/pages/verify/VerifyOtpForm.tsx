@@ -143,7 +143,6 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         }
         try {
           const otp = digits.join('');
-          toast('Verifying phone...');
           const json = await verifyPhoneMutation.mutateAsync({ partnerId, otp });
           if (!json || !json.success) {
             setError('otp', { message: json?.message || 'Phone verification failed' });
@@ -256,7 +255,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           <div className="flex items-center justify-center gap-2 sm:gap-3">
             {/** eslint-disable-next-line react/no-array-index-key -- fixed size OTP inputs */}
             {digits.map((digit, index) => (
-              <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
+              <div key={`otp-input-${digit}`} className="flex items-center gap-2 sm:gap-3">
                 <input
                   ref={(el) => {
                     inputRefs.current[index] = el;

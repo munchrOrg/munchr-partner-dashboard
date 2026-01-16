@@ -9,7 +9,7 @@ import { useOnboardingStore } from '@/stores/onboarding-store';
 
 export function OwnerIdentityUpload() {
   const { formData, setFormData, openExampleDrawer } = useOnboardingStore();
-
+  // profile
   const ownerIdentity = formData.ownerIdentity || {
     hasSNTN: null,
     idCardFrontFile: null,
