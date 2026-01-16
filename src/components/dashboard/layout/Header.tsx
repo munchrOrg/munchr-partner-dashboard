@@ -37,33 +37,29 @@ function Breadcrumbs() {
   const pathname = usePathname();
   const segments = pathname.split('/').filter(Boolean);
 
+  // Get the last segment for the current page title
+  const currentSegment = segments.at(-1) ?? 'dashboard';
+  const currentLabel =
+    pathLabels[currentSegment] ||
+    currentSegment
+      .split('-')
+      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(' ');
+
+  // Determine back link - go to parent or dashboard
+  const parentHref = segments.length > 1 ? `/${segments.slice(0, -1).join('/')}` : '/dashboard';
+  const parentSegment = segments.at(-2);
+  const parentLabel = parentSegment
+    ? pathLabels[parentSegment] || parentSegment.charAt(0).toUpperCase() + parentSegment.slice(1)
+    : 'Home';
+
   return (
     <nav className="flex flex-col items-start gap-1 text-sm">
-      {segments?.map((segment, index) => {
-        const href = `/${segments.slice(0, index + 1).join('/')}`;
-        const isLast = index === segments.length - 1;
-        const label = pathLabels[segment] || segment.charAt(0).toUpperCase() + segment.slice(1);
-
-        return (
-          <div key={segment} className="flex flex-col items-start gap-1">
-            <Link
-              href="/dashboard"
-              className="flex items-center gap-1 text-sm font-bold text-[#918D8C]"
-            >
-              <ChevronLeft className="h-4 w-4 text-gray-400" />
-              Home
-            </Link>
-
-            {isLast ? (
-              <span className="text-[30px] leading-none font-bold text-[#0C0017]">{label}</span>
-            ) : (
-              <Link href={href} className="text-[30px] leading-none font-bold text-[#0C0017]">
-                {label}
-              </Link>
-            )}
-          </div>
-        );
-      })}
+      <Link href={parentHref} className="flex items-center gap-1 text-sm font-bold text-[#918D8C]">
+        <ChevronLeft className="h-4 w-4 text-gray-400" />
+        {parentLabel}
+      </Link>
+      <span className="text-[30px] leading-none font-bold text-[#0C0017]">{currentLabel}</span>
     </nav>
   );
 }
