@@ -249,37 +249,18 @@ export function OnboardingFooter() {
 
         if (ownerIdentity.hasSNTN) {
           const file: any = ownerIdentity.sntnFile;
-          if (file) {
-            payload.sntnImage = {
-              url: file.url,
-              width: file.width || 0,
-              height: file.height || 0,
-              size: file.size || 0,
-              fileName: file.name || '',
-            };
+          if (file && file.key) {
+            payload.ntnImageKey = file.key;
           }
         } else {
-          const front: any = ownerIdentity.idCardFrontFile;
-          const back: any = ownerIdentity.idCardBackFile;
-
-          if (front) {
-            payload.frontNic = {
-              url: front.url,
-              width: front.width || 0,
-              height: front.height || 0,
-              size: front.size || 0,
-              fileName: front.name || '',
-            };
+          // When sntn is false, send cnicFrontKey and cnicBackKey
+          const front = ownerIdentity.idCardFrontFile;
+          const back = ownerIdentity.idCardBackFile;
+          if (front && front.key) {
+            payload.cnicFrontKey = front.key;
           }
-
-          if (back) {
-            payload.backNic = {
-              url: back.url,
-              width: back.width || 0,
-              height: back.height || 0,
-              size: back.size || 0,
-              fileName: back.name || '',
-            };
+          if (back && back.key) {
+            payload.cnicBackKey = back.key;
           }
         }
 
@@ -287,17 +268,11 @@ export function OnboardingFooter() {
       }
     } else if (currentStep === OnboardingStep.BANK_STATEMENT_UPLOAD) {
       const { bankStatement } = formData;
-      if (bankStatement && bankStatement.statementFile) {
+      if (bankStatement && bankStatement.statementFile && bankStatement.statementFile.key) {
         const file: any = bankStatement.statementFile;
         const payload: any = {
           currentPage: currentStep,
-          checkBookImage: {
-            url: file.url,
-            width: file.width || 0,
-            height: file.height || 0,
-            size: file.size || 0,
-            fileName: file.name || '',
-          },
+          chequeBookImageKey: file.key,
         };
         await updateProfileMutation.mutateAsync(payload);
       } else {
