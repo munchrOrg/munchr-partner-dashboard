@@ -2,8 +2,7 @@
 
 import type { FileUpload } from '@/types/onboarding';
 import { Copy, Plus } from 'lucide-react';
-
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
@@ -17,9 +16,30 @@ const PAYMENT_DETAILS = {
 };
 
 export function OnboardingFeePayment() {
-  const { formData, setFormData } = useOnboardingStore();
+  const { formData, setFormData, profile } = useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile;
   const [copied, setCopied] = useState(false);
   const [paymentTransactionId, setPaymentTransactionId] = useState('');
+  const fileUploadRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (businessProfile && !formData.onboardingFee) {
+      const onboardingFeeData = {
+        paymentTransactionId: businessProfile.paymentTransactionId || '',
+        paymentScreenshot: businessProfile.uploadScreenshotImage
+          ? {
+              name: businessProfile.uploadScreenshotImage.fileName || 'Unknown',
+              size: businessProfile.uploadScreenshotImage.size || 0,
+              url: businessProfile.uploadScreenshotImage.url || '',
+            }
+          : null,
+      };
+      setFormData('onboardingFee', onboardingFeeData);
+      setTimeout(() => {
+        setPaymentTransactionId(onboardingFeeData.paymentTransactionId);
+      }, 0);
+    }
+  }, [businessProfile, formData.onboardingFee, setFormData]);
+
   const handleCopyIban = async () => {
     try {
       await navigator.clipboard.writeText(PAYMENT_DETAILS.iban);
@@ -38,11 +58,28 @@ export function OnboardingFeePayment() {
         url: URL.createObjectURL(file),
         size: file.size,
       };
-      setFormData('onboardingFee', { paymentScreenshot: fileUpload, paymentTransactionId });
+      setFormData('onboardingFee', {
+        paymentScreenshot: fileUpload,
+        paymentTransactionId,
+      });
     }
   };
 
-  const fileUploadRef = useRef<HTMLInputElement>(null);
+  // const removeScreenshot = () => {
+  //   setFormData('onboardingFee', {
+  //     paymentScreenshot: null,
+  //     paymentTransactionId: paymentTransactionId,
+  //   });
+  // };
+
+  // const handleTransactionIdChange = (value: string) => {
+  //   setPaymentTransactionId(value);
+  //   setFormData('onboardingFee', {
+  //     paymentScreenshot: formData.onboardingFee?.paymentScreenshot || null,
+  //     paymentTransactionId: value,
+  //   });
+  // };
+
   return (
     <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
       <StepHeader
