@@ -11,9 +11,10 @@ import { OnboardingStep } from '@/types/onboarding';
 
 export function BusinessInfoReview() {
   const router = useRouter();
-  const { formData } = useOnboardingStore();
+  const { formData, profile } = useOnboardingStore();
   const { formData: signupData } = useSignupStore();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const businessProfile = profile?.partner?.businessProfile;
 
   const handleChange = (step: OnboardingStep) => {
     router.push(`/onboarding/${step}`);
@@ -21,38 +22,43 @@ export function BusinessInfoReview() {
 
   // Helper to format address from location data
   const formatAddress = () => {
-    const loc = formData.location;
-    if (!loc) {
-      return 'Not provided';
-    }
-    const parts = [
-      loc.buildingPlaceName,
-      loc.street,
-      loc.houseNumber,
-      loc.postalCode,
-      loc.city,
-      loc.state,
-    ].filter(Boolean);
-    return parts.join(', ');
+    const loc: any = formData.location || {};
+
+    const buildingPlaceName = loc.buildingPlaceName || businessProfile?.buildingName || '';
+    const street = loc.street || businessProfile?.street || '';
+    const houseNumber = loc.houseNumber || businessProfile?.houseNumber || '';
+    const postalCode = loc.postalCode || businessProfile?.postalCode || '';
+    const city = loc.city || businessProfile?.city || '';
+    const state = loc.state || businessProfile?.state || '';
+
+    const parts = [buildingPlaceName, street, houseNumber, postalCode, city, state].filter(Boolean);
+
+    return parts.length ? parts.join(', ') : 'Not provided';
   };
 
-  // Helper to format billing address
   const formatBillingAddress = () => {
-    const billing = formData.banking;
-    if (!billing) {
-      return 'Not provided';
-    }
+    const billing: any = formData.banking || {};
+    const buildingName =
+      billing.buildingName || businessProfile?.billingInfo?.billingBuildingPlaceName || '';
+    const street = billing.street || businessProfile?.billingInfo?.billingStreet || '';
+    const houseNumber =
+      billing.houseNumber || businessProfile?.billingInfo?.billingHouseNumber || '';
+    const billingState = billing.billingState || businessProfile?.billingInfo?.billingState || '';
+    const billingCity = billing.billingCity || businessProfile?.billingInfo?.billingCity || '';
+    const area = billing.area || businessProfile?.billingInfo?.billingArea || '';
+    const postalCode =
+      billing.billingPostalCode || businessProfile?.billingInfo?.billingPostalCode || '';
     const parts = [
-      billing.buildingName,
-      billing.street,
-      billing.houseNumber,
-      billing.billingState,
-      billing.billingCity,
-      billing.area,
+      buildingName,
+      street,
+      houseNumber,
+      billingState,
+      billingCity,
+      area,
+      postalCode,
     ].filter(Boolean);
-    return parts.join(', ');
+    return parts.length ? parts.join(', ') : 'Not provided';
   };
-
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
       <StepHeader
@@ -76,17 +82,22 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business name</span>
               <span className="font-medium">
-                {signupData.businessName || formData.businessInfo?.businessName || 'Not provided'}
+                {signupData.businessName ||
+                  formData.businessInfo?.businessName ||
+                  profile?.partner?.businessName ||
+                  'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business type</span>
               <span className="font-medium capitalize">
-                {(signupData.serviceProviderType || formData.businessInfo?.serviceProviderType) ===
-                'restaurant'
+                {(signupData.serviceProviderType ||
+                  formData.businessInfo?.serviceProviderType ||
+                  profile?.partner?.serviceProviderType) === 'restaurant'
                   ? 'Restaurant'
                   : (signupData.serviceProviderType ||
-                        formData.businessInfo?.serviceProviderType) === 'home-chef'
+                        formData.businessInfo?.serviceProviderType ||
+                        profile?.partner?.serviceProviderType) === 'home-chef'
                     ? 'Home Chef'
                     : 'Not provided'}
               </span>
@@ -94,11 +105,13 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business category</span>
               <span className="font-medium">
-                {(signupData.serviceProviderType || formData.businessInfo?.serviceProviderType) ===
-                'home-chef'
+                {(signupData.serviceProviderType ||
+                  formData.businessInfo?.serviceProviderType ||
+                  profile?.partner?.serviceProviderType) === 'home-chef'
                   ? 'Home Based Kitchen'
                   : (signupData.serviceProviderType ||
-                        formData.businessInfo?.serviceProviderType) === 'restaurant'
+                        formData.businessInfo?.serviceProviderType ||
+                        profile?.partner?.serviceProviderType) === 'restaurant'
                     ? 'Restaurant'
                     : 'Not provided'}
               </span>
@@ -116,13 +129,19 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Mobile phone number</span>
               <span className="font-medium">
-                {signupData.phoneNumber || formData.businessInfo?.phoneNumber || 'Not provided'}
+                {signupData.phoneNumber ||
+                  formData.businessInfo?.phoneNumber ||
+                  profile?.partner?.phone ||
+                  'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business phone number</span>
               <span className="font-medium">
-                {signupData.phoneNumber || formData.businessInfo?.phoneNumber || 'Not provided'}
+                {signupData.phoneNumber ||
+                  formData.businessInfo?.phoneNumber ||
+                  profile?.partner?.phone ||
+                  'Not provided'}
               </span>
             </div>
           </div>
@@ -163,7 +182,9 @@ export function BusinessInfoReview() {
               <span className="text-gray-600">
                 Does your restaurant have Sales tax Registration Number (SNTN)?
               </span>
-              <span className="font-medium">{formData.ownerIdentity?.hasSNTN ? 'Yes' : 'No'}</span>
+              <span className="font-medium">
+                {businessProfile?.sntn || formData.ownerIdentity?.hasSNTN ? 'Yes' : 'No'}
+              </span>
             </div>
           </div>
         </div>
@@ -182,18 +203,24 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">CNIC Number</span>
-              <span className="font-medium">{formData.legalTax?.cnicNumber || 'Not provided'}</span>
+              <span className="font-medium">
+                {formData.legalTax?.cnicNumber || businessProfile?.cnicNumber || 'Not provided'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">First & Middle Name Per CNIC</span>
               <span className="font-medium">
-                {formData.legalTax?.firstAndMiddleNameForNic || 'Not provided'}
+                {formData.legalTax?.firstAndMiddleNameForNic ||
+                  businessProfile?.firstAndMiddleNameForNic ||
+                  'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Last Name Per CNIC</span>
               <span className="font-medium">
-                {formData.legalTax?.lastNameForNic || 'Not provided'}
+                {formData.legalTax?.lastNameForNic ||
+                  businessProfile?.lastNameForNic ||
+                  'Not provided'}
               </span>
             </div>
           </div>
@@ -214,16 +241,24 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Bank Account Owner/Title</span>
               <span className="font-medium">
-                {formData.banking?.accountTitle || 'Not provided'}
+                {formData.banking?.accountTitle ||
+                  businessProfile?.billingInfo?.bankAccountOwner ||
+                  'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Bank name</span>
-              <span className="font-medium">{formData.banking?.bankName || 'Not provided'}</span>
+              <span className="font-medium">
+                {formData.banking?.bankName ||
+                  businessProfile?.billingInfo?.bankName ||
+                  'Not provided'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">IBAN</span>
-              <span className="font-medium">{formData.banking?.iban || 'Not provided'}</span>
+              <span className="font-medium">
+                {formData.banking?.iban || businessProfile?.billingInfo?.IBAN || 'Not provided'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Billing Address</span>
