@@ -11,7 +11,8 @@ import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step2Schema } from '@/validations/profile-setup';
 
 export function Step2() {
-  const { formData, setStepData, completeStep, nextStep } = useProfileSetupStore();
+  const { formData, setStepData, completeStep, nextStep, openExampleDrawer } =
+    useProfileSetupStore();
 
   const form = useForm<Step2Input>({
     resolver: zodResolver(step2Schema),
@@ -26,6 +27,14 @@ export function Step2() {
     }
   }, [formData.step2, form]);
 
+  const showExample = () => {
+    openExampleDrawer({
+      title: 'Bank Proof Example',
+      images: [{ label: 'Bank Statement / Book', src: '/assets/images/PK_Bank 1.png' }],
+      imageContainerClass: 'w-[400px] h-[250px]',
+    });
+  };
+
   const onSubmit = (data: Step2Input) => {
     setStepData('step2', data);
     completeStep(2);
@@ -33,7 +42,17 @@ export function Step2() {
   };
 
   return (
-    <div className="mx-auto space-y-6 lg:max-w-[446px]">
+    <div className="mx-auto mt-2 space-y-6 lg:max-w-[446px]">
+      <div className="flex gap-1">
+        <p>We need to verify a few things on our side.</p>
+        <button
+          type="button"
+          onClick={showExample}
+          className="text-sm font-medium text-[#2C2F2E] hover:underline"
+        >
+          See example
+        </button>
+      </div>
       <Form {...form}>
         <form
           id="profile-setup-step2-form"

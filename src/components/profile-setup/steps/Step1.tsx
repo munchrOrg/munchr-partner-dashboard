@@ -52,7 +52,7 @@ export function Step1() {
   };
 
   return (
-    <div className="mx-auto flex max-w-4xl flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
+    <div className="mx-auto mt-9 flex max-w-4xl flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
       <div className="flex-1">
         <Form {...form}>
           <form

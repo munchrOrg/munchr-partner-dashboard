@@ -25,12 +25,17 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
       isMapDrawerOpen: false,
       isExampleDrawerOpen: false,
       exampleDrawerConfig: null,
+      isScheduleDrawerOpen: false,
       isSubmitting: false,
 
-      setStepData: <K extends keyof ProfileSetupFormData>(key: K, data: ProfileSetupFormData[K]) =>
+      setStepData: <K extends keyof ProfileSetupFormData>(
+        key: K,
+        data: ProfileSetupFormData[K]
+      ) => {
         set((state) => ({
           formData: { ...state.formData, [key]: data },
-        })),
+        }));
+      },
 
       nextStep: () =>
         set((state) => {
@@ -52,12 +57,13 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
 
       goToStep: (step: ProfileSetupStep) => set({ currentStep: step }),
 
-      completeStep: (step: ProfileSetupStep) =>
+      completeStep: (step: ProfileSetupStep) => {
         set((state) => ({
           completedSteps: state.completedSteps.includes(step)
             ? state.completedSteps
             : [...state.completedSteps, step],
-        })),
+        }));
+      },
 
       completeSetup: () => set({ isCompleted: true }),
 
@@ -68,6 +74,8 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
       openExampleDrawer: (config: ExampleDrawerConfig) =>
         set({ isExampleDrawerOpen: true, exampleDrawerConfig: config }),
       closeExampleDrawer: () => set({ isExampleDrawerOpen: false, exampleDrawerConfig: null }),
+      openScheduleDrawer: () => set({ isScheduleDrawerOpen: true }),
+      closeScheduleDrawer: () => set({ isScheduleDrawerOpen: false }),
       setIsSubmitting: (isSubmitting: boolean) => set({ isSubmitting }),
 
       reset: () =>
@@ -80,6 +88,7 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
           isMapDrawerOpen: false,
           isExampleDrawerOpen: false,
           exampleDrawerConfig: null,
+          isScheduleDrawerOpen: false,
           isSubmitting: false,
         }),
     }),
