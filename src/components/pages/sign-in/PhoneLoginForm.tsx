@@ -7,8 +7,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { useSignupStore } from '@/stores/signup-store';
-import { OnboardingPhase } from '@/types/onboarding';
 import { FormFooter } from './FormFooter';
 
 type PhoneLoginFormProps = {
@@ -20,48 +18,69 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const [password, setPassword] = useState('');
 
+  const normalizePhoneNumber = (phone: string) => {
+    const p = phone.trim();
+    if (p.startsWith('+92')) {
+      return p;
+    }
+    if (p.startsWith('0')) {
+      return `+92${p.slice(1)}`;
+    }
+    return `+92${p}`;
+  };
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
 
     try {
-      const { formData, isPhoneVerified, reset: resetSignup } = useSignupStore.getState();
-      const { completedPhases, reset: resetOnboarding } = useOnboardingStore.getState();
-
-      if (!formData.email || !formData.phoneNumber) {
-        resetSignup();
-        resetOnboarding();
-        toast.error('Please complete signup first');
-        router.push('/sign-up');
+      const formattedPhone = normalizePhoneNumber(phoneNumber);
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/login`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: formattedPhone, password }),
+      });
+      const loginBody = await resp
+        .clone()
+        .json()
+        .catch(() => null);
+      const accessToken = loginBody?.accessToken;
+      if (!accessToken) {
+        toast.error('No access token received');
+        setIsLoading(false);
         return;
       }
-
-      const normalizePhone = (phone: string) => phone.replace(/[\s\-()]/g, '');
-      const isMatchingUser = normalizePhone(formData.phoneNumber) === normalizePhone(phoneNumber);
-
-      if (!isMatchingUser) {
-        resetSignup();
-        resetOnboarding();
-        toast.error('Please complete signup first');
-        router.push('/sign-up');
-        return;
+      localStorage.setItem('accessToken', accessToken);
+      sessionStorage.setItem('accessToken', accessToken);
+      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/profile`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+      if (!profileResp.ok) {
+        throw new Error('Failed to fetch profile');
       }
-
-      if (!isPhoneVerified) {
-        router.push('/verify-phone?type=signup');
-        return;
-      }
-
-      if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
-        router.push('/verify-phone?type=login');
-        return;
-      }
-
-      router.push('/verify-phone?type=login');
-    } catch {
-      setError('An unexpected error occurred');
+      const profileData = await profileResp.json();
+      useOnboardingStore.getState().setProfile(profileData);
+      const step2 = profileData?.step2;
+      const step3 = profileData?.step3;
+      const businessProfile = profileData?.partner?.businessProfile;
+      router.push(
+        !step2
+          ? `/onboarding/${businessProfile?.currentPage || 'welcome'}`
+          : businessProfile?.active && !step3
+            ? '/onboarding/business-hours-setup'
+            : step3
+              ? '/dashboard'
+              : '/onboarding/welcome'
+      );
+    } catch (err: any) {
+      setError(err.message || 'Login failed');
     } finally {
       setIsLoading(false);
     }
@@ -81,19 +100,28 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
         <div>
           <Input
             type="tel"
-            placeholder="Enter your phone number"
+            placeholder="Enter your phone number eg +92xxxxxxx"
             className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
             value={phoneNumber}
             onChange={(e) => setPhoneNumber(e.target.value)}
           />
         </div>
+        <div>
+          <Input
+            type="password"
+            placeholder="Enter your password"
+            className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+        </div>
 
         <Button
           type="submit"
-          disabled={isLoading || !phoneNumber.trim()}
+          disabled={isLoading || !phoneNumber.trim() || !password.trim()}
           className="h-11 w-full rounded-full bg-amber-400 font-medium text-black hover:bg-amber-500 sm:h-12"
         >
-          {isLoading ? 'Sending OTP...' : 'Continue'}
+          {isLoading ? 'Logging in...' : 'Continue'}
         </Button>
 
         <div className="my-4 flex items-center gap-4">
