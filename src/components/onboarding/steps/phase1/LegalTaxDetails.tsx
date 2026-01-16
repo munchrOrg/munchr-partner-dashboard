@@ -22,7 +22,19 @@ const legalTaxSchema = z.object({
 type LegalTaxInput = z.infer<typeof legalTaxSchema>;
 
 export function LegalTaxDetails() {
-  const { formData, setFormData, openExampleDrawer, triggerNavigation } = useOnboardingStore();
+  const { formData, setFormData, openExampleDrawer, triggerNavigation, profile } =
+    useOnboardingStore();
+  const businessProfile = profile?.partner?.businessProfile;
+  const legalTax = {
+    cnicNumber: businessProfile?.cnicNumber || formData.legalTax?.cnicNumber || '',
+    taxRegistrationNo:
+      businessProfile?.taxRegistrationNo || formData.legalTax?.taxRegistrationNo || '',
+    firstAndMiddleNameForNic:
+      businessProfile?.firstAndMiddleNameForNic ||
+      formData.legalTax?.firstAndMiddleNameForNic ||
+      '',
+    lastNameForNic: businessProfile?.lastNameForNic || formData.legalTax?.lastNameForNic || '',
+  };
 
   const {
     register,
@@ -30,12 +42,7 @@ export function LegalTaxDetails() {
     formState: { errors },
   } = useForm<LegalTaxInput>({
     resolver: zodResolver(legalTaxSchema),
-    defaultValues: {
-      cnicNumber: formData.legalTax?.cnicNumber || '',
-      taxRegistrationNo: formData.legalTax?.taxRegistrationNo || '',
-      firstAndMiddleNameForNic: formData.legalTax?.firstAndMiddleNameForNic || '',
-      lastNameForNic: formData.legalTax?.lastNameForNic || '',
-    },
+    defaultValues: legalTax,
     mode: 'all',
   });
 
