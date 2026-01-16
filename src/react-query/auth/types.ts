@@ -44,7 +44,7 @@ export type ResendOtpResponse = {
 
 export type VerifyEmailRequest = {
   partnerId: string;
-  token: string; // 6-digit OTP sent to user's email
+  otp: string; // 6-digit OTP sent to user's email
 };
 
 export type VerifyEmailResponse = {
