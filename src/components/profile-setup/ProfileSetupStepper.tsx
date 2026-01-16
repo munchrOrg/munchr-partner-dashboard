@@ -8,7 +8,6 @@ import { ProfileSetupHeader } from './layout/ProfileSetupHeader';
 import { ProfileSetupExampleDrawer } from './shared/ProfileSetupExampleDrawer';
 import { ProfileSetupMapDrawer } from './shared/ProfileSetupMapDrawer';
 import { ProfileSetupProgressDrawer } from './shared/ProfileSetupProgressDrawer';
-import { ProfileSetupScheduleDrawer } from './shared/ProfileSetupScheduleDrawer';
 import { StepContent } from './StepContent';
 import { Step1 } from './steps/Step1';
 import { Step2 } from './steps/Step2';
@@ -91,7 +90,6 @@ export function ProfileSetupStepper() {
       <ProfileSetupProgressDrawer />
       <ProfileSetupMapDrawer />
       <ProfileSetupExampleDrawer />
-      <ProfileSetupScheduleDrawer />
     </div>
   );
 }

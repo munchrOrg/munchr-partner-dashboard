@@ -1,13 +1,14 @@
 'use client';
 
-import type { BusinessHoursFormData } from '@/types/onboarding';
+import type { BusinessHoursFormData, DaySchedule } from '@/types/onboarding';
 import type { Step4Input } from '@/validations/profile-setup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+import TimeConfirmationDrawer from '@/components/onboarding/shared/TimeConfirmationDrawer';
 import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem } from '@/components/ui/form';
 import { Icon } from '@/components/ui/icon';
@@ -25,6 +26,8 @@ const DAYS_OF_WEEK = [
   { key: 'sunday', label: 'Sunday' },
 ] as const;
 
+type DayKey = (typeof DAYS_OF_WEEK)[number]['key'];
+
 const defaultBusinessHours: BusinessHoursFormData = {
   monday: { isOpen: false, slots: [] },
   tuesday: { isOpen: false, slots: [] },
@@ -37,25 +40,32 @@ const defaultBusinessHours: BusinessHoursFormData = {
 
 export function Step4() {
   const router = useRouter();
-  const {
-    formData,
-    setStepData,
-    completeStep,
-    completeSetup,
-    setIsSubmitting,
-    openScheduleDrawer,
-  } = useProfileSetupStore();
+  const { formData, setStepData, completeStep, completeSetup, setIsSubmitting } =
+    useProfileSetupStore();
+
+  const [editingDay, setEditingDay] = useState<DayKey | null>(null);
 
   const form = useForm<Step4Input>({
     resolver: zodResolver(step4Schema),
     defaultValues: formData.step4 || defaultBusinessHours,
   });
 
+  const businessHours = formData.step4 || defaultBusinessHours;
+
   useEffect(() => {
     if (formData.step4) {
       form.reset(formData.step4);
     }
   }, [formData.step4, form]);
+
+  const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
+    const updatedBusinessHours: BusinessHoursFormData = {
+      ...businessHours,
+      [day]: schedule,
+    };
+    setStepData('step4', updatedBusinessHours);
+    form.setValue(day, schedule);
+  };
 
   const onSubmit = async (data: Step4Input) => {
     setIsSubmitting(true);
@@ -102,7 +112,7 @@ export function Step4() {
                         type="button"
                         variant="ghost"
                         size="sm"
-                        onClick={openScheduleDrawer}
+                        onClick={() => setEditingDay(day.key)}
                         className="flex items-center justify-center gap-2 font-medium"
                       >
                         <Icon name="editIcon" className="h-5 w-5" />
@@ -133,6 +143,13 @@ export function Step4() {
           </div>
         </div>
       </div>
+
+      <TimeConfirmationDrawer
+        editingDay={editingDay}
+        businessHours={businessHours}
+        updateDaySchedule={updateDaySchedule}
+        setEditingDay={setEditingDay}
+      />
     </div>
   );
 }
