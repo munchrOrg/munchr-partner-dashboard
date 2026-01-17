@@ -34,7 +34,7 @@ export function FileUploadBox({
     };
   }, [value?.url]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) {
       return;
@@ -48,13 +48,34 @@ export function FileUploadBox({
       return;
     }
 
-    const fileUpload: FileUpload = {
-      name: file.name,
-      url: URL.createObjectURL(file),
-      size: file.size,
-    };
-
-    onChange(fileUpload);
+    try {
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const res = await fetch(`${backendUrl}storage/public/upload-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type,
+          assetType: 'logo', // You can make this dynamic if needed
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+      const data = await res.json();
+      const { key, publicUrl } = data;
+      const logoUrl = publicUrl || `https://pub-xxx.r2.dev/${key}`;
+      const fileUpload: FileUpload = {
+        name: file.name,
+        url: logoUrl,
+        size: file.size,
+        key,
+      };
+      onChange(fileUpload);
+    } catch (err: any) {
+      setError('Image upload initialization failed');
+      console.error('File upload error:', err);
+    }
   };
 
   const handleClick = () => {
