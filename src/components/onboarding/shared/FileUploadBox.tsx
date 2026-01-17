@@ -50,7 +50,7 @@ export function FileUploadBox({
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const res = await fetch(`${backendUrl}storage/public/upload-url`, {
+      const res = await fetch(`${backendUrl}v1/storage/public/upload-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

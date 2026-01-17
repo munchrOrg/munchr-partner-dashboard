@@ -11,7 +11,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/login`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/login`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -42,7 +42,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/register`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/register`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -72,7 +72,7 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
         otp: { label: 'OTP', type: 'text' },
       },
       async authorize(credentials) {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/otp/verify`, {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/otp/verify`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({

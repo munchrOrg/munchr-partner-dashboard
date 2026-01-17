@@ -70,7 +70,7 @@ export function SignUpForm() {
     const fetchCuisines = async () => {
       try {
         const base = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const r = await fetch(`${base}partner/cuisines`);
+        const r = await fetch(`${base}v1/partner/cuisines`);
         if (!r.ok) {
           throw new Error('Failed to fetch');
         }
@@ -145,7 +145,7 @@ export function SignUpForm() {
     try {
       // Step 1: Get uploadUrl and key
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const res = await fetch(`${backendUrl}/api/v1/storage/public/upload-url`, {
+      const res = await fetch(`${backendUrl}v1/storage/public/upload-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

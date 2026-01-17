@@ -43,7 +43,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
     setError(null);
 
     try {
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/login`, {
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/login`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -70,7 +70,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       }
       localStorage.setItem('accessToken', accessToken);
       sessionStorage.setItem('accessToken', accessToken);
-      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/profile`, {
+      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/profile`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -88,7 +88,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       const businessProfile: any = profileData?.partner?.businessProfile;
       router.push(
         !step2
-          ? `/onboarding/${businessProfile?.currentPage || ''}`
+          ? `/onboarding/${businessProfile?.currentPage || 'welcome'}`
           : businessProfile?.active && !step3
             ? '/onboarding/business-hours-setup'
             : step3

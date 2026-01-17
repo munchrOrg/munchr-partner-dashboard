@@ -30,6 +30,18 @@ type VerifyOtpFormProps = {
   type: 'email' | 'phone';
 };
 
+const normalizePhone = (phone: string) => {
+  let p = phone.trim();
+  if (p.startsWith('+')) {
+    p = p.slice(1);
+  }
+  if (p.startsWith('03')) {
+    p = `92${p.slice(1)}`;
+  }
+  p = p.replace(/\D/g, '');
+  return p;
+};
+
 const CONFIG = {
   email: {
     title: 'Verify your email',
@@ -229,7 +241,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     } else {
       await resendPhoneOtpMutation.mutateAsync({
         partnerId: partnerIdState!,
-        phone: destination,
+        phone: normalizePhone(destination),
       });
     }
 

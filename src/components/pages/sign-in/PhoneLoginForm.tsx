@@ -37,7 +37,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
 
     try {
       const formattedPhone = normalizePhoneNumber(phoneNumber);
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/login`, {
+      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/login`, {
         method: 'POST',
         credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
@@ -55,7 +55,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
       }
       localStorage.setItem('accessToken', accessToken);
       sessionStorage.setItem('accessToken', accessToken);
-      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}auth/profile`, {
+      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/profile`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
