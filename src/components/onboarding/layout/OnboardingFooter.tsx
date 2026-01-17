@@ -284,13 +284,7 @@ export function OnboardingFooter() {
         const file: any = menu.menuFile;
         const payload: any = {
           currentPage: currentStep,
-          menuImage: {
-            url: file.url,
-            width: file.width || 0,
-            height: file.height || 0,
-            size: file.size || 0,
-            fileName: file.name || '',
-          },
+          menuImageKey: file.key,
         };
         await updateProfileMutation.mutateAsync(payload);
       } else {
@@ -298,23 +292,13 @@ export function OnboardingFooter() {
       }
     } else if (currentStep === OnboardingStep.ONBOARDING_FEE_PAYMENT) {
       const { onboardingFee } = formData;
-      if (onboardingFee) {
-        const file: any = onboardingFee.paymentScreenshot;
-        const payload: any = {
-          currentPage: currentStep,
-          paymentTransactionId: onboardingFee.paymentTransactionId,
-          uploadScreenshotImage: {
-            url: file.url,
-            width: file.width || 0,
-            height: file.height || 0,
-            size: file.size || 0,
-            fileName: file.name || '',
-          },
-        };
-        await updateProfileMutation.mutateAsync(payload);
-      } else {
-        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
-      }
+      const file: any = onboardingFee?.paymentScreenshot;
+      const payload: any = {
+        currentPage: currentStep,
+        paymentTransactionId: onboardingFee?.paymentTransactionId || '',
+        uploadScreenshotImageKey: file?.key || '',
+      };
+      await updateProfileMutation.mutateAsync(payload);
     } else if (currentStep === OnboardingStep.TRAINING_CALL_PREFERENCE) {
       const { trainingCall } = formData;
 
