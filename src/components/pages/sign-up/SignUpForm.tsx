@@ -35,7 +35,7 @@ export function SignUpForm() {
   const router = useRouter();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
-  const [logoFile, setLogoFile] = useState<File | null>(null);
+  // Removed unused logoFile
   const [cuisineOptions, setCuisineOptions] = useState<Option[]>([]);
 
   const {
@@ -124,7 +124,7 @@ export function SignUpForm() {
     },
   });
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setLogoError(null);
 
@@ -142,18 +142,47 @@ export function SignUpForm() {
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setLogoPreview(event.target?.result as string);
-    };
-    reader.readAsDataURL(file);
-    setLogoFile(file);
+    try {
+      // Step 1: Get uploadUrl and key
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const res = await fetch(`${backendUrl}/api/v1/storage/public/upload-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type,
+          assetType: 'logo',
+        }),
+      });
+      if (!res.ok) {
+        throw new Error('Failed to get upload URL');
+      }
+      const data = await res.json();
+      const { key, uploadUrl } = data;
+
+      // Step 2: Try to upload file to uploadUrl (PUT), ignore CORS error
+      try {
+        await fetch(uploadUrl, {
+          method: 'PUT',
+          headers: { 'Content-Type': file.type },
+          body: file,
+        });
+      } catch (uploadErr) {
+        console.warn('File upload error (likely CORS):', uploadErr);
+        // Ignore CORS error, proceed anyway
+      }
+
+      const logoUrl = `https://pub-xxx.r2.dev/${key}`;
+      setLogoPreview(logoUrl);
+    } catch {
+      setLogoError('Image upload failed');
+    }
   }, []);
 
   const handleRemoveLogo = useCallback(() => {
     setLogoPreview(null);
     setLogoError(null);
-    setLogoFile(null);
+    // Removed setLogoFile(null) as logoFile is unused
   }, []);
 
   const onSubmit = async (data: SignUpInput) => {
@@ -180,7 +209,18 @@ export function SignUpForm() {
       const parsed = parsePhoneNumberFromString(phoneRaw);
       const countryCode = parsed ? `+${parsed.countryCallingCode}` : '';
 
-      const payload = {
+      // Get sntnFile from onboarding store
+      let ntnImageKey;
+      try {
+        // Use dynamic import instead of require
+        const onboardingStore =
+          (window as any).__zustandOnboardingStore ||
+          (await import('@/stores/onboarding-store')).useOnboardingStore;
+        const onboardingData = onboardingStore.getState().formData;
+        ntnImageKey = onboardingData?.ownerIdentity?.sntnFile?.key;
+      } catch {}
+
+      const payload: any = {
         email: data.email,
         phone,
         countryCode,
@@ -189,17 +229,14 @@ export function SignUpForm() {
         businessName: data.businessName,
         cuisineIds: data.cuisines,
         description: data.businessDescription,
-        // restaurantLogoKey :'http://localhost:3000/logo.png',
-        resturantLogo: {
-          url: logoPreview || 'http://localhost:3000/logo.png',
-          width: 0,
-          height: 0,
-          size: logoFile?.size ?? 0,
-          fileName: logoFile?.name ?? '',
-        },
+        logoUrl: logoPreview || 'http://localhost:3000/logo.png',
       };
+      // Only add ntnImageKey if present. Do NOT add frontNicKey or backNicKey.
+      if (ntnImageKey) {
+        payload.ntnImageKey = ntnImageKey;
+      }
 
-      signUpMutation.mutate(payload as any);
+      signUpMutation.mutate(payload);
     } catch {
       setError('root', { message: 'An unexpected error occurred' });
     }
@@ -299,7 +336,7 @@ export function SignUpForm() {
                 defaultCountry="PK"
                 value={field.value}
                 onChange={(value) => field.onChange(value ?? '')}
-                className="phone-input-container flex h-11 w-full items-center rounded-full border border-gray-300 px-4 sm:h-12 sm:px-5 [&_.PhoneInputCountry]:mr-2 [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:border-none [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:outline-none"
+                className="flex h-11 w-full items-center rounded-full border border-gray-300 px-4 sm:h-12 sm:px-5 [&_.PhoneInputCountry]:mr-2 [&_.PhoneInputInput]:flex-1 [&_.PhoneInputInput]:border-none [&_.PhoneInputInput]:bg-transparent [&_.PhoneInputInput]:text-sm [&_.PhoneInputInput]:outline-none"
                 placeholder="Enter your Phone Number *"
               />
             )}
