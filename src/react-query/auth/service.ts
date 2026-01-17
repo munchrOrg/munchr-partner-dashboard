@@ -1,7 +1,11 @@
 import type {
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   ProfileResponse,
   ResendOtpRequest,
   ResendOtpResponse,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   SignUpRequest,
   SignUpResponse,
   UpdateProfileRequest,
@@ -32,5 +36,9 @@ export const authService = {
     apiClient.post<VerifyPhoneResponse>('v1/auth/verify-phone', data).then((res) => res.data),
   updateProfile: (data: UpdateProfileRequest) =>
     apiClient.put<UpdateProfileResponse>('v1/auth/update/profile', data).then((res) => res.data),
+  forgotPassword: (data: ForgotPasswordRequest) =>
+    apiClient.post<ForgotPasswordResponse>('v1/auth/forgot-password', data).then((res) => res.data),
+  resetPassword: (data: ResetPasswordRequest) =>
+    apiClient.post<ResetPasswordResponse>('v1/auth/reset-password', data).then((res) => res.data),
   getProfile: () => apiClient.get<ProfileResponse>('v1/auth/profile').then((res) => res.data),
 };

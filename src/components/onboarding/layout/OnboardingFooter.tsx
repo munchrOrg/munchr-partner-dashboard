@@ -234,7 +234,6 @@ export function OnboardingFooter() {
   const getProfileMutation = useGetProfile();
 
   const handleContinue = async () => {
-    await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
     if (currentStep === OnboardingStep.WELCOME) {
       router.push(`/onboarding/${getNextPhaseEntryStep()}`);
       return;
@@ -386,11 +385,54 @@ export function OnboardingFooter() {
       } else {
         await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
       }
+    } else if (currentStep === OnboardingStep.BUSINESS_HOURS_SETUP) {
+      const { businessHours } = formData;
+      if (businessHours) {
+        const businessHoursPayload: any[] = [];
+        const dayMapping = {
+          monday: 1,
+          tuesday: 2,
+          wednesday: 3,
+          thursday: 4,
+          friday: 5,
+          saturday: 6,
+          sunday: 0,
+        };
+
+        Object.entries(businessHours).forEach(([day, schedule]) => {
+          const dayOfWeek = dayMapping[day as keyof typeof dayMapping];
+          if (schedule.isOpen && schedule.slots.length > 0) {
+            schedule.slots.forEach((slot) => {
+              businessHoursPayload.push({
+                dayOfWeek,
+                startTime: slot.open,
+                endTime: slot.close,
+                isClosed: false,
+              });
+            });
+          } else {
+            businessHoursPayload.push({
+              dayOfWeek,
+              startTime: '00:00',
+              endTime: '00:00',
+              isClosed: true,
+            });
+          }
+        });
+
+        const payload: any = {
+          currentPage: currentStep,
+          operatingHours: businessHoursPayload,
+        };
+        await updateProfileMutation.mutateAsync(payload);
+      } else {
+        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+      }
     } else {
+      // Handle all other steps that don't have specific API data
       await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
     }
     try {
-      await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
       try {
         const profileResp = await getProfileMutation.mutateAsync();
         const profileData = (profileResp as any)?.data;

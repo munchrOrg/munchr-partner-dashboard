@@ -78,6 +78,27 @@ export type UpdateProfileResponse = {
   message?: string;
 };
 
+export type ForgotPasswordRequest = {
+  email: string;
+};
+
+export type ForgotPasswordResponse = {
+  success: boolean;
+  message?: string;
+  code?: string; // The OTP code that will be used for verification
+};
+
+export type ResetPasswordRequest = {
+  email: string;
+  otp: string;
+  newPassword: string;
+};
+
+export type ResetPasswordResponse = {
+  success: boolean;
+  message?: string;
+};
+
 export type ProfileResponse = {
   success: boolean;
   data?: {

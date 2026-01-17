@@ -4,10 +4,10 @@ import dynamic from 'next/dynamic';
 import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-import { STEP_ORDER, STEP_PHASE_MAP } from '@/config/onboarding-steps';
+import { STEP_ORDER } from '@/config/onboarding-steps';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useSignupStore } from '@/stores/signup-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { OnboardingStep } from '@/types/onboarding';
 
 const stepComponents: Record<OnboardingStep, React.ComponentType> = {
   [OnboardingStep.WELCOME]: dynamic(
@@ -153,18 +153,18 @@ export default function OnboardingPage() {
       return;
     }
 
-    const stepPhase = STEP_PHASE_MAP[stepEnum];
+    // const stepPhase = STEP_PHASE_MAP[stepEnum];
 
     // Block step 3 access if phase 2 not completed OR account not approved
-    if (stepPhase === OnboardingPhase.OPEN_BUSINESS) {
-      if (
-        !completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) ||
-        accountStatus !== 'approved'
-      ) {
-        router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
-        return;
-      }
-    }
+    // if (stepPhase === OnboardingPhase.OPEN_BUSINESS) {
+    //   if (
+    //     !completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)
+    //     || accountStatus !== 'approved'
+    //   ) {
+    //     router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
+    //     return;
+    //   }
+    // }
 
     goToStep(stepEnum);
   }, [step, completedSteps, completedPhases, currentStep, goToStep, router, accountStatus]);

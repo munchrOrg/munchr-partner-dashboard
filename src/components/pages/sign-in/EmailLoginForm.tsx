@@ -85,14 +85,17 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       onboardingStore.setProfile(profileData); // Save profile data in global store
       const step2 = profileData?.step2;
       const step3 = profileData?.step3;
+      const accountStatus = profileData?.partner?.businessProfile?.verificationStatus;
       const businessProfile: any = profileData?.partner?.businessProfile;
       router.push(
         !step2
           ? `/onboarding/${businessProfile?.currentPage || 'welcome'}`
-          : businessProfile?.active && !step3
+          : businessProfile?.verificationStatus && !step3
             ? '/onboarding/business-hours-setup'
             : step3
-              ? '/dashboard'
+              ? accountStatus === 'verified'
+                ? '/onboarding/open-business-intro'
+                : '/onboarding/welcome'
               : '/onboarding/welcome'
       );
     } catch (err: any) {

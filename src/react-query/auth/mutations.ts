@@ -1,6 +1,10 @@
 import type { UseMutationOptions } from '@tanstack/react-query';
 import type {
+  ForgotPasswordRequest,
+  ForgotPasswordResponse,
   ResendOtpRequest,
+  ResetPasswordRequest,
+  ResetPasswordResponse,
   SignUpRequest,
   SignUpResponse,
   UpdateProfileRequest,
@@ -52,6 +56,20 @@ export const useUpdateProfile = () => {
   return useMutation({
     mutationFn: (data: UpdateProfileRequest) =>
       authService.updateProfile(data) as Promise<UpdateProfileResponse>,
+  });
+};
+
+export const useForgotPassword = () => {
+  return useMutation({
+    mutationFn: (data: ForgotPasswordRequest) =>
+      authService.forgotPassword(data) as Promise<ForgotPasswordResponse>,
+  });
+};
+
+export const useResetPassword = () => {
+  return useMutation({
+    mutationFn: (data: ResetPasswordRequest) =>
+      authService.resetPassword(data) as Promise<ResetPasswordResponse>,
   });
 };
 
