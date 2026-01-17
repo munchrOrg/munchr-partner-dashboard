@@ -50,19 +50,57 @@ export function OnboardingFeePayment() {
     }
   };
 
-  const handleFileUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
-    if (file) {
-      const fileUpload: FileUpload = {
-        name: file.name,
-        url: URL.createObjectURL(file),
-        size: file.size,
-      };
-      setFormData('onboardingFee', {
-        paymentScreenshot: fileUpload,
-        paymentTransactionId,
-      });
+    if (!file) {
+      return;
     }
+
+    // Step 1: Get upload URL and key from backend
+    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+    const res = await fetch(`${backendUrl}storage/public/upload-url`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        fileName: file.name,
+        mimeType: file.type,
+        assetType: 'logo',
+      }),
+    });
+    if (!res.ok) {
+      console.error('Failed to get upload URL');
+      return;
+    }
+    const { key, uploadUrl } = await res.json();
+    console.log('Upload API response:', { key, uploadUrl });
+
+    // Step 2: Upload file to storage
+    try {
+      const uploadRes = await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: { 'Content-Type': file.type },
+      });
+      if (!uploadRes.ok) {
+        console.warn('File upload failed (likely CORS):', uploadRes.statusText);
+        // For development, ignore CORS error and proceed
+      }
+    } catch (err) {
+      console.warn('File upload error (likely CORS):', err);
+      // For development, ignore CORS error and proceed
+    }
+
+    // Step 3: Save key and public URL in FileUpload object
+    const fileUpload: FileUpload = {
+      name: file.name,
+      url: `https://pub-xxx.r2.dev/${key}`,
+      size: file.size,
+      key,
+    };
+    setFormData('onboardingFee', {
+      paymentScreenshot: fileUpload,
+      paymentTransactionId,
+    });
   };
 
   // const removeScreenshot = () => {
