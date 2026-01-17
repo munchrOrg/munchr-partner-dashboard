@@ -51,7 +51,12 @@ export function MultiSelect({
   };
 
   const handleRemove = (value: string, e: React.MouseEvent) => {
-    e.stopPropagation();
+    e?.stopPropagation();
+    onChange(selected.filter((v) => v !== value));
+  };
+
+  // Helper for keyboard removal
+  const handleRemoveKeyboard = (value: string) => {
     onChange(selected.filter((v) => v !== value));
   };
 
@@ -94,16 +99,23 @@ export function MultiSelect({
                 <Badge
                   key={value}
                   variant="secondary"
-                  className="bg-amber-100 text-amber-800 hover:bg-amber-200"
+                  className="flex items-center bg-amber-100 text-amber-800 hover:bg-amber-200"
                 >
                   {selectedLabels[index]}
-                  <button
-                    type="button"
-                    className="ml-1 rounded-full outline-none hover:bg-amber-300"
+                  <span
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`Remove ${selectedLabels[index]}`}
+                    className="ml-1 cursor-pointer rounded-full outline-none hover:bg-amber-300"
                     onClick={(e) => handleRemove(value, e)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        handleRemoveKeyboard(value);
+                      }
+                    }}
                   >
                     <X className="size-3" />
-                  </button>
+                  </span>
                 </Badge>
               ))
             )}
