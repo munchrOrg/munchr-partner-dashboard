@@ -17,8 +17,12 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useVerifyEmail, useVerifyPhone } from '@/react-query/auth/mutations';
-import { useResendEmailOtp, useResendPhoneOtp } from '@/react-query/auth/resendotp';
+import {
+  useResendEmailOtp,
+  useResendPhoneOtp,
+  useVerifyEmail,
+  useVerifyPhone,
+} from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';

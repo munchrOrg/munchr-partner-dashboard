@@ -89,6 +89,17 @@ export const useOnboardingStore = create<OnboardingStore>()(
       clearNavigation: () => set({ shouldNavigate: false, navigationStep: null }),
       setProfile: (profileData: any) => set({ profile: profileData }),
 
+      syncFromBackend: (onboardingData: {
+        currentStep: OnboardingStep | null;
+        completedSteps: string[];
+        completedPhases: string[];
+      }) =>
+        set({
+          currentStep: (onboardingData.currentStep as OnboardingStep) || Step.WELCOME,
+          completedSteps: (onboardingData.completedSteps || []) as OnboardingStep[],
+          completedPhases: (onboardingData.completedPhases || []) as OnboardingPhase[],
+        }),
+
       reset: () =>
         set({
           currentStep: Step.WELCOME,

@@ -58,7 +58,7 @@ export function LegalTaxDetails() {
     const { legalTax } = formData;
     if (legalTax) {
       const payload: any = {
-        currentPage: OnboardingStep.LEGAL_TAX_DETAILS,
+        currentStep: OnboardingStep.LEGAL_TAX_DETAILS,
         cnicNumber: legalTax.cnicNumber || '',
         taxRegistrationNo: legalTax.taxRegistrationNo || '',
         firstAndMiddleNameForNic: legalTax.firstAndMiddleNameForNic || '',

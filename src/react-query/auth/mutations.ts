@@ -1,7 +1,13 @@
 import type { UseMutationOptions } from '@tanstack/react-query';
 import type {
+  ChangePasswordRequest,
+  ChangePasswordResponse,
   ForgotPasswordRequest,
   ForgotPasswordResponse,
+  LoginRequest,
+  LogoutRequest,
+  PhoneLoginRequest,
+  RefreshTokenRequest,
   ResendOtpRequest,
   ResetPasswordRequest,
   ResetPasswordResponse,
@@ -14,8 +20,74 @@ import type {
   VerifyPhoneRequest,
 } from './types';
 import { useMutation } from '@tanstack/react-query';
+import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
 import { authService } from './service';
+
+// Email login
+export const useLogin = () => {
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+
+  return useMutation({
+    mutationFn: (data: LoginRequest) => authService.login(data),
+    onSuccess: (response) => {
+      setAccessToken(response.accessToken);
+    },
+  });
+};
+
+// Phone login
+export const usePhoneLogin = () => {
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+
+  return useMutation({
+    mutationFn: (data: PhoneLoginRequest) => authService.phoneLogin(data),
+    onSuccess: (response) => {
+      setAccessToken(response.accessToken);
+    },
+  });
+};
+
+// Refresh token
+export const useRefreshToken = () => {
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+
+  return useMutation({
+    mutationFn: (data: RefreshTokenRequest) => authService.refreshToken(data),
+    onSuccess: (response) => {
+      setAccessToken(response.accessToken);
+    },
+  });
+};
+
+// Logout
+export const useLogout = () => {
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  return useMutation({
+    mutationFn: (data?: LogoutRequest) => authService.logout(data),
+    onSuccess: () => {
+      clearAuth();
+      useOnboardingStore.getState().reset();
+      useSignupStore.getState().reset();
+    },
+    onError: () => {
+      // Even if logout fails on backend, clear local state
+      clearAuth();
+      useOnboardingStore.getState().reset();
+      useSignupStore.getState().reset();
+    },
+  });
+};
+
+// Change password (authenticated)
+export const useChangePassword = () => {
+  return useMutation({
+    mutationFn: (data: ChangePasswordRequest) =>
+      authService.changePassword(data) as Promise<ChangePasswordResponse>,
+  });
+};
 
 export const useSignUp = ({
   options,
@@ -73,13 +145,33 @@ export const useResetPassword = () => {
   });
 };
 
+// For imperative profile fetch after login (use useProfile query from ./queries.ts for reactive fetching)
 export const useGetProfile = () => {
-  const onboardingStore = useOnboardingStore.getState();
   return useMutation({
-    mutationFn: async () => {
-      const profileData = await authService.getProfile();
-      onboardingStore.setProfile(profileData);
-      return profileData;
-    },
+    mutationFn: () => authService.getProfile(),
+  });
+};
+
+export const useResendEmailOtp = () => {
+  return useMutation({
+    mutationFn: ({ partnerId, email }: { partnerId: string; email: string }) =>
+      authService.resendEmailOtp({
+        entityId: partnerId,
+        entityType: 'partner',
+        email,
+        purpose: 'email_signup',
+      }),
+  });
+};
+
+export const useResendPhoneOtp = () => {
+  return useMutation({
+    mutationFn: ({ partnerId, phone }: { partnerId: string; phone: string }) =>
+      authService.resendPhoneOtp({
+        entityId: partnerId,
+        entityType: 'partner',
+        phone,
+        purpose: 'phone_signup',
+      }),
   });
 };

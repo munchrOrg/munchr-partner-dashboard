@@ -122,7 +122,7 @@ export function BankingDetails() {
     });
 
     const payload: any = {
-      currentPage: OnboardingStep.BANKING_DETAILS,
+      currentStep: OnboardingStep.BANKING_DETAILS,
       billingAddressAreSame: data.sameAsBusinessAddress,
       bankAccountOwner: data.accountTitle,
       bankName: data.bankName,

@@ -236,6 +236,12 @@ type OnboardingActions = {
   profile: any;
   setProfile: (profileData: any) => void;
 
+  syncFromBackend: (onboardingData: {
+    currentStep: OnboardingStep | null;
+    completedSteps: string[];
+    completedPhases: string[];
+  }) => void;
+
   reset: () => void;
 };
 

@@ -182,12 +182,37 @@ export function OnboardingFooter() {
   const formId = STEPS_WITH_FORMS[currentStep];
   const hasForm = Boolean(formId);
 
+  const updateProfileMutation = useUpdateProfile();
+  const getProfileMutation = useGetProfile();
+
   const executeNavigation = useCallback(
-    (step: OnboardingStep) => {
+    async (step: OnboardingStep) => {
+      // Sync with backend
+      const nextStep = getNextStep(step);
+      const isPhaseComplete = isLastStepOfPhase(step);
+      const phase = STEP_PHASE_MAP[step];
+
+      try {
+        // Send onboarding progress to backend
+        const onboardingPayload: any = {
+          completeStep: step,
+          currentStep: nextStep || step,
+        };
+
+        if (isPhaseComplete) {
+          onboardingPayload.completePhase = phase;
+        }
+
+        await updateProfileMutation.mutateAsync(onboardingPayload);
+      } catch (error) {
+        console.error('Failed to sync onboarding progress:', error);
+        // Continue with local state even if backend sync fails
+      }
+
+      // Update local state
       completeStep(step);
 
-      if (isLastStepOfPhase(step)) {
-        const phase = STEP_PHASE_MAP[step];
+      if (isPhaseComplete) {
         completePhase(phase);
 
         const nextPhase = getNextPhase(phase);
@@ -199,12 +224,11 @@ export function OnboardingFooter() {
         return;
       }
 
-      const nextStep = getNextStep(step);
       if (nextStep) {
         router.push(`/onboarding/${nextStep}`);
       }
     },
-    [completeStep, completePhase, router]
+    [completeStep, completePhase, router, updateProfileMutation]
   );
 
   const getNextPhaseEntryStep = useCallback((): OnboardingStep => {
@@ -231,9 +255,6 @@ export function OnboardingFooter() {
     }
   };
 
-  const updateProfileMutation = useUpdateProfile();
-  const getProfileMutation = useGetProfile();
-
   const handleContinue = async () => {
     if (currentStep === OnboardingStep.WELCOME) {
       router.push(`/onboarding/${getNextPhaseEntryStep()}`);
@@ -244,7 +265,7 @@ export function OnboardingFooter() {
       if (ownerIdentity) {
         const payload: any = {
           sntn: ownerIdentity.hasSNTN,
-          currentPage: currentStep,
+          currentStep,
         };
 
         if (ownerIdentity.hasSNTN) {
@@ -271,30 +292,30 @@ export function OnboardingFooter() {
       if (bankStatement && bankStatement.statementFile && bankStatement.statementFile.key) {
         const file: any = bankStatement.statementFile;
         const payload: any = {
-          currentPage: currentStep,
+          currentStep,
           chequeBookImageKey: file.key,
         };
         await updateProfileMutation.mutateAsync(payload);
       } else {
-        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+        await updateProfileMutation.mutateAsync({ currentStep } as any);
       }
     } else if (currentStep === OnboardingStep.DINE_IN_MENU_UPLOAD) {
       const { menu } = formData;
       if (menu && menu.menuFile) {
         const file: any = menu.menuFile;
         const payload: any = {
-          currentPage: currentStep,
+          currentStep,
           menuImageKey: file.key,
         };
         await updateProfileMutation.mutateAsync(payload);
       } else {
-        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+        await updateProfileMutation.mutateAsync({ currentStep } as any);
       }
     } else if (currentStep === OnboardingStep.ONBOARDING_FEE_PAYMENT) {
       const { onboardingFee } = formData;
       const file: any = onboardingFee?.paymentScreenshot;
       const payload: any = {
-        currentPage: currentStep,
+        currentStep,
         paymentTransactionId: onboardingFee?.paymentTransactionId || '',
         uploadScreenshotImageKey: file?.key || '',
       };
@@ -308,7 +329,7 @@ export function OnboardingFooter() {
           : convertTo24HourFormat(trainingCall.preferredTime);
 
         const payload: any = {
-          currentPage: currentStep,
+          currentStep,
           bookSlot: {
             networkPreference: trainingCall.networkProvider,
             date: trainingCall.preferredDate,
@@ -319,7 +340,7 @@ export function OnboardingFooter() {
         await updateProfileMutation.mutateAsync(payload);
       } else {
         await updateProfileMutation.mutateAsync({
-          currentPage: currentStep,
+          currentStep,
         } as any);
       }
     } else if (currentStep === OnboardingStep.PAYMENT_METHOD_SELECTION) {
@@ -330,7 +351,7 @@ export function OnboardingFooter() {
         );
         if (selected) {
           const payload: any = {
-            currentPage: currentStep,
+            currentStep,
             paymentMethod: {
               paymentMethod: selected.method,
               accountNumber: selected.accountNumber,
@@ -338,10 +359,10 @@ export function OnboardingFooter() {
           };
           await updateProfileMutation.mutateAsync(payload);
         } else {
-          await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+          await updateProfileMutation.mutateAsync({ currentStep } as any);
         }
       } else {
-        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+        await updateProfileMutation.mutateAsync({ currentStep } as any);
       }
     } else if (currentStep === OnboardingStep.BUSINESS_HOURS_SETUP) {
       const { businessHours } = formData;
@@ -379,16 +400,16 @@ export function OnboardingFooter() {
         });
 
         const payload: any = {
-          currentPage: currentStep,
+          currentStep,
           operatingHours: businessHoursPayload,
         };
         await updateProfileMutation.mutateAsync(payload);
       } else {
-        await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+        await updateProfileMutation.mutateAsync({ currentStep } as any);
       }
     } else {
       // Handle all other steps that don't have specific API data
-      await updateProfileMutation.mutateAsync({ currentPage: currentStep } as any);
+      await updateProfileMutation.mutateAsync({ currentStep } as any);
     }
     try {
       try {

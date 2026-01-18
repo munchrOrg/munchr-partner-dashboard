@@ -61,7 +61,7 @@ export function EmailConfirmModal() {
     }
     try {
       await updateProfileMutation.mutateAsync({
-        currentPage: OnboardingStep.BUSINESS_INFO_REVIEW,
+        currentStep: OnboardingStep.BUSINESS_INFO_REVIEW,
         email,
       } as any);
     } catch (err) {

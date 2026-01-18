@@ -92,6 +92,9 @@ export function SignUpForm() {
     };
   }, []);
 
+  // Store email for passing to verification page
+  const [submittedEmail, setSubmittedEmail] = useState<string>('');
+
   const signUpMutation = useSignUp({
     options: {
       onSuccess: (resp) => {
@@ -101,7 +104,13 @@ export function SignUpForm() {
           if (resp.partnerId) {
             setPartnerId(resp.partnerId);
           }
-          router.push('/verify-email?type=signup');
+          // Pass partnerId and email via URL for verification page
+          const params = new URLSearchParams({
+            type: 'signup',
+            partnerId: resp.partnerId,
+            email: submittedEmail,
+          });
+          router.push(`/verify-email?${params.toString()}`);
         } else {
           toast.error(resp.message || 'Registration failed');
         }
@@ -192,6 +201,8 @@ export function SignUpForm() {
     }
 
     try {
+      // Store form data in Zustand for verification page
+      setSubmittedEmail(data.email);
       const { setFormData } = useSignupStore.getState();
       setFormData({
         serviceProviderType: data.serviceProviderType,
