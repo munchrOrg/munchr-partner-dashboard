@@ -229,7 +229,7 @@ export function SignUpForm() {
         businessName: data.businessName,
         cuisineIds: data.cuisines,
         description: data.businessDescription,
-        logoUrl: logoPreview || 'http://localhost:3000/logo.png',
+        logoUrl: logoPreview,
       };
       // Only add ntnImageKey if present. Do NOT add frontNicKey or backNicKey.
       if (ntnImageKey) {

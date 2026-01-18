@@ -16,6 +16,7 @@ import {
   PHASE_ENTRY_STEP,
   STEP_PHASE_MAP,
 } from '@/config/onboarding-steps';
+import { convertTo24HourFormat, is24HourFormat } from '@/lib/helpers';
 import { useGetProfile, useUpdateProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
@@ -301,53 +302,10 @@ export function OnboardingFooter() {
     } else if (currentStep === OnboardingStep.TRAINING_CALL_PREFERENCE) {
       const { trainingCall } = formData;
 
-      const is24Hour = (t?: string) => /^\d{2}:\d{2}$/.test(t || '');
-
-      const to24HourTime = (time12h?: string): string => {
-        if (!time12h) {
-          return '';
-        }
-
-        const parts = time12h.trim().split(' ');
-        if (parts.length !== 2) {
-          return '';
-        }
-
-        const timePart = parts[0];
-        const modifier = parts[1];
-
-        if (!timePart || !modifier) {
-          return '';
-        }
-
-        const timeParts = timePart.split(':');
-        if (timeParts.length !== 2) {
-          return '';
-        }
-
-        const hours = Number(timeParts[0]);
-        const minutes = Number(timeParts[1]);
-
-        if (Number.isNaN(hours) || Number.isNaN(minutes)) {
-          return '';
-        }
-
-        let h = hours;
-
-        if (modifier === 'PM' && h !== 12) {
-          h += 12;
-        }
-        if (modifier === 'AM' && h === 12) {
-          h = 0;
-        }
-
-        return `${h.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-      };
-
       if (trainingCall) {
-        const time24 = is24Hour(trainingCall.preferredTime)
+        const time24 = is24HourFormat(trainingCall.preferredTime)
           ? trainingCall.preferredTime
-          : to24HourTime(trainingCall.preferredTime);
+          : convertTo24HourFormat(trainingCall.preferredTime);
 
         const payload: any = {
           currentPage: currentStep,

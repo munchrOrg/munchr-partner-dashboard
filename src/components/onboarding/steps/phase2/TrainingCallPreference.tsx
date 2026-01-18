@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { formatToHHMM } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { NetworkProvider } from '@/types/onboarding';
@@ -39,13 +40,6 @@ const TIME_SLOTS = [
 export function TrainingCallPreference() {
   const { formData, setFormData, profile } = useOnboardingStore();
   const businessProfile = profile?.partner?.businessProfile?.bookSlot;
-  const formatToHHMM = (time: string | undefined) => {
-    if (!time) {
-      return '';
-    }
-    const [hour, minute] = time.split(':');
-    return `${hour}:${minute}`;
-  };
   useEffect(() => {
     if (businessProfile && !formData.trainingCall) {
       setFormData('trainingCall', {

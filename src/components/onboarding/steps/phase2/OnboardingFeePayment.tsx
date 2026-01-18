@@ -6,6 +6,8 @@ import { useEffect, useRef, useState } from 'react';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
+import { getAuthHeaders } from '@/lib/auth-helpers';
+import { createFileUploadFromKey } from '@/lib/helpers';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 const PAYMENT_DETAILS = {
@@ -25,13 +27,15 @@ export function OnboardingFeePayment() {
     if (businessProfile && !formData.onboardingFee) {
       const onboardingFeeData = {
         paymentTransactionId: businessProfile.paymentTransactionId || '',
-        paymentScreenshot: businessProfile.uploadScreenshotImage
-          ? {
-              name: businessProfile.uploadScreenshotImage.fileName || 'Unknown',
-              size: businessProfile.uploadScreenshotImage.size || 0,
-              url: businessProfile.uploadScreenshotImage.url || '',
-            }
-          : null,
+        paymentScreenshot: businessProfile.uploadScreenshotImageKey
+          ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
+          : businessProfile.uploadScreenshotImage
+            ? {
+                name: businessProfile.uploadScreenshotImage.fileName || 'Unknown',
+                size: businessProfile.uploadScreenshotImage.size || 0,
+                url: businessProfile.uploadScreenshotImage.url || '',
+              }
+            : null,
       };
       setFormData('onboardingFee', onboardingFeeData);
       setTimeout(() => {
@@ -58,13 +62,13 @@ export function OnboardingFeePayment() {
 
     // Step 1: Get upload URL and key from backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-    const res = await fetch(`${backendUrl}v1/storage/public/upload-url`, {
+    const res = await fetch(`${backendUrl}v1/storage/upload-url`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await getAuthHeaders(),
       body: JSON.stringify({
         fileName: file.name,
         mimeType: file.type,
-        assetType: 'logo',
+        assetType: 'payment-screenshot',
       }),
     });
     if (!res.ok) {

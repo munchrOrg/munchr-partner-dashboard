@@ -6,6 +6,7 @@ import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { createFileUploadFromKey } from '@/lib/helpers';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 export function OwnerIdentityUpload() {
@@ -15,23 +16,27 @@ export function OwnerIdentityUpload() {
   const ownerIdentity = {
     hasSNTN: businessProfile?.sntn ?? formData.ownerIdentity?.hasSNTN ?? null,
 
-    idCardFrontFile:
-      businessProfile?.idCardFrontFile ?? formData.ownerIdentity?.idCardFrontFile ?? null,
+    idCardFrontFile: businessProfile?.cnicFrontKey
+      ? createFileUploadFromKey(businessProfile.cnicFrontKey, 'CNIC Front')
+      : (businessProfile?.idCardFrontFile ?? formData.ownerIdentity?.idCardFrontFile ?? null),
 
-    idCardBackFile:
-      businessProfile?.idCardBackFile ?? formData.ownerIdentity?.idCardBackFile ?? null,
+    idCardBackFile: businessProfile?.cnicBackKey
+      ? createFileUploadFromKey(businessProfile.cnicBackKey, 'CNIC Back')
+      : (businessProfile?.idCardBackFile ?? formData.ownerIdentity?.idCardBackFile ?? null),
 
-    sntnFile: businessProfile?.ntnImages ?? formData.ownerIdentity?.sntnFile ?? null,
+    sntnFile: businessProfile?.ntnImageKey
+      ? createFileUploadFromKey(businessProfile.ntnImageKey, 'NTN')
+      : (businessProfile?.ntnImages ?? formData.ownerIdentity?.sntnFile ?? null),
   };
   useEffect(() => {
     setFormData('ownerIdentity', ownerIdentity);
   }, [profile]);
 
   const handleSNTNChange = (value: string) => {
-    // Reset all files when switching SNTN
+    const newValue = value === 'yes';
     setFormData('ownerIdentity', {
       ...ownerIdentity,
-      hasSNTN: value === 'yes',
+      hasSNTN: newValue,
       sntnFile: null,
       idCardFrontFile: null,
       idCardBackFile: null,

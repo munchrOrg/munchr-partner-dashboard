@@ -11,6 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
+import { useGetProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
@@ -28,6 +29,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
   const [isLoading, setIsLoading] = useState(false);
   const [profile, setProfile] = useState<any>(null); // Profile data state
   const onboardingStore = useOnboardingStore();
+  const getProfileMutation = useGetProfile();
   console.warn(profile);
 
   const {
@@ -70,17 +72,8 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       }
       localStorage.setItem('accessToken', accessToken);
       sessionStorage.setItem('accessToken', accessToken);
-      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/profile`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      if (!profileResp.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-      const profileData = await profileResp.json();
+
+      const profileData: any = await getProfileMutation.mutateAsync();
       setProfile(profileData); // Save profile data in local state
       onboardingStore.setProfile(profileData); // Save profile data in global store
       const step2 = profileData?.step2;
@@ -90,7 +83,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       router.push(
         !step2
           ? `/onboarding/${businessProfile?.currentPage || 'welcome'}`
-          : businessProfile?.verificationStatus && !step3
+          : businessProfile?.verificationStatus === 'verified' && !step3
             ? '/onboarding/business-hours-setup'
             : step3
               ? accountStatus === 'verified'

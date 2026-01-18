@@ -6,6 +6,7 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useGetProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { FormFooter } from './FormFooter';
 
@@ -18,6 +19,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
   const [error, setError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
+  const getProfileMutation = useGetProfile();
   const [password, setPassword] = useState('');
 
   const normalizePhoneNumber = (phone: string) => {
@@ -55,17 +57,9 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
       }
       localStorage.setItem('accessToken', accessToken);
       sessionStorage.setItem('accessToken', accessToken);
-      const profileResp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/profile`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      if (!profileResp.ok) {
-        throw new Error('Failed to fetch profile');
-      }
-      const profileData = await profileResp.json();
+
+      // Fetch profile using React Query
+      const profileData: any = await getProfileMutation.mutateAsync();
       useOnboardingStore.getState().setProfile(profileData);
       const step2 = profileData?.step2;
       const step3 = profileData?.step3;

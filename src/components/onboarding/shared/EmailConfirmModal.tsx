@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -28,6 +29,7 @@ export function EmailConfirmModal() {
     completePhase,
     isEmailConfirmModalOpen,
     closeEmailConfirmModal,
+    profile,
   } = useOnboardingStore();
 
   // Initialize email from formData - uses key prop on Dialog to reset state when modal opens
@@ -44,6 +46,12 @@ export function EmailConfirmModal() {
   };
 
   const handleConfirm = async () => {
+    // Check if email matches partner email
+    if (profile?.partner?.email && email === profile.partner.email) {
+      toast.error('This email is already in use. Please use a different email address.');
+      return;
+    }
+
     // Update email in formData if it was changed
     if (email !== formData.businessInfo?.email && formData.businessInfo) {
       setFormData('businessInfo', {

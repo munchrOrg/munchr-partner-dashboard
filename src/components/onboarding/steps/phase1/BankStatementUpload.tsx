@@ -5,6 +5,7 @@ import { CircleAlert } from 'lucide-react';
 import { useEffect } from 'react';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
+import { createFileUploadFromKey } from '@/lib/helpers';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 export function BankStatementUpload() {
@@ -12,13 +13,15 @@ export function BankStatementUpload() {
   const businessProfile = profile?.partner?.businessProfile?.billingInfo;
   const prefilledFile: FileUpload | null =
     formData.bankStatement?.statementFile ||
-    (businessProfile?.checkBookImage
-      ? {
-          name: businessProfile.checkBookImage.fileName || 'Unknown',
-          size: businessProfile.checkBookImage.size || 0,
-          url: businessProfile.checkBookImage.url || '',
-        }
-      : null);
+    (businessProfile?.chequeBookImageKey
+      ? createFileUploadFromKey(businessProfile.chequeBookImageKey, 'Bank Statement')
+      : businessProfile?.checkBookImage
+        ? {
+            name: businessProfile.checkBookImage.fileName || 'Unknown',
+            size: businessProfile.checkBookImage.size || 0,
+            url: businessProfile.checkBookImage.url || '',
+          }
+        : null);
 
   const prefilledData = prefilledFile ? { statementFile: prefilledFile } : null;
 
