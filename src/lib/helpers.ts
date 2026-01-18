@@ -87,12 +87,27 @@ export function convertTo24HourFormat(time12h?: string): string {
  * Input: "10:30" or "2:5"
  * Output: "10:30" or "02:05"
  */
-export function formatToHHMM(time: string | undefined): string {
+// export function formatToHHMM(time: string | undefined): string {
+//   if (!time) {
+//     return '';
+//   }
+//   const [hour, minute] = time.split(':');
+//   const h = hour.padStart(2, '0');
+//   const m = minute.padStart(2, '0');
+//   return `${h}:${m}`;
+// }
+export function formatToHHMM(time?: string): string {
   if (!time) {
     return '';
   }
-  const [hour, minute] = time.split(':');
-  const h = hour.padStart(2, '0');
-  const m = minute.padStart(2, '0');
+
+  const parts: any = time.split(':');
+  if (parts.length < 2) {
+    return '';
+  }
+
+  const h = parts[0].padStart(2, '0');
+  const m = parts[1].padStart(2, '0');
+
   return `${h}:${m}`;
 }
