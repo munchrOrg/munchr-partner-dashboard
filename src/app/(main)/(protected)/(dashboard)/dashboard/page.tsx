@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { DashboardContent } from '@/components/dashboard/widgets/DashboardContent';
 import { useProfile } from '@/react-query/auth/queries';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
@@ -18,12 +18,12 @@ export default function DashboardPage() {
     completedPhases.includes(OnboardingPhase.OPEN_BUSINESS);
 
   useEffect(() => {
-    if (!allPhasesCompleted) {
+    if (profile && !allPhasesCompleted) {
       router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
     }
-  }, [allPhasesCompleted, router]);
+  }, [allPhasesCompleted, router, profile]);
 
-  if (!allPhasesCompleted) {
+  if (!profile || !allPhasesCompleted) {
     return (
       <div className="flex h-full items-center justify-center">
         <p>Loading...</p>
@@ -31,20 +31,10 @@ export default function DashboardPage() {
     );
   }
 
-  return (
-    <div className="container mx-auto p-8">
-      <Card>
-        <CardHeader>
-          <CardTitle>Dashboard</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p>
-            Welcome,
-            {profile?.email || 'Partner'}!
-          </p>
-          <p className="mt-2 text-gray-500">You are now logged in.</p>
-        </CardContent>
-      </Card>
-    </div>
-  );
+  const user = {
+    name: profile.name || null,
+    email: profile.email || null,
+  };
+
+  return <DashboardContent user={user} />;
 }

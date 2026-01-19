@@ -58,6 +58,7 @@ build-archive.log
 
 # IDE
 .idea
+.cursor
 
 # coverage
 /coverage

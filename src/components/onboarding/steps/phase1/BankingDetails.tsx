@@ -3,7 +3,7 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
 import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 
 import { toast } from 'sonner';
 import { z } from 'zod';
@@ -58,7 +58,7 @@ export function BankingDetails() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     setValue,
     formState: { errors },
   } = useForm<BankingInput>({
@@ -67,7 +67,7 @@ export function BankingDetails() {
     mode: 'all',
   });
 
-  const sameAsBusinessAddress = watch('sameAsBusinessAddress');
+  const sameAsBusinessAddress = useWatch({ control, name: 'sameAsBusinessAddress' });
 
   useEffect(() => {
     if (sameAsBusinessAddress) {
@@ -149,8 +149,8 @@ export function BankingDetails() {
           <CircleAlert className="text-gray-light mt-0.5 size-5 shrink-0" />
           <div className="text-gray-light text-sm">
             <p className="mb-2">
-              Note: your have to upload a bank proof later in this process and the proof must
-              matches with the details you share here. Please considfer the following.
+              Note: you have to upload a bank proof later in this process and the proof must match
+              with the details you share here. Please consider the following.
             </p>
             <ul className="text-gray-light ml-1 list-inside list-disc space-y-1 text-sm">
               <li>The bank account holder's name exactly as it appears on the bank statement</li>

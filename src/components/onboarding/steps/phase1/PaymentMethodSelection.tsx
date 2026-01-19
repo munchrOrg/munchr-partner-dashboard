@@ -5,7 +5,7 @@ import type { PaymentFormInput } from '@/validations/payment';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, Trash2 } from 'lucide-react';
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
@@ -55,7 +55,7 @@ export function PaymentMethodSelection() {
 
   const prefilledAccount: SavedPaymentAccount | null = businessProfile?.paymentMethodType
     ? {
-        id: Date.now().toString(),
+        id: 'business-prefilled',
         method: businessProfile.paymentMethodType,
         ...(businessProfile.paymentMethodType === PaymentMethod.CARD
           ? {
@@ -77,7 +77,7 @@ export function PaymentMethodSelection() {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     reset,
     setValue,
     formState: { errors, isValid },
@@ -95,7 +95,12 @@ export function PaymentMethodSelection() {
     mode: 'onChange',
   });
 
-  const selectedMethod = watch('selectedMethod');
+  const selectedMethod = useWatch({ control, name: 'selectedMethod' });
+  const accountTitle = useWatch({ control, name: 'accountTitle' });
+  const cardNumber = useWatch({ control, name: 'cardNumber' });
+  const cardExpiry = useWatch({ control, name: 'cardExpiry' });
+  const cardCvv = useWatch({ control, name: 'cardCvv' });
+  const accountNumber = useWatch({ control, name: 'accountNumber' });
 
   const handleAddAccount = handleSubmit((data) => {
     if (!data.selectedMethod) {
@@ -109,7 +114,7 @@ export function PaymentMethodSelection() {
     }
 
     const newAccount: SavedPaymentAccount = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       method: data.selectedMethod,
       ...(data.selectedMethod === PaymentMethod.CARD
         ? {
@@ -184,12 +189,8 @@ export function PaymentMethodSelection() {
 
     const isFormValid =
       selectedMethod === PaymentMethod.CARD
-        ? isValid &&
-          watch('accountTitle') &&
-          watch('cardNumber') &&
-          watch('cardExpiry') &&
-          watch('cardCvv')
-        : isValid && watch('accountNumber');
+        ? isValid && accountTitle && cardNumber && cardExpiry && cardCvv
+        : isValid && accountNumber;
 
     if (selectedMethod === PaymentMethod.CARD) {
       return (
