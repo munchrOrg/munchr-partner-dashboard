@@ -36,6 +36,20 @@ export type LoginResponse = {
   };
 };
 
+export type VerificationRequiredError = {
+  error: 'verification_required';
+  emailVerified: boolean;
+  phoneVerified: boolean;
+  partnerId?: string;
+  email?: string;
+  phone?: string;
+};
+
+export type PendingApprovalError = {
+  error: 'pending_approval';
+  message: string;
+};
+
 export type RefreshTokenRequest = {
   refreshToken: string;
 };
@@ -84,6 +98,15 @@ export type SignUpResponse = {
   requiresVerification: {
     email: boolean;
     phone: boolean;
+  };
+  // Tokens can be at root level or nested under 'tokens'
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  tokens?: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
   };
 };
 
@@ -327,10 +350,15 @@ export type ProfileResponse = {
     serviceProviderType: string;
     status: string;
     businessProfile: any;
+    emailVerified?: boolean;
+    phoneVerified?: boolean;
   };
   operatingHours: OperatingHoursType[];
   step1: boolean;
   step2: boolean;
   step3: boolean;
   onboarding: OnboardingState;
+  // Verification status (should be included in profile response)
+  emailVerified?: boolean;
+  phoneVerified?: boolean;
 };
