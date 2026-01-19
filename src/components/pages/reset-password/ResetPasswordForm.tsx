@@ -21,11 +21,10 @@ export function ResetPasswordForm() {
   });
   const router = useRouter();
 
-  const onSubmit = async (data: ResetPasswordInput) => {
+  const onSubmit = async (_data: ResetPasswordInput) => {
     try {
       // Handler to be implemented - should reset password and redirect to sign-in
-      console.log('Reset password:', data.password);
-      console.log('Confirm password:', data.confirmPassword);
+      // TODO: Implement password reset API call
       router.push('/sign-in');
     } catch {
       setError('root', { message: 'An unexpected error occurred' });
