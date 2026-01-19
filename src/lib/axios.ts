@@ -1,7 +1,7 @@
-import type { Session } from 'next-auth';
 import axios from 'axios';
-import { getSession, signOut } from 'next-auth/react';
+import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useSignupStore } from '@/stores/signup-store';
 
 const apiClient = axios.create({
   baseURL: process.env.NEXT_PUBLIC_BACKEND_URL,
@@ -9,23 +9,15 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
-// Request interceptor - attach auth token
+// Request interceptor - attach auth token from Zustand store
 apiClient.interceptors.request.use(
-  async (config) => {
-    if (typeof window !== 'undefined') {
-      let accessToken = localStorage.getItem('accessToken');
-      if (!accessToken) {
-        accessToken = sessionStorage.getItem('accessToken');
-      }
-      if (!accessToken) {
-        const session = (await getSession()) as Session | null;
-        accessToken = session?.accessToken || '';
-      }
-      if (accessToken) {
-        config.headers.Authorization = `Bearer ${accessToken}`;
-      }
+  (config) => {
+    const { accessToken } = useAuthStore.getState();
+    if (accessToken) {
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
     return config;
   },
@@ -35,29 +27,33 @@ apiClient.interceptors.request.use(
 // Response interceptor - handle errors globally
 apiClient.interceptors.response.use(
   (response) => response,
-  async (error) => {
+  (error) => {
     const status = error?.response?.status || error?.request?.status;
-    if (status === 401) {
-      if (typeof window !== 'undefined') {
-        localStorage.clear();
-        sessionStorage.clear();
-        localStorage.removeItem('onboarding-storage');
-        sessionStorage.removeItem('sentryReplaySession');
-        try {
-          // const onboardingStore = require('@/stores/onboarding-store').useOnboardingStore.getState();
-          // onboardingStore.reset();
-          const onboardingStore = useOnboardingStore.getState();
-          onboardingStore.reset();
-        } catch {}
-        if (window.location.pathname !== '/sign-in') {
-          try {
-            await signOut({ redirect: false });
-          } catch {}
-          window.location.href = '/sign-in';
-        }
-        window.location.href = '/sign-in';
-      }
+
+    const backendData = error?.response?.data;
+    let backendMessage = backendData?.message;
+
+    if (backendMessage && typeof backendMessage === 'object' && backendMessage.message) {
+      backendMessage = backendMessage.message;
     }
+
+    if (backendMessage && typeof backendMessage === 'string') {
+      error.message = backendMessage;
+    }
+
+    const isAuthRoute =
+      typeof window !== 'undefined' &&
+      (window.location.pathname === '/sign-in' ||
+        window.location.pathname === '/sign-up' ||
+        window.location.pathname.startsWith('/verify-'));
+
+    if (status === 401 && typeof window !== 'undefined' && !isAuthRoute) {
+      useAuthStore.getState().clearAuth();
+      useOnboardingStore.getState().reset();
+      useSignupStore.getState().reset();
+      window.location.href = '/sign-in';
+    }
+
     return Promise.reject(error);
   }
 );

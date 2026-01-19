@@ -42,9 +42,6 @@ export function ForgotPasswordForm() {
         setSubmittedEmail(data.email);
         setEmailSent(true);
         toast.success('OTP sent successfully! Check your email.');
-        if (response.code) {
-          console.warn('OTP Code received:', response.code);
-        }
       } else {
         toast.error(response.message || 'Failed to send OTP');
       }

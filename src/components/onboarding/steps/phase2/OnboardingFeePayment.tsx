@@ -1,14 +1,17 @@
 'use client';
 
-import type { FileUpload } from '@/types/onboarding';
+import type { FileUpload, OnboardingFeeFormData } from '@/types/onboarding';
 import { Copy, Plus } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
+import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
-import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
-import { getAuthHeaders } from '@/lib/auth-helpers';
 import { createFileUploadFromKey } from '@/lib/helpers';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
+import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingStep } from '@/types/onboarding';
 
 const PAYMENT_DETAILS = {
   accountName: 'Food for more',
@@ -18,31 +21,50 @@ const PAYMENT_DETAILS = {
 };
 
 export function OnboardingFeePayment() {
-  const { formData, setFormData, profile } = useOnboardingStore();
+  const { data: profile } = useProfile();
   const businessProfile = profile?.partner?.businessProfile;
+  const { triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
+
   const [copied, setCopied] = useState(false);
-  const [paymentTransactionId, setPaymentTransactionId] = useState('');
   const fileUploadRef = useRef<HTMLInputElement>(null);
-  useEffect(() => {
-    if (businessProfile && !formData.onboardingFee) {
-      const onboardingFeeData = {
-        paymentTransactionId: businessProfile.paymentTransactionId || '',
-        paymentScreenshot: businessProfile.uploadScreenshotImageKey
-          ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
-          : businessProfile.uploadScreenshotImage
-            ? {
-                name: businessProfile.uploadScreenshotImage.fileName || 'Unknown',
-                size: businessProfile.uploadScreenshotImage.size || 0,
-                url: businessProfile.uploadScreenshotImage.url || '',
-              }
-            : null,
-      };
-      setFormData('onboardingFee', onboardingFeeData);
-      setTimeout(() => {
-        setPaymentTransactionId(onboardingFeeData.paymentTransactionId);
-      }, 0);
+
+  const [onboardingFee, setOnboardingFee] = useState<OnboardingFeeFormData>(() => ({
+    paymentTransactionId: businessProfile?.paymentTransactionId || '',
+    paymentScreenshot: businessProfile?.uploadScreenshotImageKey
+      ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
+      : businessProfile?.uploadScreenshotImage
+        ? {
+            name: businessProfile.uploadScreenshotImage.fileName || 'Unknown',
+            size: businessProfile.uploadScreenshotImage.size || 0,
+            url: businessProfile.uploadScreenshotImage.url || '',
+          }
+        : null,
+  }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    console.log(`FORM SUBMITTED`);
+    e.preventDefault();
+
+    if (!onboardingFee.paymentScreenshot) {
+      toast.error('Please upload your payment screenshot before continuing.');
+      return;
     }
-  }, [businessProfile, formData.onboardingFee, setFormData]);
+
+    try {
+      const file = onboardingFee.paymentScreenshot as FileUpload & { key?: string };
+      await updateProfileMutation.mutateAsync({
+        currentStep: OnboardingStep.ONBOARDING_FEE_PAYMENT,
+        paymentTransactionId: onboardingFee.paymentTransactionId || '',
+        uploadScreenshotImageKey: file?.key || '',
+      });
+
+      triggerNavigation(OnboardingStep.ONBOARDING_FEE_PAYMENT);
+    } catch (error) {
+      console.error('Failed to save onboarding fee payment:', error);
+      toast.error('Failed to save data. Please try again.');
+    }
+  };
 
   const handleCopyIban = async () => {
     try {
@@ -60,11 +82,16 @@ export function OnboardingFeePayment() {
       return;
     }
 
-    // Step 1: Get upload URL and key from backend
     const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-    const res = await fetch(`${backendUrl}v1/storage/upload-url`, {
+    const accessToken = useAuthStore.getState().accessToken;
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (accessToken) {
+      headers.Authorization = `Bearer ${accessToken}`;
+    }
+
+    const res = await fetch(`${backendUrl}/v1/storage/upload-url`, {
       method: 'POST',
-      headers: await getAuthHeaders(),
+      headers,
       body: JSON.stringify({
         fileName: file.name,
         mimeType: file.type,
@@ -78,7 +105,6 @@ export function OnboardingFeePayment() {
     const { key, uploadUrl } = await res.json();
     console.log('Upload API response:', { key, uploadUrl });
 
-    // Step 2: Upload file to storage
     try {
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',
@@ -87,43 +113,44 @@ export function OnboardingFeePayment() {
       });
       if (!uploadRes.ok) {
         console.warn('File upload failed (likely CORS):', uploadRes.statusText);
-        // For development, ignore CORS error and proceed
       }
     } catch (err) {
       console.warn('File upload error (likely CORS):', err);
-      // For development, ignore CORS error and proceed
     }
 
-    // Step 3: Save key and public URL in FileUpload object
     const fileUpload: FileUpload = {
       name: file.name,
       url: `https://pub-xxx.r2.dev/${key}`,
       size: file.size,
       key,
     };
-    setFormData('onboardingFee', {
+
+    setOnboardingFee((prev) => ({
+      ...prev,
       paymentScreenshot: fileUpload,
-      paymentTransactionId,
-    });
+    }));
   };
 
-  // const removeScreenshot = () => {
-  //   setFormData('onboardingFee', {
-  //     paymentScreenshot: null,
-  //     paymentTransactionId: paymentTransactionId,
-  //   });
-  // };
+  const handleTransactionIdChange = (value: string) => {
+    setOnboardingFee((prev) => ({
+      ...prev,
+      paymentTransactionId: value,
+    }));
+  };
 
-  // const handleTransactionIdChange = (value: string) => {
-  //   setPaymentTransactionId(value);
-  //   setFormData('onboardingFee', {
-  //     paymentScreenshot: formData.onboardingFee?.paymentScreenshot || null,
-  //     paymentTransactionId: value,
-  //   });
-  // };
+  const removeScreenshot = () => {
+    setOnboardingFee((prev) => ({
+      ...prev,
+      paymentScreenshot: null,
+    }));
+  };
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
+    <form
+      id="onboarding-step-form"
+      onSubmit={handleSubmit}
+      className="mx-auto max-w-xl px-4 py-8 sm:px-8"
+    >
       <StepHeader
         title="Pay one-time onboarding fee"
         description="On average, restaurant recoup this payment from 12 new orders."
@@ -178,29 +205,28 @@ export function OnboardingFeePayment() {
           <div>
             <p className="mb-2 block text-lg font-bold">Upload a screenshot*</p>
 
-            {formData.onboardingFee?.paymentScreenshot ? (
+            {onboardingFee.paymentScreenshot ? (
               <div className="flex items-center justify-between rounded-lg border border-gray-300 bg-white p-4">
                 <span className="text-gray-light text-base font-semibold">
-                  {formData.onboardingFee.paymentScreenshot.name}
+                  {onboardingFee.paymentScreenshot.name}
                 </span>
                 <Button
                   type="button"
                   variant="ghost"
                   size="sm"
                   role="button"
-                  onClick={() =>
-                    setFormData('onboardingFee', { paymentScreenshot: null, paymentTransactionId })
-                  }
+                  onClick={removeScreenshot}
                 >
                   Remove
                 </Button>
               </div>
             ) : (
-              <HoverBorderGradient
-                containerClassName="rounded-full w-fit"
-                as="button"
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => fileUploadRef.current?.click()}
-                className="text-purple-dark flex min-w-xs cursor-pointer items-center space-x-2 bg-white"
+                className="text-purple-dark flex min-w-xs cursor-pointer items-center justify-start space-x-2 rounded-full bg-white px-2 py-6"
               >
                 <Plus className="size-6" />
                 <input
@@ -211,7 +237,7 @@ export function OnboardingFeePayment() {
                   className="hidden"
                 />
                 <span className="cursor-pointer text-inherit">Upload a screenshot</span>
-              </HoverBorderGradient>
+              </Button>
             )}
           </div>
         </div>
@@ -229,20 +255,13 @@ export function OnboardingFeePayment() {
             <input
               type="text"
               placeholder="Your transaction ID"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
-              value={paymentTransactionId}
-              onChange={(e) => {
-                const value = e.target.value;
-                setPaymentTransactionId(value);
-                setFormData('onboardingFee', {
-                  paymentScreenshot: formData.onboardingFee?.paymentScreenshot || null,
-                  paymentTransactionId: value,
-                });
-              }}
+              className="w-full rounded-full border border-gray-300 bg-white px-4 py-4 outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+              value={onboardingFee.paymentTransactionId}
+              onChange={(e) => handleTransactionIdChange(e.target.value)}
             />
           </div>
         </div>
       </div>
-    </div>
+    </form>
   );
 }

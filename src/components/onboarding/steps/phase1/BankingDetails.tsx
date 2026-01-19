@@ -11,6 +11,7 @@ import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
@@ -32,24 +33,26 @@ const bankingSchema = z.object({
 type BankingInput = z.infer<typeof bankingSchema>;
 
 export function BankingDetails() {
-  const { formData, setFormData, triggerNavigation, profile } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const { triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
+
   const businessProfile = profile?.partner?.businessProfile?.billingInfo;
   const businessProfileAddressData = profile?.partner?.businessProfile;
+
   const bankingPrefill = {
-    accountTitle: businessProfile?.bankAccountOwner || formData.banking?.accountTitle || '',
-    bankName: businessProfile?.bankName || formData.banking?.bankName || '',
-    iban: businessProfile?.IBAN || formData.banking?.iban || '',
-    sameAsBusinessAddress:
-      businessProfile?.billingAddressAreSame || formData.banking?.sameAsBusinessAddress || false,
-    address: formData.banking?.address || '',
-    buildingName: businessProfile?.billingBuildingPlaceName || formData.banking?.buildingName || '',
-    street: businessProfile?.billingStreet || formData.banking?.street || '',
-    houseNumber: businessProfile?.billingHouseNumber || formData.banking?.houseNumber || '',
-    billingState: businessProfile?.billingState || formData.banking?.billingState || '',
-    billingCity: businessProfile?.billingCity || formData.banking?.billingCity || '',
-    area: businessProfile?.billingArea || formData.banking?.area || '',
-    billingPostalCode:
-      businessProfile?.billingPostalCode || formData.banking?.billingPostalCode || '',
+    accountTitle: businessProfile?.bankAccountOwner || '',
+    bankName: businessProfile?.bankName || '',
+    iban: businessProfile?.IBAN || '',
+    sameAsBusinessAddress: businessProfile?.billingAddressAreSame || false,
+    address: '',
+    buildingName: businessProfile?.billingBuildingPlaceName || '',
+    street: businessProfile?.billingStreet || '',
+    houseNumber: businessProfile?.billingHouseNumber || '',
+    billingState: businessProfile?.billingState || '',
+    billingCity: businessProfile?.billingCity || '',
+    area: businessProfile?.billingArea || '',
+    billingPostalCode: businessProfile?.billingPostalCode || '',
   };
 
   const {
@@ -66,33 +69,16 @@ export function BankingDetails() {
 
   const sameAsBusinessAddress = watch('sameAsBusinessAddress');
 
-  // Auto-fill or clear billing address fields when checkbox changes
   useEffect(() => {
     if (sameAsBusinessAddress) {
-      // Prefer formData.banking, fallback to businessProfileAddressData
-      setValue('address', formData.banking?.address || businessProfileAddressData?.address || '');
-      setValue(
-        'buildingName',
-        formData.banking?.buildingName || businessProfileAddressData?.buildingPlaceName || ''
-      );
-      setValue('street', formData.banking?.street || businessProfileAddressData?.street || '');
-      setValue(
-        'houseNumber',
-        formData.banking?.houseNumber || businessProfileAddressData?.houseNumber || ''
-      );
-      setValue(
-        'billingState',
-        formData.banking?.billingState || businessProfileAddressData?.state || ''
-      );
-      setValue(
-        'billingCity',
-        formData.banking?.billingCity || businessProfileAddressData?.city || ''
-      );
-      setValue('area', formData.banking?.area || businessProfileAddressData?.area || '');
-      setValue(
-        'billingPostalCode',
-        formData.banking?.billingPostalCode || businessProfileAddressData?.postalCode || ''
-      );
+      setValue('address', businessProfileAddressData?.address || '');
+      setValue('buildingName', businessProfileAddressData?.buildingPlaceName || '');
+      setValue('street', businessProfileAddressData?.street || '');
+      setValue('houseNumber', businessProfileAddressData?.houseNumber || '');
+      setValue('billingState', businessProfileAddressData?.state || '');
+      setValue('billingCity', businessProfileAddressData?.city || '');
+      setValue('area', businessProfileAddressData?.area || '');
+      setValue('billingPostalCode', businessProfileAddressData?.postalCode || '');
     } else {
       // Clear all fields
       setValue('address', '');
@@ -104,25 +90,11 @@ export function BankingDetails() {
       setValue('area', '');
       setValue('billingPostalCode', '');
     }
-  }, [sameAsBusinessAddress]);
-  const updateProfileMutation = useUpdateProfile();
+  }, [sameAsBusinessAddress, businessProfileAddressData, setValue]);
 
   const onSubmit = async (data: BankingInput) => {
-    setFormData('banking', {
-      accountTitle: data.accountTitle,
-      bankName: data.bankName,
-      iban: data.iban,
-      sameAsBusinessAddress: data.sameAsBusinessAddress,
-      street: data.street || '',
-      houseNumber: data.houseNumber || '',
-      billingState: data.billingState || '',
-      billingCity: data.billingCity || '',
-      area: data.area || '',
-      billingPostalCode: data.billingPostalCode || '',
-    });
-
     const payload: any = {
-      currentPage: OnboardingStep.BANKING_DETAILS,
+      currentStep: OnboardingStep.BANKING_DETAILS,
       billingAddressAreSame: data.sameAsBusinessAddress,
       bankAccountOwner: data.accountTitle,
       bankName: data.bankName,
@@ -161,7 +133,7 @@ export function BankingDetails() {
         description="Your bank details are encrypted and secure so no one access them, not even us."
       />
 
-      <form id="banking-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+      <form id="onboarding-step-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         <div>
           <Input
             placeholder="Bank Account Owner / Title *"

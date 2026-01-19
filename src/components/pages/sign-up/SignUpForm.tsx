@@ -70,7 +70,7 @@ export function SignUpForm() {
     const fetchCuisines = async () => {
       try {
         const base = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const r = await fetch(`${base}v1/partner/cuisines`);
+        const r = await fetch(`${base}/v1/partner/cuisines`);
         if (!r.ok) {
           throw new Error('Failed to fetch');
         }
@@ -92,6 +92,9 @@ export function SignUpForm() {
     };
   }, []);
 
+  const [submittedEmail, setSubmittedEmail] = useState<string>('');
+  const [submittedPhone, setSubmittedPhone] = useState<string>('');
+
   const signUpMutation = useSignUp({
     options: {
       onSuccess: (resp) => {
@@ -101,7 +104,13 @@ export function SignUpForm() {
           if (resp.partnerId) {
             setPartnerId(resp.partnerId);
           }
-          router.push('/verify-email?type=signup');
+          const params = new URLSearchParams({
+            type: 'signup',
+            partnerId: resp.partnerId,
+            email: submittedEmail,
+            phone: submittedPhone,
+          });
+          router.push(`/verify-email?${params.toString()}`);
         } else {
           toast.error(resp.message || 'Registration failed');
         }
@@ -145,7 +154,7 @@ export function SignUpForm() {
     try {
       // Step 1: Get uploadUrl and key
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const res = await fetch(`${backendUrl}v1/storage/public/upload-url`, {
+      const res = await fetch(`${backendUrl}/v1/storage/public/upload-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -157,14 +166,15 @@ export function SignUpForm() {
       if (!res.ok) {
         throw new Error('Failed to get upload URL');
       }
+      // TODO: Add types for return type of upload api.
       const data = await res.json();
-      const { key, uploadUrl } = data;
+      const { uploadUrl, publicUrl } = data;
 
       // Step 2: Try to upload file to uploadUrl (PUT), ignore CORS error
       try {
         await fetch(uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': file.type },
+          // headers: { 'Content-Type': file.type },
           body: file,
         });
       } catch (uploadErr) {
@@ -172,10 +182,10 @@ export function SignUpForm() {
         // Ignore CORS error, proceed anyway
       }
 
-      const logoUrl = `https://pub-xxx.r2.dev/${key}`;
-      setLogoPreview(logoUrl);
+      // const logoUrl = `https://pub-xxx.r2.dev/${key}`;
+      setLogoPreview(publicUrl);
     } catch {
-      setLogoError('Image upload failed');
+      // setLogoError('Image upload failed');
     }
   }, []);
 
@@ -192,17 +202,9 @@ export function SignUpForm() {
     }
 
     try {
-      const { setFormData } = useSignupStore.getState();
-      setFormData({
-        serviceProviderType: data.serviceProviderType,
-        businessName: data.businessName,
-        businessDescription: data.businessDescription,
-        email: data.email,
-        password: (data as any).password || undefined,
-        phoneNumber: data.phoneNumber,
-        cuisines: data.cuisines,
-        logoUrl: logoPreview,
-      });
+      // Store email/phone for URL params (all business data goes to backend, not localStorage)
+      setSubmittedEmail(data.email);
+      setSubmittedPhone(data.phoneNumber);
 
       const phoneRaw = (data.phoneNumber ?? '').toString();
       const phone = phoneRaw.slice(0, 20);

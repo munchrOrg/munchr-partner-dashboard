@@ -1,17 +1,17 @@
 'use client';
 
-import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useProfile } from '@/react-query/auth/queries';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 export default function DashboardPage() {
-  const { data: session } = useSession();
-  const { completedPhases } = useOnboardingStore();
+  const { data: profile } = useProfile();
   const router = useRouter();
-  console.log(session);
+
+  const completedPhases = (profile?.onboarding?.completedPhases || []) as OnboardingPhase[];
+
   const allPhasesCompleted =
     completedPhases.includes(OnboardingPhase.ADD_BUSINESS) &&
     completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) &&
@@ -40,7 +40,7 @@ export default function DashboardPage() {
         <CardContent>
           <p>
             Welcome,
-            {session?.user?.email}!
+            {profile?.email || 'Partner'}!
           </p>
           <p className="mt-2 text-gray-500">You are now logged in.</p>
         </CardContent>

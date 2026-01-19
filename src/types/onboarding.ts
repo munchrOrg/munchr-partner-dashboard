@@ -68,6 +68,17 @@ export enum NetworkProvider {
   TELENOR = 'telenor',
 }
 
+export enum AssetType {
+  CNIC_FRONT = 'cnic-front',
+  CNIC_BACK = 'cnic-back',
+  NTN = 'ntn',
+  CHEQUE_BOOK = 'cheque-book',
+  PAYMENT_SCREENSHOT = 'payment-screenshot',
+  MENU = 'menu',
+  LOGO = 'logo',
+  OTHER = 'other',
+}
+
 // export enum DayOfWeek {
 //   MONDAY = 'monday',
 //   TUESDAY = 'tuesday',
@@ -176,7 +187,6 @@ export type BusinessHoursFormData = {
   sunday: DaySchedule;
 };
 
-// ===== Store Types =====
 export type OnboardingFormData = {
   businessInfo: BusinessInfoFormData | null;
   location: LocationFormData | null;
@@ -191,55 +201,6 @@ export type OnboardingFormData = {
   onboardingFee: OnboardingFeeFormData | null;
   businessHours: BusinessHoursFormData | null;
 };
-
-type OnboardingState = {
-  currentStep: OnboardingStep;
-  completedSteps: OnboardingStep[];
-  completedPhases: OnboardingPhase[];
-  formData: OnboardingFormData;
-
-  // UI State
-  isProgressDrawerOpen: boolean;
-  isExampleDrawerOpen: boolean;
-  isMapDrawerOpen: boolean;
-  isConfirmModalOpen: boolean;
-  isEmailConfirmModalOpen: boolean;
-  exampleDrawerConfig: ExampleDrawerConfig | null;
-  confirmModalConfig: ConfirmModalConfig | null;
-
-  // Navigation State
-  shouldNavigate: boolean;
-  navigationStep: OnboardingStep | null;
-};
-
-type OnboardingActions = {
-  setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) => void;
-  completeStep: (step: OnboardingStep) => void;
-  completePhase: (phase: OnboardingPhase) => void;
-  goToStep: (step: OnboardingStep) => void;
-
-  // UI Actions
-  openProgressDrawer: () => void;
-  closeProgressDrawer: () => void;
-  openExampleDrawer: (config: ExampleDrawerConfig) => void;
-  closeExampleDrawer: () => void;
-  openMapDrawer: () => void;
-  closeMapDrawer: () => void;
-  openConfirmModal: (config: ConfirmModalConfig) => void;
-  closeConfirmModal: () => void;
-  openEmailConfirmModal: () => void;
-  closeEmailConfirmModal: () => void;
-
-  // Navigation Actions
-  triggerNavigation: (step: OnboardingStep) => void;
-  clearNavigation: () => void;
-  profile: any;
-  setProfile: (profileData: any) => void;
-
-  reset: () => void;
-};
-
-export type OnboardingStore = OnboardingState & OnboardingActions;
 
 // ===== UI Config Types =====
 export type ExampleDrawerConfig = {
@@ -274,6 +235,7 @@ export type FileUploadBoxProps = {
   onChange: (file: FileUpload | null) => void;
   acceptedFormats?: string;
   maxSizeMB?: number;
+  assetType?: AssetType | string;
 };
 
 export type IntroStepProps = {

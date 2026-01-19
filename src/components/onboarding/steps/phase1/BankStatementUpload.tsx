@@ -1,38 +1,60 @@
 'use client';
 
-import type { FileUpload } from '@/types/onboarding';
+import type { BankStatementFormData, FileUpload } from '@/types/onboarding';
 import { CircleAlert } from 'lucide-react';
-import { useEffect } from 'react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { createFileUploadFromKey } from '@/lib/helpers';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { AssetType, OnboardingStep } from '@/types/onboarding';
 
 export function BankStatementUpload() {
-  const { formData, setFormData, openExampleDrawer, profile } = useOnboardingStore();
-  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
-  const prefilledFile: FileUpload | null =
-    formData.bankStatement?.statementFile ||
-    (businessProfile?.chequeBookImageKey
-      ? createFileUploadFromKey(businessProfile.chequeBookImageKey, 'Bank Statement')
-      : businessProfile?.checkBookImage
+  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const billingInfo = profile?.partner?.businessProfile?.billingInfo;
+  const updateProfileMutation = useUpdateProfile();
+
+  const [bankStatement, setBankStatement] = useState<BankStatementFormData>(() => {
+    const prefilled = billingInfo?.chequeBookImageKey
+      ? createFileUploadFromKey(billingInfo.chequeBookImageKey, 'Bank Statement')
+      : billingInfo?.checkBookImage
         ? {
-            name: businessProfile.checkBookImage.fileName || 'Unknown',
-            size: businessProfile.checkBookImage.size || 0,
-            url: businessProfile.checkBookImage.url || '',
+            name: billingInfo.checkBookImage.fileName || 'Unknown',
+            size: billingInfo.checkBookImage.size || 0,
+            url: billingInfo.checkBookImage.url || '',
           }
-        : null);
+        : null;
+    return { statementFile: prefilled };
+  });
 
-  const prefilledData = prefilledFile ? { statementFile: prefilledFile } : null;
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
 
-  useEffect(() => {
-    if (prefilledData) {
-      setFormData('bankStatement', prefilledData);
+    if (!bankStatement.statementFile) {
+      toast.error('Please upload your bank statement before continuing.');
+      return;
     }
-  }, [prefilledData, setFormData]);
+
+    try {
+      const file = bankStatement.statementFile as FileUpload & { key?: string };
+      await updateProfileMutation.mutateAsync({
+        currentStep: OnboardingStep.BANK_STATEMENT_UPLOAD,
+        chequeBookImageKey: file?.key || '',
+      });
+
+      triggerNavigation(OnboardingStep.BANK_STATEMENT_UPLOAD);
+    } catch (error) {
+      console.error('Failed to save bank statement:', error);
+      toast.error('Failed to save data. Please try again.');
+    }
+  };
 
   const handleFileChange = (file: FileUpload | null) => {
-    setFormData('bankStatement', { statementFile: file });
+    setBankStatement({ statementFile: file });
   };
 
   const showExample = () => {
@@ -43,7 +65,11 @@ export function BankStatementUpload() {
   };
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
+    <form
+      id="onboarding-step-form"
+      onSubmit={handleSubmit}
+      className="mx-auto max-w-xl px-4 py-8 sm:px-8"
+    >
       <StepHeader
         title="Upload Bank Book / Account Statement"
         description="We need to verify a few things on out side."
@@ -71,10 +97,11 @@ export function BankStatementUpload() {
       <div className="mt-6">
         <FileUploadBox
           label="Bank Statement"
-          value={prefilledFile || null}
+          value={bankStatement.statementFile}
           onChange={handleFileChange}
+          assetType={AssetType.CHEQUE_BOOK}
         />
       </div>
-    </div>
+    </form>
   );
 }

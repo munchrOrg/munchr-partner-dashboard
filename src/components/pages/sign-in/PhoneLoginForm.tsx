@@ -2,12 +2,10 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useGetProfile } from '@/react-query/auth/mutations';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useGetProfile, usePhoneLogin } from '@/react-query/auth/mutations';
 import { FormFooter } from './FormFooter';
 
 type PhoneLoginFormProps = {
@@ -16,11 +14,14 @@ type PhoneLoginFormProps = {
 
 export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
   const [phoneNumber, setPhoneNumber] = useState('');
-  const getProfileMutation = useGetProfile();
   const [password, setPassword] = useState('');
+
+  const phoneLoginMutation = usePhoneLogin();
+  const getProfileMutation = useGetProfile();
+
+  const isLoading = phoneLoginMutation.isPending || getProfileMutation.isPending;
+  const error = phoneLoginMutation.error?.message || getProfileMutation.error?.message;
 
   const normalizePhoneNumber = (phone: string) => {
     const p = phone.trim();
@@ -32,52 +33,19 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
     }
     return `+92${p}`;
   };
+
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsLoading(true);
-    setError(null);
 
     try {
       const formattedPhone = normalizePhoneNumber(phoneNumber);
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: formattedPhone, password }),
-      });
-      const loginBody = await resp
-        .clone()
-        .json()
-        .catch(() => null);
-      const accessToken = loginBody?.accessToken;
-      if (!accessToken) {
-        toast.error('No access token received');
-        setIsLoading(false);
-        return;
-      }
-      localStorage.setItem('accessToken', accessToken);
-      sessionStorage.setItem('accessToken', accessToken);
+      await phoneLoginMutation.mutateAsync({ phoneNumber: formattedPhone, password });
 
-      // Fetch profile using React Query
-      const profileData: any = await getProfileMutation.mutateAsync();
-      useOnboardingStore.getState().setProfile(profileData);
-      const step2 = profileData?.step2;
-      const step3 = profileData?.step3;
-      const businessProfile = profileData?.partner?.businessProfile;
-      router.push(
-        !step2
-          ? `/onboarding/${businessProfile?.currentPage || 'welcome'}`
-          : businessProfile?.active && !step3
-            ? '/onboarding/business-hours-setup'
-            : step3
-              ? '/dashboard'
-              : '/onboarding/welcome'
-      );
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
-    }
+      const profileData = await getProfileMutation.mutateAsync();
+
+      const targetStep = profileData?.onboarding?.currentStep || 'welcome';
+      router.push(`/onboarding/${targetStep}`);
+    } catch {}
   };
 
   return (

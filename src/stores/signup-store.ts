@@ -1,46 +1,37 @@
-import type { AccountStatus, SignupFormData, SignupStore } from '@/types/signup';
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 
-const initialFormData: SignupFormData = {
-  serviceProviderType: null,
-  businessName: '',
-  businessDescription: '',
-  email: '',
-  password: undefined,
-  phoneNumber: '',
-  cuisines: [],
-  logoUrl: null,
+type SignupState = {
+  partnerId: string | null;
+  isEmailVerified: boolean;
+  isPhoneVerified: boolean;
 };
+
+type SignupActions = {
+  setPartnerId: (id: string | null) => void;
+  setEmailVerified: (verified: boolean) => void;
+  setPhoneVerified: (verified: boolean) => void;
+  reset: () => void;
+};
+
+type SignupStore = SignupState & SignupActions;
 
 export const useSignupStore = create<SignupStore>()(
   persist(
     (set) => ({
-      formData: initialFormData,
-      accountStatus: 'pending',
+      partnerId: null,
       isEmailVerified: false,
       isPhoneVerified: false,
-      partnerId: null,
 
-      setFormData: (data: Partial<SignupFormData>) =>
-        set((state) => ({
-          formData: { ...state.formData, ...data },
-        })),
-
-      setAccountStatus: (status: AccountStatus) => set({ accountStatus: status }),
-
-      setEmailVerified: (verified: boolean) => set({ isEmailVerified: verified }),
-
-      setPhoneVerified: (verified: boolean) => set({ isPhoneVerified: verified }),
-      setPartnerId: (id: string | null) => set({ partnerId: id }),
+      setPartnerId: (id) => set({ partnerId: id }),
+      setEmailVerified: (verified) => set({ isEmailVerified: verified }),
+      setPhoneVerified: (verified) => set({ isPhoneVerified: verified }),
 
       reset: () =>
         set({
-          formData: initialFormData,
-          accountStatus: 'pending',
+          partnerId: null,
           isEmailVerified: false,
           isPhoneVerified: false,
-          partnerId: null,
         }),
     }),
     {

@@ -1,9 +1,10 @@
 'use client';
 
+import type { TrainingCallFormData } from '@/types/onboarding';
 import { ChevronDown, Clock, HelpCircle } from 'lucide-react';
 import Image from 'next/image';
-
-import { useEffect } from 'react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import {
@@ -13,10 +14,12 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { formatToHHMM } from '@/lib/helpers';
+import { convertTo24HourFormat, formatToHHMM, is24HourFormat } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { NetworkProvider } from '@/types/onboarding';
+import { NetworkProvider, OnboardingStep } from '@/types/onboarding';
 
 const NETWORK_PROVIDERS = [
   { value: NetworkProvider.JAZZ, label: 'Jazz', image: '/jazz.png' },
@@ -38,46 +41,74 @@ const TIME_SLOTS = [
 ];
 
 export function TrainingCallPreference() {
-  const { formData, setFormData, profile } = useOnboardingStore();
-  const businessProfile = profile?.partner?.businessProfile?.bookSlot;
-  useEffect(() => {
-    if (businessProfile && !formData.trainingCall) {
-      setFormData('trainingCall', {
-        networkProvider: businessProfile.networkPreference || '',
-        preferredDate: businessProfile.bookingDate || '',
-        preferredTime: formatToHHMM(businessProfile.bookingTime),
-      });
-    }
-  }, [businessProfile, formData.trainingCall]);
+  const { data: profile } = useProfile();
+  const bookSlot = profile?.partner?.businessProfile?.bookSlot;
+  const { triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
 
-  const trainingData = {
-    networkProvider:
-      formData.trainingCall?.networkProvider || businessProfile?.networkPreference || null,
-    preferredDate: formData.trainingCall?.preferredDate || businessProfile?.bookingDate || '',
-    preferredTime: formData.trainingCall?.preferredTime || businessProfile?.bookingTime || '',
+  const [trainingCall, setTrainingCall] = useState<TrainingCallFormData>(() => ({
+    networkProvider: bookSlot?.networkPreference || null,
+    preferredDate: bookSlot?.bookingDate || '',
+    preferredTime: bookSlot?.bookingTime ? formatToHHMM(bookSlot.bookingTime) : '',
+  }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!trainingCall.networkProvider) {
+      toast.error('Please select your mobile network provider.');
+      return;
+    }
+    if (!trainingCall.preferredTime) {
+      toast.error('Please select your preferred time for the training call.');
+      return;
+    }
+    if (!trainingCall.preferredDate) {
+      toast.error('Please select your preferred date for the training call.');
+      return;
+    }
+
+    try {
+      const time24 = is24HourFormat(trainingCall.preferredTime)
+        ? trainingCall.preferredTime
+        : convertTo24HourFormat(trainingCall.preferredTime);
+
+      await updateProfileMutation.mutateAsync({
+        currentStep: OnboardingStep.TRAINING_CALL_PREFERENCE,
+        bookSlot: {
+          networkPreference: trainingCall.networkProvider,
+          date: trainingCall.preferredDate,
+          time: time24,
+        },
+      });
+
+      triggerNavigation(OnboardingStep.TRAINING_CALL_PREFERENCE);
+    } catch (error) {
+      console.error('Failed to save training call preference:', error);
+      toast.error('Failed to save data. Please try again.');
+    }
   };
 
   const handleProviderSelect = (provider: NetworkProvider) => {
-    setFormData('trainingCall', {
-      ...formData.trainingCall,
+    setTrainingCall((prev) => ({
+      ...prev,
       networkProvider: provider,
-      preferredDate: formData.trainingCall?.preferredDate || '', // ensure string
-      preferredTime: formData.trainingCall?.preferredTime || '', // ensure string
-    });
+    }));
   };
 
   const handleFieldChange = (field: 'preferredDate' | 'preferredTime', value: string) => {
-    setFormData('trainingCall', {
-      ...formData.trainingCall,
+    setTrainingCall((prev) => ({
+      ...prev,
       [field]: value,
-      networkProvider: formData.trainingCall?.networkProvider || null, // ensure networkProvider exists
-      preferredDate: field === 'preferredDate' ? value : formData.trainingCall?.preferredDate || '',
-      preferredTime: field === 'preferredTime' ? value : formData.trainingCall?.preferredTime || '',
-    });
+    }));
   };
 
   return (
-    <div className="relative mx-auto max-w-2xl px-4 py-8 sm:px-8">
+    <form
+      id="onboarding-step-form"
+      onSubmit={handleSubmit}
+      className="relative mx-auto max-w-2xl px-4 py-8 sm:px-8"
+    >
       <StepHeader
         title="Network & Training Call Preference"
         description="Please select your prefered mobile network and you convenient time for training call"
@@ -93,7 +124,7 @@ export function TrainingCallPreference() {
               onClick={() => handleProviderSelect(provider.value)}
               className={cn(
                 'relative flex h-28 items-center justify-center rounded-2xl border-2 bg-white p-4 transition-all hover:shadow-md sm:h-32',
-                trainingData.networkProvider === provider.value
+                trainingCall.networkProvider === provider.value
                   ? 'border-gray-400 shadow-sm'
                   : 'border-gray-200'
               )}
@@ -113,8 +144,8 @@ export function TrainingCallPreference() {
                 variant="outline"
                 className="border-gray-light text-gray-light w-full justify-between rounded-full py-7 text-sm has-[>svg]:px-5"
               >
-                {trainingData.networkProvider
-                  ? NETWORK_PROVIDERS.find((p) => p.value === trainingData.networkProvider)?.label
+                {trainingCall.networkProvider
+                  ? NETWORK_PROVIDERS.find((p) => p.value === trainingCall.networkProvider)?.label
                   : 'Select mobile network preference'}
                 <ChevronDown className="h-4 w-4 opacity-50" />
               </Button>
@@ -148,7 +179,7 @@ export function TrainingCallPreference() {
                   variant="outline"
                   className="text-gray-light w-full justify-between rounded-full border-gray-300 py-7 text-sm has-[>svg]:px-5"
                 >
-                  {trainingData.preferredTime || 'Select time*'}
+                  {trainingCall.preferredTime || 'Select time*'}
                   <Clock className="h-4 w-4 opacity-50" />
                 </Button>
               </DropdownMenuTrigger>
@@ -167,7 +198,7 @@ export function TrainingCallPreference() {
             {/* Date Selection */}
             <Input
               type="date"
-              value={trainingData.preferredDate}
+              value={trainingCall.preferredDate}
               onChange={(e) => handleFieldChange('preferredDate', e.target.value)}
               min={new Date().toISOString().split('T')[0]}
               placeholder="Select date*"
@@ -185,6 +216,6 @@ export function TrainingCallPreference() {
       >
         <HelpCircle className="h-6 w-6 text-white" />
       </Button>
-    </div>
+    </form>
   );
 }

@@ -1,14 +1,16 @@
 'use client';
 
-import type { DaySchedule } from '@/types/onboarding';
-
+import type { BusinessHoursFormData, DaySchedule } from '@/types/onboarding';
 import { useState } from 'react';
+import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import TimeConfirmationDrawer from '@/components/onboarding/shared/TimeConfirmationDrawer';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-
+import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingStep } from '@/types/onboarding';
 
 const DAYS_OF_WEEK = [
   { key: 'monday', label: 'Monday' },
@@ -22,29 +24,149 @@ const DAYS_OF_WEEK = [
 
 type DayKey = (typeof DAYS_OF_WEEK)[number]['key'];
 
-export function BusinessHoursSetup() {
-  const { formData, setFormData } = useOnboardingStore();
-  const [editingDay, setEditingDay] = useState<DayKey | null>(null);
+const DEFAULT_BUSINESS_HOURS: BusinessHoursFormData = {
+  monday: { isOpen: false, slots: [] },
+  tuesday: { isOpen: false, slots: [] },
+  wednesday: { isOpen: false, slots: [] },
+  thursday: { isOpen: false, slots: [] },
+  friday: { isOpen: false, slots: [] },
+  saturday: { isOpen: false, slots: [] },
+  sunday: { isOpen: false, slots: [] },
+};
 
-  const businessHours = formData.businessHours || {
-    monday: { isOpen: false, slots: [] },
-    tuesday: { isOpen: false, slots: [] },
-    wednesday: { isOpen: false, slots: [] },
-    thursday: { isOpen: false, slots: [] },
-    friday: { isOpen: false, slots: [] },
-    saturday: { isOpen: false, slots: [] },
-    sunday: { isOpen: false, slots: [] },
+function convertOperatingHoursToFormData(
+  operatingHours:
+    | Array<{ dayOfWeek: number; startTime?: string; endTime?: string; isClosed: boolean }>
+    | undefined
+): BusinessHoursFormData {
+  if (!operatingHours || operatingHours.length === 0) {
+    return DEFAULT_BUSINESS_HOURS;
+  }
+
+  const dayMapping: Record<number, DayKey> = {
+    0: 'sunday',
+    1: 'monday',
+    2: 'tuesday',
+    3: 'wednesday',
+    4: 'thursday',
+    5: 'friday',
+    6: 'saturday',
   };
 
+  const result = { ...DEFAULT_BUSINESS_HOURS };
+
+  operatingHours.forEach((hour) => {
+    const dayKey = dayMapping[hour.dayOfWeek];
+    if (dayKey) {
+      if (hour.isClosed) {
+        result[dayKey] = { isOpen: false, slots: [] };
+      } else if (hour.startTime && hour.endTime) {
+        const existingSlots = result[dayKey].slots;
+        result[dayKey] = {
+          isOpen: true,
+          slots: [...existingSlots, { open: hour.startTime, close: hour.endTime }],
+        };
+      }
+    }
+  });
+
+  return result;
+}
+
+export function BusinessHoursSetup() {
+  const { data: profile } = useProfile();
+  const { triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
+  const [editingDay, setEditingDay] = useState<DayKey | null>(null);
+
+  const [businessHours, setBusinessHours] = useState<BusinessHoursFormData>(() =>
+    convertOperatingHoursToFormData(profile?.operatingHours)
+  );
+
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
-    setFormData('businessHours', {
-      ...businessHours,
+    setBusinessHours((prev) => ({
+      ...prev,
       [day]: schedule,
+    }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const days = [
+      'monday',
+      'tuesday',
+      'wednesday',
+      'thursday',
+      'friday',
+      'saturday',
+      'sunday',
+    ] as const;
+    const hasOpenDay = days.some((day) => businessHours[day].isOpen);
+    if (!hasOpenDay) {
+      toast.error('Please mark at least one day as open.');
+      return;
+    }
+
+    for (const day of days) {
+      const schedule = businessHours[day];
+      if (schedule.isOpen && schedule.slots.length === 0) {
+        toast.error('Please add time slots for all open days or mark them as closed.');
+        return;
+      }
+    }
+
+    const dayMapping = {
+      monday: 1,
+      tuesday: 2,
+      wednesday: 3,
+      thursday: 4,
+      friday: 5,
+      saturday: 6,
+      sunday: 0,
+    };
+
+    const operatingHoursPayload: any[] = [];
+    Object.entries(businessHours).forEach(([day, schedule]) => {
+      const dayOfWeek = dayMapping[day as keyof typeof dayMapping];
+      if (schedule.isOpen && schedule.slots.length > 0) {
+        schedule.slots.forEach((slot) => {
+          operatingHoursPayload.push({
+            dayOfWeek,
+            startTime: slot.open,
+            endTime: slot.close,
+            isClosed: false,
+          });
+        });
+      } else {
+        operatingHoursPayload.push({
+          dayOfWeek,
+          startTime: '00:00',
+          endTime: '00:00',
+          isClosed: true,
+        });
+      }
     });
+
+    try {
+      await updateProfileMutation.mutateAsync({
+        currentStep: OnboardingStep.BUSINESS_HOURS_SETUP,
+        operatingHours: operatingHoursPayload,
+      });
+
+      triggerNavigation(OnboardingStep.BUSINESS_HOURS_SETUP);
+    } catch (error) {
+      console.error('Failed to save business hours:', error);
+      toast.error('Failed to save data. Please try again.');
+    }
   };
 
   return (
-    <div className="mx-auto flex h-full max-w-6xl items-center justify-center px-4 py-8 sm:px-8">
+    <form
+      id="onboarding-step-form"
+      onSubmit={handleSubmit}
+      className="mx-auto flex h-full max-w-6xl items-center justify-center px-4 py-8 sm:px-8"
+    >
       <div className="flex w-full flex-col gap-8 lg:flex-row lg:items-center lg:gap-16">
         <div className="flex flex-1 flex-col justify-center">
           <StepHeader
@@ -90,6 +212,6 @@ export function BusinessHoursSetup() {
         updateDaySchedule={updateDaySchedule}
         setEditingDay={setEditingDay}
       />
-    </div>
+    </form>
   );
 }

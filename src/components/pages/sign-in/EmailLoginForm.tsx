@@ -4,33 +4,19 @@ import type { SignInInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { useGetProfile } from '@/react-query/auth/mutations';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useGetProfile, useLogin } from '@/react-query/auth/mutations';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
-// function handleUnauthorized(onboardingStore: any, signupStore: any) {
-//   localStorage.clear();
-//   sessionStorage.clear();
-//   onboardingStore.reset();
-//   signupStore.reset();
-// }
-
 export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => void }) {
   const router = useRouter();
-  const [error, setError] = useState<string | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [profile, setProfile] = useState<any>(null); // Profile data state
-  const onboardingStore = useOnboardingStore();
+  const loginMutation = useLogin();
   const getProfileMutation = useGetProfile();
-  console.warn(profile);
 
   const {
     register,
@@ -40,62 +26,18 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
     resolver: zodResolver(signInSchema),
   });
 
+  const isLoading = loginMutation.isPending || getProfileMutation.isPending;
+  const error = loginMutation.error?.message || getProfileMutation.error?.message;
+
   const onSubmit = async (data: SignInInput) => {
-    setIsLoading(true);
-    setError(null);
-
     try {
-      const resp = await fetch(`${process.env.NEXT_PUBLIC_BACKEND_URL}v1/auth/login`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: data.email, password: data.password }),
-      });
-      const loginBody = await resp
-        .clone()
-        .json()
-        .catch(() => null);
-      console.warn('Login response headers:', Array.from(resp.headers.entries()));
-      console.warn('Login response body:', loginBody);
-      // if (!resp.ok) {
-      //   if (resp.status === 401) {
-      //     handleUnauthorized(onboardingStore, signupStore);
-      //     throw new Error('Unauthorized: Cleared local data');
-      //   }
-      //   throw new Error('Login failed');
-      // }
-      const accessToken = loginBody?.accessToken;
-      if (!accessToken) {
-        toast.error('No access token received');
-        setIsLoading(false);
-        return;
-      }
-      localStorage.setItem('accessToken', accessToken);
-      sessionStorage.setItem('accessToken', accessToken);
+      await loginMutation.mutateAsync(data);
 
-      const profileData: any = await getProfileMutation.mutateAsync();
-      setProfile(profileData); // Save profile data in local state
-      onboardingStore.setProfile(profileData); // Save profile data in global store
-      const step2 = profileData?.step2;
-      const step3 = profileData?.step3;
-      const accountStatus = profileData?.partner?.businessProfile?.verificationStatus;
-      const businessProfile: any = profileData?.partner?.businessProfile;
-      router.push(
-        !step2
-          ? `/onboarding/${businessProfile?.currentPage || 'welcome'}`
-          : businessProfile?.verificationStatus === 'verified' && !step3
-            ? '/onboarding/business-hours-setup'
-            : step3
-              ? accountStatus === 'verified'
-                ? '/onboarding/open-business-intro'
-                : '/onboarding/welcome'
-              : '/onboarding/welcome'
-      );
-    } catch (err: any) {
-      setError(err.message || 'Login failed');
-    } finally {
-      setIsLoading(false);
-    }
+      const profileData = await getProfileMutation.mutateAsync();
+
+      const targetStep = profileData?.onboarding?.currentStep || 'welcome';
+      router.push(`/onboarding/${targetStep}`);
+    } catch {}
   };
 
   return (
