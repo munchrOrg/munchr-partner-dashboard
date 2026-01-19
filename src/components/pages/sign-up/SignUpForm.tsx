@@ -4,7 +4,7 @@ import type { Option } from '@/components/ui/multi-select';
 import type { SignUpInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { isValidPhoneNumber, parsePhoneNumberFromString } from 'libphonenumber-js';
-import { X } from 'lucide-react';
+import { Loader2, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSignUp } from '@/react-query/auth/mutations';
+import { useAuthStore } from '@/stores/auth-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
 import 'react-phone-number-input/style.css';
@@ -35,6 +36,7 @@ export function SignUpForm() {
   const router = useRouter();
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
+  const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   // Removed unused logoFile
   const [cuisineOptions, setCuisineOptions] = useState<Option[]>([]);
 
@@ -104,6 +106,11 @@ export function SignUpForm() {
           if (resp.partnerId) {
             setPartnerId(resp.partnerId);
           }
+          // Token can be at root level or nested under 'tokens'
+          const accessToken = resp.accessToken || resp.tokens?.accessToken;
+          if (accessToken) {
+            useAuthStore.getState().setAccessToken(accessToken);
+          }
           const params = new URLSearchParams({
             type: 'signup',
             partnerId: resp.partnerId,
@@ -136,8 +143,10 @@ export function SignUpForm() {
   const handleFileChange = useCallback(async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     setLogoError(null);
+    setIsUploadingLogo(true);
 
     if (!file) {
+      setIsUploadingLogo(false);
       return;
     }
 
@@ -186,6 +195,8 @@ export function SignUpForm() {
       setLogoPreview(publicUrl);
     } catch {
       // setLogoError('Image upload failed');
+    } finally {
+      setIsUploadingLogo(false);
     }
   }, []);
 
@@ -382,7 +393,12 @@ export function SignUpForm() {
 
         {/* Logo Upload with Preview Inside Box */}
         <div>
-          {logoPreview ? (
+          {isUploadingLogo ? (
+            <div className="flex min-h-[100px] cursor-not-allowed flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-gray-50 p-4">
+              <Loader2 className="mb-2 h-6 w-6 animate-spin text-gray-400" />
+              <span className="text-sm text-gray-500">Uploading logo...</span>
+            </div>
+          ) : logoPreview ? (
             <div className="relative flex min-h-[100px] cursor-pointer flex-col items-center justify-center rounded-2xl border border-dashed border-gray-300 bg-white p-4 transition-colors hover:bg-gray-50">
               <div className="relative h-24 w-24 overflow-hidden rounded-xl">
                 <Image src={logoPreview} alt="Logo preview" fill className="object-contain" />
@@ -400,6 +416,7 @@ export function SignUpForm() {
                   accept=".jpg,.jpeg,.png,.webp"
                   className="hidden"
                   onChange={handleFileChange}
+                  disabled={isUploadingLogo}
                 />
                 Change logo
               </label>
@@ -411,6 +428,7 @@ export function SignUpForm() {
                 accept=".jpg,.jpeg,.png,.webp"
                 className="hidden"
                 onChange={handleFileChange}
+                disabled={isUploadingLogo}
               />
               <svg
                 className="mb-2 h-6 w-6 text-gray-400"

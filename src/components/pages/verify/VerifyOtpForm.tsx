@@ -150,25 +150,34 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         setPhoneVerified(true);
       }
 
-      if (response.accountActivated && response.accessToken) {
-        setAccessToken(response.accessToken);
+      const accessToken = response.accessToken || (response as any).tokens?.accessToken;
+      if (accessToken) {
+        setAccessToken(accessToken);
+      }
+
+      const bothVerified = response.emailVerified && response.phoneVerified;
+
+      if (bothVerified || response.accountActivated) {
         useSignupStore.getState().reset();
-        // Navigate to onboarding based on backend's currentStep
         const targetStep = response.onboarding?.currentStep || 'welcome';
         router.push(`/onboarding/${targetStep}`);
         return;
       }
 
-      if (type === 'email') {
+      if (type === 'email' && !response.phoneVerified) {
         const phone = searchParams.get('phone') || '';
         router.push(
-          `/verify-phone?type=signup&partnerId=${partnerId}&phone=${encodeURIComponent(phone)}`
+          `/verify-phone?type=signup&partnerId=${partnerId}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(searchParams.get('email') || '')}`
         );
-      } else {
+      } else if (type === 'phone' && !response.emailVerified) {
         const email = searchParams.get('email') || '';
         router.push(
-          `/verify-email?type=signup&partnerId=${partnerId}&email=${encodeURIComponent(email)}`
+          `/verify-email?type=signup&partnerId=${partnerId}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(searchParams.get('phone') || '')}`
         );
+      } else {
+        useSignupStore.getState().reset();
+        const targetStep = response.onboarding?.currentStep || 'welcome';
+        router.push(`/onboarding/${targetStep}`);
       }
     } catch {
       setError('otp', { message: 'An unexpected error occurred' });

@@ -2,7 +2,7 @@
 
 import { useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
@@ -37,7 +37,10 @@ export function OnboardingFooter() {
   const currentStep = params.step as OnboardingStep;
 
   const { data: profile } = useProfile();
-  const completedPhases = (profile?.onboarding?.completedPhases || []) as string[];
+  const completedPhases = useMemo(
+    () => (profile?.onboarding?.completedPhases || []) as string[],
+    [profile?.onboarding?.completedPhases]
+  );
 
   const { openProgressDrawer, shouldNavigate, navigationStep, clearNavigation } =
     useOnboardingStore();
@@ -76,7 +79,7 @@ export function OnboardingFooter() {
       if (isPhaseComplete) {
         const nextPhase = getNextPhase(phase);
         if (nextPhase) {
-          router.push(`/onboarding/${OnboardingStep.WELCOME}`);
+          router.push(`/onboarding/${PHASE_ENTRY_STEP[nextPhase]}`);
         } else {
           router.push('/dashboard');
         }

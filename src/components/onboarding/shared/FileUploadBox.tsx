@@ -1,7 +1,7 @@
 'use client';
 
 import type { FileUpload, FileUploadBoxProps } from '@/types/onboarding';
-import { Link2, X } from 'lucide-react';
+import { Link2, Loader2, X } from 'lucide-react';
 
 import { useEffect, useRef, useState } from 'react';
 import { useAuthStore } from '@/stores/auth-store';
@@ -21,6 +21,7 @@ export function FileUploadBox({
 }: FileUploadBoxProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const previousUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -45,6 +46,7 @@ export function FileUploadBox({
     }
 
     setError(null);
+    setIsUploading(true);
 
     const fileSizeMB = file.size / (1024 * 1024);
     if (fileSizeMB > maxSizeMB) {
@@ -103,6 +105,8 @@ export function FileUploadBox({
     } catch (err: any) {
       setError('Image upload failed');
       console.error('File upload error:', err);
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -150,9 +154,17 @@ export function FileUploadBox({
           <button
             type="button"
             onClick={handleClick}
-            className="text-purple-dark text-base font-bold hover:underline"
+            disabled={isUploading}
+            className="text-purple-dark text-base font-bold hover:underline disabled:cursor-not-allowed disabled:opacity-50"
           >
-            Upload from your device
+            {isUploading ? (
+              <div className="flex items-center gap-2">
+                <Loader2 className="h-4 w-4 animate-spin" />
+                Uploading...
+              </div>
+            ) : (
+              'Upload from your device'
+            )}
           </button>
 
           {error && <p className="mt-2 text-sm text-red-500">{error}</p>}
@@ -163,11 +175,30 @@ export function FileUploadBox({
           type="file"
           accept={acceptedFormats}
           onChange={handleFileChange}
+          disabled={isUploading}
           className="hidden"
         />
       </div>
 
-      {value && (
+      {isUploading && (
+        <div className="flex items-center justify-between rounded-full border border-gray-200 px-4 py-3">
+          <div className="flex items-center gap-3">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+              <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-gray-700">Uploading file...</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100">
+              <Loader2 className="h-3 w-3 animate-spin text-yellow-600" />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {value && !isUploading && (
         <div className="flex items-center justify-between rounded-full border border-gray-200 px-4 py-3">
           <div className="flex items-center gap-3">
             <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">

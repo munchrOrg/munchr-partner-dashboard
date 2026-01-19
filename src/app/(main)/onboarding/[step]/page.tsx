@@ -5,7 +5,6 @@ import { useParams, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
 import { STEP_ORDER } from '@/config/onboarding-steps';
-import { useProfile } from '@/react-query/auth/queries';
 import { OnboardingStep } from '@/types/onboarding';
 
 const stepComponents: Record<OnboardingStep, React.ComponentType> = {
@@ -136,71 +135,18 @@ const stepComponents: Record<OnboardingStep, React.ComponentType> = {
   ),
 };
 
-function OnboardingLoadingSkeleton() {
-  return (
-    <div className="flex h-full animate-pulse flex-col items-center justify-center gap-4">
-      <div className="h-8 w-64 rounded bg-gray-200" />
-      <div className="h-4 w-96 rounded bg-gray-200" />
-      <div className="mt-8 h-64 w-full max-w-2xl rounded-lg bg-gray-100" />
-    </div>
-  );
-}
-
 export default function OnboardingPage() {
   const router = useRouter();
   const params = useParams();
   const step = params.step as string;
 
-  const { data: profile, isLoading, isError } = useProfile();
-
-  const onboarding = profile?.onboarding;
-  const backendCurrentStep = onboarding?.currentStep as OnboardingStep | null;
-  const completedSteps = (onboarding?.completedSteps || []) as string[];
-
+  // Only redirect invalid steps to welcome - AuthGuard handles all other routing
   useEffect(() => {
-    if (isLoading) {
-      return;
-    }
-
     const stepEnum = step as OnboardingStep;
-
     if (!STEP_ORDER.includes(stepEnum)) {
       router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
-      return;
     }
-
-    if (stepEnum === OnboardingStep.WELCOME) {
-      return;
-    }
-
-    if (backendCurrentStep) {
-      const requestedStepIndex = STEP_ORDER.indexOf(stepEnum);
-      const currentStepIndex = STEP_ORDER.indexOf(backendCurrentStep);
-      const isStepCompleted = completedSteps.includes(stepEnum);
-
-      if (!isStepCompleted && requestedStepIndex > currentStepIndex) {
-        router.replace(`/onboarding/${backendCurrentStep}`);
-      }
-    }
-  }, [step, isLoading, backendCurrentStep, completedSteps, router]);
-
-  if (isLoading) {
-    return <OnboardingLoadingSkeleton />;
-  }
-
-  if (isError) {
-    return (
-      <div className="flex h-full flex-col items-center justify-center gap-4">
-        <p className="text-red-500">Failed to load profile. Please try refreshing the page.</p>
-        <button
-          onClick={() => window.location.reload()}
-          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
-        >
-          Refresh
-        </button>
-      </div>
-    );
-  }
+  }, [step, router]);
 
   const StepComponent = stepComponents[step as OnboardingStep];
 

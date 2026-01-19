@@ -5,8 +5,9 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Icon } from '@/components/ui/icon';
-import { useLogout } from '@/react-query/auth/mutations';
+import { useLogout, useUpdateProfile } from '@/react-query/auth/mutations';
 import { useProfile } from '@/react-query/auth/queries';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 const NEXT_STEPS = [
   "Open the email and Click 'Create Password'",
@@ -17,6 +18,7 @@ const NEXT_STEPS = [
 export function PortalSetupComplete() {
   const { data: profile } = useProfile();
   const logoutMutation = useLogout();
+  const updateProfileMutation = useUpdateProfile();
   const router = useRouter();
   const hasRun = useRef(false);
 
@@ -24,27 +26,60 @@ export function PortalSetupComplete() {
     profile?.partner?.businessProfile?.email || profile?.partner?.email || 'your@email.com';
 
   useEffect(() => {
-    if (hasRun.current) {
+    if (hasRun.current || !profile) {
       return undefined;
     }
     hasRun.current = true;
 
-    toast.success('Your application is under review. You will be notified once approved.', {
-      duration: 5000,
-    });
+    const partnerStatus = profile.partner?.status;
 
-    const timer = setTimeout(async () => {
+    if (partnerStatus && partnerStatus !== 'pending_approval') {
+      const advanceToPhase3 = async () => {
+        try {
+          await updateProfileMutation.mutateAsync({
+            currentStep: OnboardingStep.OPEN_BUSINESS_INTRO,
+          });
+        } catch (error) {
+          console.error('Failed to advance to Phase 3:', error);
+        }
+        router.push(`/onboarding/${OnboardingStep.OPEN_BUSINESS_INTRO}`);
+      };
+
+      advanceToPhase3();
+      return undefined;
+    }
+
+    const completePhaseAndLogout = async () => {
       try {
-        await logoutMutation.mutateAsync({});
-      } catch {}
-      router.push('/sign-in');
-    }, 5000);
+        await updateProfileMutation.mutateAsync({
+          completeStep: OnboardingStep.PORTAL_SETUP_COMPLETE,
+          completePhase: OnboardingPhase.VERIFY_BUSINESS,
+        });
+      } catch (error) {
+        console.error('Failed to mark phase as complete:', error);
+      }
+
+      toast.success('Your application is under review. You will be notified once approved.', {
+        duration: 5000,
+      });
+
+      // Logout after delay
+      setTimeout(async () => {
+        try {
+          await logoutMutation.mutateAsync({});
+        } catch {}
+        router.push('/sign-in');
+      }, 5000);
+    };
+
+    completePhaseAndLogout();
 
     return () => {
-      clearTimeout(timer);
       hasRun.current = false;
     };
-  }, [logoutMutation, router]);
+  }, [profile]);
+  // Commented to prevent un-necessary re-renders
+  // }, [logoutMutation, updateProfileMutation, router]);
 
   return (
     <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">

@@ -1,7 +1,7 @@
 'use client';
 
 import type { FileUpload, OnboardingFeeFormData } from '@/types/onboarding';
-import { Copy, Plus } from 'lucide-react';
+import { Copy, Loader2, Plus } from 'lucide-react';
 import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
@@ -28,6 +28,7 @@ export function OnboardingFeePayment() {
 
   const [copied, setCopied] = useState(false);
   const fileUploadRef = useRef<HTMLInputElement>(null);
+  const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
 
   const [onboardingFee, setOnboardingFee] = useState<OnboardingFeeFormData>(() => ({
     paymentTransactionId: businessProfile?.paymentTransactionId || '',
@@ -81,51 +82,60 @@ export function OnboardingFeePayment() {
       return;
     }
 
-    const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-    const accessToken = useAuthStore.getState().accessToken;
-    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
+    setIsUploadingScreenshot(true);
 
-    const res = await fetch(`${backendUrl}/v1/storage/upload-url`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify({
-        fileName: file.name,
-        mimeType: file.type,
-        assetType: 'payment-screenshot',
-      }),
-    });
-    if (!res.ok) {
-      console.error('Failed to get upload URL');
-      return;
-    }
-    const { key, uploadUrl } = await res.json();
     try {
-      const uploadRes = await fetch(uploadUrl, {
-        method: 'PUT',
-        body: file,
-        headers: { 'Content-Type': file.type },
-      });
-      if (!uploadRes.ok) {
-        console.warn('File upload failed (likely CORS):', uploadRes.statusText);
+      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const accessToken = useAuthStore.getState().accessToken;
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
       }
-    } catch (err) {
-      console.warn('File upload error (likely CORS):', err);
+
+      const res = await fetch(`${backendUrl}/v1/storage/upload-url`, {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          fileName: file.name,
+          mimeType: file.type,
+          assetType: 'payment-screenshot',
+        }),
+      });
+      if (!res.ok) {
+        console.error('Failed to get upload URL');
+        return;
+      }
+      const { key, uploadUrl } = await res.json();
+      try {
+        const uploadRes = await fetch(uploadUrl, {
+          method: 'PUT',
+          body: file,
+          headers: { 'Content-Type': file.type },
+        });
+        if (!uploadRes.ok) {
+          console.warn('File upload failed (likely CORS):', uploadRes.statusText);
+        }
+      } catch (err) {
+        console.warn('File upload error (likely CORS):', err);
+      }
+
+      const fileUpload: FileUpload = {
+        name: file.name,
+        url: `https://pub-xxx.r2.dev/${key}`,
+        size: file.size,
+        key,
+      };
+
+      setOnboardingFee((prev) => ({
+        ...prev,
+        paymentScreenshot: fileUpload,
+      }));
+    } catch (error) {
+      console.error('Failed to upload screenshot:', error);
+      toast.error('Failed to upload screenshot. Please try again.');
+    } finally {
+      setIsUploadingScreenshot(false);
     }
-
-    const fileUpload: FileUpload = {
-      name: file.name,
-      url: `https://pub-xxx.r2.dev/${key}`,
-      size: file.size,
-      key,
-    };
-
-    setOnboardingFee((prev) => ({
-      ...prev,
-      paymentScreenshot: fileUpload,
-    }));
   };
 
   const handleTransactionIdChange = (value: string) => {
@@ -223,17 +233,25 @@ export function OnboardingFeePayment() {
                 variant="outline"
                 size="sm"
                 onClick={() => fileUploadRef.current?.click()}
+                disabled={isUploadingScreenshot}
                 className="text-purple-dark flex min-w-xs cursor-pointer items-center justify-start space-x-2 rounded-full bg-white px-2 py-6"
               >
-                <Plus className="size-6" />
+                {isUploadingScreenshot ? (
+                  <Loader2 className="size-6 animate-spin" />
+                ) : (
+                  <Plus className="size-6" />
+                )}
                 <input
                   ref={fileUploadRef}
                   type="file"
                   accept="image/*"
                   onChange={handleFileUpload}
                   className="hidden"
+                  disabled={isUploadingScreenshot}
                 />
-                <span className="cursor-pointer text-inherit">Upload a screenshot</span>
+                <span className="cursor-pointer text-inherit">
+                  {isUploadingScreenshot ? 'Uploading...' : 'Upload a screenshot'}
+                </span>
               </Button>
             )}
           </div>
