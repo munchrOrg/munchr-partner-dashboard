@@ -1,130 +1,92 @@
 import type {
   ConfirmModalConfig,
   ExampleDrawerConfig,
-  OnboardingFormData,
-  OnboardingPhase,
+  LocationFormData,
   OnboardingStep,
-  OnboardingStore,
 } from '@/types/onboarding';
 import { create } from 'zustand';
 
-import { persist } from 'zustand/middleware';
-import { OnboardingStep as Step } from '@/types/onboarding';
+type OnboardingUIState = {
+  isProgressDrawerOpen: boolean;
+  isExampleDrawerOpen: boolean;
+  isMapDrawerOpen: boolean;
+  exampleDrawerConfig: ExampleDrawerConfig | null;
 
-const initialFormData: OnboardingFormData = {
-  businessInfo: null,
-  location: null,
-  ownerIdentity: null,
-  legalTax: null,
-  banking: null,
-  bankStatement: null,
-  package: null,
-  paymentMethod: null,
-  menu: null,
-  trainingCall: null,
-  onboardingFee: null,
-  businessHours: null,
+  mapLocation: LocationFormData | null;
+  mapLocationCallback: ((location: LocationFormData) => void) | null;
+
+  isConfirmModalOpen: boolean;
+  isEmailConfirmModalOpen: boolean;
+  confirmModalConfig: ConfirmModalConfig | null;
+
+  shouldNavigate: boolean;
+  navigationStep: OnboardingStep | null;
 };
 
-export const useOnboardingStore = create<OnboardingStore>()(
-  persist(
-    (set) => ({
-      currentStep: Step.WELCOME,
-      completedSteps: [],
-      completedPhases: [],
-      formData: initialFormData,
+type OnboardingUIActions = {
+  openProgressDrawer: () => void;
+  closeProgressDrawer: () => void;
+  openExampleDrawer: (config: ExampleDrawerConfig) => void;
+  closeExampleDrawer: () => void;
+  openMapDrawer: (
+    location: LocationFormData,
+    onConfirm: (location: LocationFormData) => void
+  ) => void;
+  closeMapDrawer: () => void;
+  updateMapLocation: (location: LocationFormData) => void;
 
-      isProgressDrawerOpen: false,
-      isExampleDrawerOpen: false,
-      isMapDrawerOpen: false,
-      isConfirmModalOpen: false,
-      isEmailConfirmModalOpen: false,
-      exampleDrawerConfig: null,
-      confirmModalConfig: null,
+  openConfirmModal: (config: ConfirmModalConfig) => void;
+  closeConfirmModal: () => void;
+  openEmailConfirmModal: () => void;
+  closeEmailConfirmModal: () => void;
 
-      shouldNavigate: false,
-      navigationStep: null,
-      profile: null,
+  triggerNavigation: (step: OnboardingStep) => void;
+  clearNavigation: () => void;
 
-      setFormData: <K extends keyof OnboardingFormData>(key: K, data: OnboardingFormData[K]) =>
-        set((state) => ({
-          formData: { ...state.formData, [key]: data },
-        })),
+  reset: () => void;
+};
 
-      completeStep: (step: OnboardingStep) =>
-        set((state) => ({
-          completedSteps: state.completedSteps.includes(step)
-            ? state.completedSteps
-            : [...state.completedSteps, step],
-        })),
+export type OnboardingUIStore = OnboardingUIState & OnboardingUIActions;
 
-      completePhase: (phase: OnboardingPhase) =>
-        set((state) => ({
-          completedPhases: state.completedPhases.includes(phase)
-            ? state.completedPhases
-            : [...state.completedPhases, phase],
-        })),
+const initialState: OnboardingUIState = {
+  isProgressDrawerOpen: false,
+  isExampleDrawerOpen: false,
+  isMapDrawerOpen: false,
+  exampleDrawerConfig: null,
+  mapLocation: null,
+  mapLocationCallback: null,
+  isConfirmModalOpen: false,
+  isEmailConfirmModalOpen: false,
+  confirmModalConfig: null,
+  shouldNavigate: false,
+  navigationStep: null,
+};
 
-      goToStep: (step: OnboardingStep) => set({ currentStep: step }),
+export const useOnboardingStore = create<OnboardingUIStore>()((set) => ({
+  ...initialState,
 
-      openProgressDrawer: () => set({ isProgressDrawerOpen: true }),
-      closeProgressDrawer: () => set({ isProgressDrawerOpen: false }),
+  openProgressDrawer: () => set({ isProgressDrawerOpen: true }),
+  closeProgressDrawer: () => set({ isProgressDrawerOpen: false }),
 
-      openExampleDrawer: (config: ExampleDrawerConfig) =>
-        set({ isExampleDrawerOpen: true, exampleDrawerConfig: config }),
-      closeExampleDrawer: () => set({ isExampleDrawerOpen: false, exampleDrawerConfig: null }),
+  openExampleDrawer: (config: ExampleDrawerConfig) =>
+    set({ isExampleDrawerOpen: true, exampleDrawerConfig: config }),
+  closeExampleDrawer: () => set({ isExampleDrawerOpen: false, exampleDrawerConfig: null }),
 
-      openMapDrawer: () => set({ isMapDrawerOpen: true }),
-      closeMapDrawer: () => set({ isMapDrawerOpen: false }),
+  openMapDrawer: (location: LocationFormData, onConfirm: (location: LocationFormData) => void) =>
+    set({ isMapDrawerOpen: true, mapLocation: location, mapLocationCallback: onConfirm }),
+  closeMapDrawer: () =>
+    set({ isMapDrawerOpen: false, mapLocation: null, mapLocationCallback: null }),
+  updateMapLocation: (location: LocationFormData) => set({ mapLocation: location }),
 
-      openConfirmModal: (config: ConfirmModalConfig) =>
-        set({ isConfirmModalOpen: true, confirmModalConfig: config }),
-      closeConfirmModal: () => set({ isConfirmModalOpen: false, confirmModalConfig: null }),
+  openConfirmModal: (config: ConfirmModalConfig) =>
+    set({ isConfirmModalOpen: true, confirmModalConfig: config }),
+  closeConfirmModal: () => set({ isConfirmModalOpen: false, confirmModalConfig: null }),
 
-      openEmailConfirmModal: () => set({ isEmailConfirmModalOpen: true }),
-      closeEmailConfirmModal: () => set({ isEmailConfirmModalOpen: false }),
+  openEmailConfirmModal: () => set({ isEmailConfirmModalOpen: true }),
+  closeEmailConfirmModal: () => set({ isEmailConfirmModalOpen: false }),
 
-      triggerNavigation: (step: OnboardingStep) =>
-        set({ shouldNavigate: true, navigationStep: step }),
-      clearNavigation: () => set({ shouldNavigate: false, navigationStep: null }),
-      setProfile: (profileData: any) => set({ profile: profileData }),
+  triggerNavigation: (step: OnboardingStep) => set({ shouldNavigate: true, navigationStep: step }),
+  clearNavigation: () => set({ shouldNavigate: false, navigationStep: null }),
 
-      syncFromBackend: (onboardingData: {
-        currentStep: OnboardingStep | null;
-        completedSteps: string[];
-        completedPhases: string[];
-      }) =>
-        set({
-          currentStep: (onboardingData.currentStep as OnboardingStep) || Step.WELCOME,
-          completedSteps: (onboardingData.completedSteps || []) as OnboardingStep[],
-          completedPhases: (onboardingData.completedPhases || []) as OnboardingPhase[],
-        }),
-
-      reset: () =>
-        set({
-          currentStep: Step.WELCOME,
-          completedSteps: [],
-          completedPhases: [],
-          formData: initialFormData,
-          isProgressDrawerOpen: false,
-          isExampleDrawerOpen: false,
-          isMapDrawerOpen: false,
-          isConfirmModalOpen: false,
-          isEmailConfirmModalOpen: false,
-          exampleDrawerConfig: null,
-          confirmModalConfig: null,
-          shouldNavigate: false,
-          navigationStep: null,
-        }),
-    }),
-    {
-      name: 'onboarding-storage',
-      partialize: (state) => ({
-        currentStep: state.currentStep,
-        completedSteps: state.completedSteps,
-        completedPhases: state.completedPhases,
-        formData: state.formData,
-      }),
-    }
-  )
-);
+  reset: () => set(initialState),
+}));

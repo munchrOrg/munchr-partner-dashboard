@@ -92,8 +92,8 @@ export function SignUpForm() {
     };
   }, []);
 
-  // Store email for passing to verification page
   const [submittedEmail, setSubmittedEmail] = useState<string>('');
+  const [submittedPhone, setSubmittedPhone] = useState<string>('');
 
   const signUpMutation = useSignUp({
     options: {
@@ -104,11 +104,11 @@ export function SignUpForm() {
           if (resp.partnerId) {
             setPartnerId(resp.partnerId);
           }
-          // Pass partnerId and email via URL for verification page
           const params = new URLSearchParams({
             type: 'signup',
             partnerId: resp.partnerId,
             email: submittedEmail,
+            phone: submittedPhone,
           });
           router.push(`/verify-email?${params.toString()}`);
         } else {
@@ -154,7 +154,7 @@ export function SignUpForm() {
     try {
       // Step 1: Get uploadUrl and key
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const res = await fetch(`${backendUrl}v1/storage/public/upload-url`, {
+      const res = await fetch(`${backendUrl}/v1/storage/public/upload-url`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -201,19 +201,9 @@ export function SignUpForm() {
     }
 
     try {
-      // Store form data in Zustand for verification page
+      // Store email/phone for URL params (all business data goes to backend, not localStorage)
       setSubmittedEmail(data.email);
-      const { setFormData } = useSignupStore.getState();
-      setFormData({
-        serviceProviderType: data.serviceProviderType,
-        businessName: data.businessName,
-        businessDescription: data.businessDescription,
-        email: data.email,
-        password: (data as any).password || undefined,
-        phoneNumber: data.phoneNumber,
-        cuisines: data.cuisines,
-        logoUrl: logoPreview,
-      });
+      setSubmittedPhone(data.phoneNumber);
 
       const phoneRaw = (data.phoneNumber ?? '').toString();
       const phone = phoneRaw.slice(0, 20);

@@ -5,31 +5,28 @@ import { useState } from 'react';
 
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { useSignupStore } from '@/stores/signup-store';
+import { useProfile } from '@/react-query/auth/queries';
 import { OnboardingStep } from '@/types/onboarding';
 
 export function BusinessInfoReview() {
   const router = useRouter();
-  const { formData, profile } = useOnboardingStore();
-  const { formData: signupData } = useSignupStore();
+  const { data: profile } = useProfile();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const businessProfile = profile?.partner?.businessProfile;
+
+  const partner = profile?.partner;
+  const businessProfile = partner?.businessProfile;
 
   const handleChange = (step: OnboardingStep) => {
     router.push(`/onboarding/${step}`);
   };
 
-  // Helper to format address from location data
   const formatAddress = () => {
-    const loc: any = formData.location || {};
-
-    const buildingPlaceName = loc.buildingPlaceName || businessProfile?.buildingName || '';
-    const street = loc.street || businessProfile?.street || '';
-    const houseNumber = loc.houseNumber || businessProfile?.houseNumber || '';
-    const postalCode = loc.postalCode || businessProfile?.postalCode || '';
-    const city = loc.city || businessProfile?.city || '';
-    const state = loc.state || businessProfile?.state || '';
+    const buildingPlaceName = businessProfile?.buildingPlaceName || '';
+    const street = businessProfile?.street || '';
+    const houseNumber = businessProfile?.houseNumber || '';
+    const postalCode = businessProfile?.postalCode || '';
+    const city = businessProfile?.city || '';
+    const state = businessProfile?.state || '';
 
     const parts = [buildingPlaceName, street, houseNumber, postalCode, city, state].filter(Boolean);
 
@@ -37,17 +34,14 @@ export function BusinessInfoReview() {
   };
 
   const formatBillingAddress = () => {
-    const billing: any = formData.banking || {};
-    const buildingName =
-      billing.buildingName || businessProfile?.billingInfo?.billingBuildingPlaceName || '';
-    const street = billing.street || businessProfile?.billingInfo?.billingStreet || '';
-    const houseNumber =
-      billing.houseNumber || businessProfile?.billingInfo?.billingHouseNumber || '';
-    const billingState = billing.billingState || businessProfile?.billingInfo?.billingState || '';
-    const billingCity = billing.billingCity || businessProfile?.billingInfo?.billingCity || '';
-    const area = billing.area || businessProfile?.billingInfo?.billingArea || '';
-    const postalCode =
-      billing.billingPostalCode || businessProfile?.billingInfo?.billingPostalCode || '';
+    const billingInfo = businessProfile?.billingInfo;
+    const buildingName = billingInfo?.billingBuildingPlaceName || '';
+    const street = billingInfo?.billingStreet || '';
+    const houseNumber = billingInfo?.billingHouseNumber || '';
+    const billingState = billingInfo?.billingState || '';
+    const billingCity = billingInfo?.billingCity || '';
+    const area = billingInfo?.billingArea || '';
+    const postalCode = billingInfo?.billingPostalCode || '';
     const parts = [
       buildingName,
       street,
@@ -81,23 +75,14 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Business name</span>
-              <span className="font-medium">
-                {signupData.businessName ||
-                  formData.businessInfo?.businessName ||
-                  profile?.partner?.businessName ||
-                  'Not provided'}
-              </span>
+              <span className="font-medium">{partner?.businessName || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business type</span>
               <span className="font-medium capitalize">
-                {(signupData.serviceProviderType ||
-                  formData.businessInfo?.serviceProviderType ||
-                  profile?.partner?.serviceProviderType) === 'restaurant'
+                {partner?.serviceProviderType === 'restaurant'
                   ? 'Restaurant'
-                  : (signupData.serviceProviderType ||
-                        formData.businessInfo?.serviceProviderType ||
-                        profile?.partner?.serviceProviderType) === 'home-chef'
+                  : partner?.serviceProviderType === 'home_chef'
                     ? 'Home Chef'
                     : 'Not provided'}
               </span>
@@ -105,13 +90,9 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business category</span>
               <span className="font-medium">
-                {(signupData.serviceProviderType ||
-                  formData.businessInfo?.serviceProviderType ||
-                  profile?.partner?.serviceProviderType) === 'home-chef'
+                {partner?.serviceProviderType === 'home_chef'
                   ? 'Home Based Kitchen'
-                  : (signupData.serviceProviderType ||
-                        formData.businessInfo?.serviceProviderType ||
-                        profile?.partner?.serviceProviderType) === 'restaurant'
+                  : partner?.serviceProviderType === 'restaurant'
                     ? 'Restaurant'
                     : 'Not provided'}
               </span>
@@ -119,29 +100,19 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business cuisine</span>
               <span className="font-medium">
-                {signupData.cuisines?.length
-                  ? signupData.cuisines.join(', ')
-                  : formData.businessInfo?.cuisines?.length
-                    ? formData.businessInfo.cuisines.join(', ')
-                    : 'Not provided'}
+                {businessProfile?.cuisines?.length
+                  ? businessProfile.cuisines.join(', ')
+                  : 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Mobile phone number</span>
-              <span className="font-medium">
-                {signupData.phoneNumber ||
-                  formData.businessInfo?.phoneNumber ||
-                  profile?.partner?.phone ||
-                  'Not provided'}
-              </span>
+              <span className="font-medium">{partner?.phone || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business phone number</span>
               <span className="font-medium">
-                {signupData.phoneNumber ||
-                  formData.businessInfo?.phoneNumber ||
-                  profile?.partner?.phone ||
-                  'Not provided'}
+                {businessProfile?.businessPhone || partner?.phone || 'Not provided'}
               </span>
             </div>
           </div>
@@ -182,9 +153,7 @@ export function BusinessInfoReview() {
               <span className="text-gray-600">
                 Does your restaurant have Sales tax Registration Number (SNTN)?
               </span>
-              <span className="font-medium">
-                {businessProfile?.sntn || formData.ownerIdentity?.hasSNTN ? 'Yes' : 'No'}
-              </span>
+              <span className="font-medium">{businessProfile?.sntn ? 'Yes' : 'No'}</span>
             </div>
           </div>
         </div>
@@ -203,24 +172,18 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">CNIC Number</span>
-              <span className="font-medium">
-                {formData.legalTax?.cnicNumber || businessProfile?.cnicNumber || 'Not provided'}
-              </span>
+              <span className="font-medium">{businessProfile?.cnicNumber || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">First & Middle Name Per CNIC</span>
               <span className="font-medium">
-                {formData.legalTax?.firstAndMiddleNameForNic ||
-                  businessProfile?.firstAndMiddleNameForNic ||
-                  'Not provided'}
+                {businessProfile?.firstAndMiddleNameForNic || 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Last Name Per CNIC</span>
               <span className="font-medium">
-                {formData.legalTax?.lastNameForNic ||
-                  businessProfile?.lastNameForNic ||
-                  'Not provided'}
+                {businessProfile?.lastNameForNic || 'Not provided'}
               </span>
             </div>
           </div>
@@ -241,23 +204,19 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Bank Account Owner/Title</span>
               <span className="font-medium">
-                {formData.banking?.accountTitle ||
-                  businessProfile?.billingInfo?.bankAccountOwner ||
-                  'Not provided'}
+                {businessProfile?.billingInfo?.bankAccountOwner || 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Bank name</span>
               <span className="font-medium">
-                {formData.banking?.bankName ||
-                  businessProfile?.billingInfo?.bankName ||
-                  'Not provided'}
+                {businessProfile?.billingInfo?.bankName || 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">IBAN</span>
               <span className="font-medium">
-                {formData.banking?.iban || businessProfile?.billingInfo?.IBAN || 'Not provided'}
+                {businessProfile?.billingInfo?.IBAN || 'Not provided'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -282,7 +241,7 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Tariff</span>
               <span className="font-medium">
-                {formData.package?.selectedPackageId === 'tablet-plan'
+                {businessProfile?.partnershipPackage === 'tablet-plan'
                   ? 'Your Own Phone (Tablet + Godroid App)'
                   : 'Your Own Phone (Godroid App)'}
               </span>

@@ -4,7 +4,7 @@ import type { Coordinates, LocationFormData } from '@/types/onboarding';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import { Search } from 'lucide-react';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { toast } from 'sonner';
@@ -12,7 +12,9 @@ import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Input } from '@/components/ui/input';
 import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingStep } from '@/types/onboarding';
 
 const libraries: 'places'[] = ['places'];
 
@@ -47,14 +49,16 @@ const fieldConfigs: FieldConfig[] = [
 ];
 
 export function BusinessLocation() {
-  const { formData, setFormData, openMapDrawer, profile } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const { openMapDrawer, triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinates | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
   const addressData: { [key: string]: any } = profile?.partner?.businessProfile || {};
-  const locationData: { [key: string]: any } = formData.location || {};
   const getDefault = (key: string) => {
-    return locationData[key] ?? addressData[key] ?? '';
+    return addressData[key] ?? '';
   };
 
   const { isLoaded } = useJsApiLoader({
@@ -67,7 +71,6 @@ export function BusinessLocation() {
     register,
     handleSubmit,
     setValue,
-    reset,
     formState: { errors },
   } = useForm<LocationInput>({
     resolver: zodResolver(locationSchema),
@@ -83,32 +86,6 @@ export function BusinessLocation() {
     },
     mode: 'all',
   });
-
-  // ...existing code...
-  const prevLocationRef = useRef(formData.location);
-  useEffect(() => {
-    const location = formData.location;
-    if (location && location !== prevLocationRef.current) {
-      const timeoutId = setTimeout(() => {
-        reset({
-          buildingPlaceName: location.buildingPlaceName || '',
-          street: location.street || '',
-          houseNumber: location.houseNumber || '',
-          state: location.state || '',
-          city: location.city || '',
-          area: location.area || '',
-          postalCode: location.postalCode || '',
-          addCommentAboutLocation: location.addCommentAboutLocation || '',
-        });
-        if (location.coordinates) {
-          setSelectedCoordinates(location.coordinates);
-        }
-        prevLocationRef.current = location;
-      }, 0);
-      return () => clearTimeout(timeoutId);
-    }
-    return undefined;
-  }, [formData.location, reset]);
 
   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter') {
@@ -167,9 +144,32 @@ export function BusinessLocation() {
     setValue('postalCode', postalCode, { shouldValidate: true });
   };
 
-  const updateProfileMutation = useUpdateProfile();
+  const handleMapConfirm = useCallback(
+    async (confirmedLocation: LocationFormData) => {
+      try {
+        await updateProfileMutation.mutateAsync({
+          currentStep: OnboardingStep.BUSINESS_LOCATION,
+          buildingPlaceName: confirmedLocation.buildingPlaceName,
+          street: confirmedLocation.street,
+          houseNumber: confirmedLocation.houseNumber,
+          state: confirmedLocation.state,
+          city: confirmedLocation.city,
+          area: confirmedLocation.area,
+          postalCode: confirmedLocation.postalCode,
+          addCommentAboutLocation: confirmedLocation.addCommentAboutLocation,
+          latitude: confirmedLocation.coordinates?.lat,
+          longitude: confirmedLocation.coordinates?.lng,
+        });
 
-  const onSubmit = (data: LocationInput) => {
+        triggerNavigation(OnboardingStep.BUSINESS_LOCATION);
+      } catch {
+        toast.error('Failed to save location');
+      }
+    },
+    [updateProfileMutation, triggerNavigation]
+  );
+
+  const onSubmit = async (data: LocationInput) => {
     const locationData: LocationFormData = {
       buildingPlaceName: data.buildingPlaceName || '',
       street: data.street,
@@ -182,31 +182,7 @@ export function BusinessLocation() {
       coordinates: selectedCoordinates,
     };
 
-    (async () => {
-      try {
-        const payload = {
-          buildingPlaceName: locationData.buildingPlaceName,
-          street: locationData.street,
-          houseNumber: locationData.houseNumber,
-          state: locationData.state,
-          city: locationData.city,
-          area: locationData.area,
-          postalCode: locationData.postalCode,
-          addCommentAboutLocation: locationData.addCommentAboutLocation,
-        };
-
-        const resp = await updateProfileMutation.mutateAsync(payload);
-        if (!resp || !resp.success) {
-          toast.error(resp?.message || 'Failed to save address');
-          return;
-        }
-
-        setFormData('location', locationData);
-        openMapDrawer();
-      } catch {
-        toast.error('Failed to save address');
-      }
-    })();
+    openMapDrawer(locationData, handleMapConfirm);
   };
 
   return (
@@ -217,8 +193,11 @@ export function BusinessLocation() {
           description="Customers and riders will use this information to find your store."
         />
 
-        <form id="location-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
-          {/* Google Places Autocomplete Search */}
+        <form
+          id="onboarding-step-form"
+          onSubmit={handleSubmit(onSubmit)}
+          className="mt-6 space-y-4"
+        >
           {isLoaded && (
             <Autocomplete
               onLoad={setAutocomplete}

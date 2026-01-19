@@ -1,14 +1,14 @@
 'use client';
 
-import { signOut } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Icon } from '@/components/ui/icon';
+import { useProfile } from '@/react-query/auth/queries';
+import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { useSignupStore } from '@/stores/signup-store';
-import { OnboardingPhase } from '@/types/onboarding';
 
 const NEXT_STEPS = [
   "Open the email and Click 'Create Password'",
@@ -17,12 +17,15 @@ const NEXT_STEPS = [
 ];
 
 export function PortalSetupComplete() {
-  const { formData, completePhase, reset: resetOnboarding } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const { reset: resetOnboarding } = useOnboardingStore();
   const resetSignup = useSignupStore((state) => state.reset);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
   const router = useRouter();
   const hasRun = useRef(false);
 
-  const email = formData.businessInfo?.email || 'your@email.com';
+  const email =
+    profile?.partner?.businessProfile?.email || profile?.partner?.email || 'your@email.com';
 
   useEffect(() => {
     if (hasRun.current) {
@@ -30,18 +33,14 @@ export function PortalSetupComplete() {
     }
     hasRun.current = true;
 
-    completePhase(OnboardingPhase.VERIFY_BUSINESS);
-
     toast.success('Your application is under review. You will be notified once approved.', {
       duration: 5000,
     });
 
     const timer = setTimeout(() => {
-      // TODO: Uncomment this when backend is ready
-      // resetOnboarding();
-      // resetSignup();
-
-      signOut({ redirect: false });
+      resetOnboarding();
+      resetSignup();
+      clearAuth();
       router.push('/sign-in');
     }, 5000);
     // NOTE: This has been added to allow timer to run as react in strict mode while development runs twice and when effect runs twice it finds hasRun.current and returns early without allowing timer to run which was not allowing user to logout (Once backend is ready and app is set for production , comment the hasRun line in effect cleanup function  )
@@ -49,7 +48,7 @@ export function PortalSetupComplete() {
       clearTimeout(timer);
       hasRun.current = false;
     };
-  }, [completePhase, resetOnboarding, resetSignup, router]);
+  }, [resetOnboarding, resetSignup, clearAuth, router]);
 
   return (
     <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">

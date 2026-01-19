@@ -7,7 +7,6 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep } from '@/types/onboarding';
 
 const libraries: 'places'[] = ['places'];
 
@@ -23,7 +22,7 @@ const defaultCenter = {
 };
 
 export function MapDrawer() {
-  const { isMapDrawerOpen, closeMapDrawer, formData, setFormData, triggerNavigation } =
+  const { isMapDrawerOpen, closeMapDrawer, mapLocation, mapLocationCallback, updateMapLocation } =
     useOnboardingStore();
 
   const [markerPosition, setMarkerPosition] = useState(defaultCenter);
@@ -53,7 +52,7 @@ export function MapDrawer() {
     libraries,
   });
 
-  const location = formData.location;
+  const location = mapLocation;
 
   const geocodeAddress = useCallback(async () => {
     if (!isLoaded || !window.google || !location) {
@@ -139,8 +138,8 @@ export function MapDrawer() {
             }
           });
 
-          setFormData('location', {
-            buildingPlaceName: '',
+          updateMapLocation({
+            buildingPlaceName: location.buildingPlaceName || '',
             street,
             houseNumber,
             area,
@@ -155,7 +154,7 @@ export function MapDrawer() {
         console.error('Reverse geocoding error:', error);
       }
     },
-    [isLoaded, location, setFormData]
+    [isLoaded, location, updateMapLocation]
   );
 
   const onMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
@@ -174,17 +173,16 @@ export function MapDrawer() {
       return;
     }
 
-    // Update location with coordinates
-    setFormData('location', {
+    const updatedLocation = {
       ...location,
       coordinates: markerPosition,
-    });
+    };
 
-    // Close drawer
+    if (mapLocationCallback) {
+      mapLocationCallback(updatedLocation);
+    }
+
     closeMapDrawer();
-
-    // Trigger navigation (Footer will handle it)
-    triggerNavigation(OnboardingStep.BUSINESS_LOCATION);
   };
 
   if (!location) {

@@ -9,6 +9,7 @@ const apiClient = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  withCredentials: true,
 });
 
 // Request interceptor - attach auth token from Zustand store
@@ -28,16 +29,25 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     const status = error?.response?.status || error?.request?.status;
-    if (status === 401 && typeof window !== 'undefined') {
-      // Clear all stores on unauthorized
+
+    const backendMessage = error?.response?.data?.message;
+    if (backendMessage) {
+      error.message = backendMessage;
+    }
+
+    const isAuthRoute =
+      typeof window !== 'undefined' &&
+      (window.location.pathname === '/sign-in' ||
+        window.location.pathname === '/sign-up' ||
+        window.location.pathname.startsWith('/verify-'));
+
+    if (status === 401 && typeof window !== 'undefined' && !isAuthRoute) {
       useAuthStore.getState().clearAuth();
       useOnboardingStore.getState().reset();
       useSignupStore.getState().reset();
-
-      if (window.location.pathname !== '/sign-in') {
-        window.location.href = '/sign-in';
-      }
+      window.location.href = '/sign-in';
     }
+
     return Promise.reject(error);
   }
 );

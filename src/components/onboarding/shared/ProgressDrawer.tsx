@@ -1,19 +1,25 @@
 'use client';
 
-import type { OnboardingPhase } from '@/types/onboarding';
+import type { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { useParams } from 'next/navigation';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { PHASE_INFO, PHASE_ORDER, STEP_PHASE_MAP } from '@/config/onboarding-steps';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 
 export function ProgressDrawer() {
-  const { isProgressDrawerOpen, closeProgressDrawer, currentStep, completedPhases } =
-    useOnboardingStore();
+  const { isProgressDrawerOpen, closeProgressDrawer } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const params = useParams();
 
-  const currentPhase = STEP_PHASE_MAP[currentStep];
+  const currentStep = params.step as OnboardingStep;
+  const completedPhases = (profile?.onboarding?.completedPhases || []) as OnboardingPhase[];
+
+  const currentPhase = currentStep ? STEP_PHASE_MAP[currentStep] : undefined;
 
   const getPhaseStatus = (phase: OnboardingPhase) => {
-    if (completedPhases.includes(phase)) {
+    if (completedPhases?.includes(phase)) {
       return 'completed';
     }
     if (phase === currentPhase) {
@@ -51,12 +57,7 @@ export function ProgressDrawer() {
                     )}
                   </div>
                   {index < PHASE_ORDER.length - 1 && (
-                    <div
-                      className={cn(
-                        'mt-2 h-20 w-0.5 bg-gray-200'
-                        // status === 'completed' ? 'bg-black' : 'bg-gray-200'
-                      )}
-                    />
+                    <div className={cn('mt-2 h-20 w-0.5 bg-gray-200')} />
                   )}
                 </div>
 

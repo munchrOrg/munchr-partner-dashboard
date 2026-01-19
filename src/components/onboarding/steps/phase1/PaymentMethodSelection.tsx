@@ -1,10 +1,10 @@
 'use client';
 
-import type { SavedPaymentAccount } from '@/types/onboarding';
+import type { PaymentMethodFormData, SavedPaymentAccount } from '@/types/onboarding';
 import type { PaymentFormInput } from '@/validations/payment';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ChevronDown, Trash2 } from 'lucide-react';
-import { useEffect } from 'react';
+import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
@@ -16,8 +16,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { PaymentMethod } from '@/types/onboarding';
+import { OnboardingStep, PaymentMethod } from '@/types/onboarding';
 import { paymentFormSchema } from '@/validations/payment';
 
 const PAYMENT_OPTIONS = [
@@ -46,37 +48,31 @@ const maskCardNumber = (number: string) => {
 };
 
 export function PaymentMethodSelection() {
-  const { formData, setFormData, profile } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const { triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
   const businessProfile = profile?.partner?.businessProfile?.billingInfo;
-  const prefilledAccount: SavedPaymentAccount | null =
-    formData.paymentMethod?.savedAccounts?.[0] ||
-    (businessProfile?.paymentMethodType
-      ? {
-          id: Date.now().toString(),
-          method: businessProfile.paymentMethodType,
-          ...(businessProfile.paymentMethodType === PaymentMethod.CARD
-            ? {
-                accountTitle: businessProfile.accountTitle || '',
-                cardNumber: businessProfile.cardNumber || '',
-                cardExpiry: businessProfile.cardExpiry || '',
-              }
-            : {
-                accountNumber: businessProfile.paymentAccountNumber || '',
-              }),
-        }
-      : null);
-  useEffect(() => {
-    if (prefilledAccount) {
-      setFormData('paymentMethod', {
-        savedAccounts: [prefilledAccount],
-        selectedAccountId: prefilledAccount.id,
-      });
-    }
-  }, [profile]);
-  const paymentData = {
-    savedAccounts: formData.paymentMethod?.savedAccounts || [],
-    selectedAccountId: formData.paymentMethod?.selectedAccountId || null,
-  };
+
+  const prefilledAccount: SavedPaymentAccount | null = businessProfile?.paymentMethodType
+    ? {
+        id: Date.now().toString(),
+        method: businessProfile.paymentMethodType,
+        ...(businessProfile.paymentMethodType === PaymentMethod.CARD
+          ? {
+              accountTitle: businessProfile.accountTitle || '',
+              cardNumber: businessProfile.cardNumber || '',
+              cardExpiry: businessProfile.cardExpiry || '',
+            }
+          : {
+              accountNumber: businessProfile.paymentAccountNumber || '',
+            }),
+      }
+    : null;
+
+  const [paymentData, setPaymentData] = useState<PaymentMethodFormData>(() => ({
+    savedAccounts: prefilledAccount ? [prefilledAccount] : [],
+    selectedAccountId: prefilledAccount?.id || null,
+  }));
 
   const {
     register,
@@ -124,7 +120,7 @@ export function PaymentMethodSelection() {
         : { accountNumber: data.accountNumber || '' }),
     };
 
-    setFormData('paymentMethod', {
+    setPaymentData({
       savedAccounts: [newAccount],
       selectedAccountId: newAccount.id,
     });
@@ -134,7 +130,7 @@ export function PaymentMethodSelection() {
   });
 
   const handleRemoveAccount = () => {
-    setFormData('paymentMethod', {
+    setPaymentData({
       savedAccounts: [],
       selectedAccountId: null,
     });
@@ -142,10 +138,43 @@ export function PaymentMethodSelection() {
   };
 
   const handleSelectAccount = (accountId: string) => {
-    setFormData('paymentMethod', {
+    setPaymentData({
       ...paymentData,
       selectedAccountId: accountId,
     });
+  };
+
+  const handleFormSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!paymentData.savedAccounts?.length) {
+      toast.error('Please add a payment method before continuing.');
+      return;
+    }
+    if (!paymentData.selectedAccountId) {
+      toast.error('Please select a payment method before continuing.');
+      return;
+    }
+
+    try {
+      const selected = paymentData.savedAccounts.find(
+        (acc) => acc.id === paymentData.selectedAccountId
+      );
+      if (selected) {
+        await updateProfileMutation.mutateAsync({
+          currentStep: OnboardingStep.PAYMENT_METHOD_SELECTION,
+          paymentMethod: {
+            paymentMethod: selected.method,
+            accountNumber: selected.accountNumber,
+          },
+        });
+      }
+
+      triggerNavigation(OnboardingStep.PAYMENT_METHOD_SELECTION);
+    } catch (error) {
+      console.error('Failed to save payment method:', error);
+      toast.error('Failed to save data. Please try again.');
+    }
   };
 
   const renderPaymentFields = () => {
@@ -331,17 +360,21 @@ export function PaymentMethodSelection() {
   const hasSavedAccount = paymentData.savedAccounts && paymentData.savedAccounts.length > 0;
 
   return (
-    <div className="mx-auto max-w-xl px-4 py-8 sm:px-8">
+    <form
+      id="onboarding-step-form"
+      onSubmit={handleFormSubmit}
+      className="mx-auto max-w-xl px-4 py-8 sm:px-8"
+    >
       <StepHeader title="Select Payment Method" />
 
       {renderSavedAccounts()}
 
       {!hasSavedAccount && (
         <div className="mt-6">
-          {/* <h3 className="mb-4 text-lg font-semibold">Add Payment Method</h3> */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
+                type="button"
                 variant="outline"
                 className="h-12 w-full justify-between rounded-full border-gray-300 px-4"
               >
@@ -383,6 +416,6 @@ export function PaymentMethodSelection() {
           {renderPaymentFields()}
         </div>
       )}
-    </div>
+    </form>
   );
 }

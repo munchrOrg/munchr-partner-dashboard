@@ -1,6 +1,9 @@
 'use client';
 
+import type { PackageFormData } from '@/types/onboarding';
 import { Check } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import {
   Accordion,
@@ -11,7 +14,9 @@ import {
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { cn } from '@/lib/utils';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
 import { useOnboardingStore } from '@/stores/onboarding-store';
+import { OnboardingStep } from '@/types/onboarding';
 
 const PACKAGES = [
   {
@@ -99,16 +104,43 @@ const PACKAGES = [
 ];
 
 export function PartnershipPackage() {
-  const { formData, setFormData } = useOnboardingStore();
+  const { triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
 
-  const selectedPackageId = formData.package?.selectedPackageId || '';
+  const [selectedPackage, setSelectedPackage] = useState<PackageFormData>({
+    selectedPackageId: '',
+  });
 
   const handleSelect = (packageId: string) => {
-    setFormData('package', { selectedPackageId: packageId });
+    setSelectedPackage({ selectedPackageId: packageId });
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!selectedPackage.selectedPackageId) {
+      toast.error('Please select a partnership package before continuing.');
+      return;
+    }
+
+    try {
+      await updateProfileMutation.mutateAsync({
+        currentStep: OnboardingStep.PARTNERSHIP_PACKAGE,
+      });
+
+      triggerNavigation(OnboardingStep.PARTNERSHIP_PACKAGE);
+    } catch (error) {
+      console.error('Failed to save package selection:', error);
+      toast.error('Failed to save data. Please try again.');
+    }
   };
 
   return (
-    <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
+    <form
+      id="onboarding-step-form"
+      onSubmit={handleSubmit}
+      className="mx-auto max-w-6xl px-4 py-8 sm:px-8"
+    >
       <StepHeader
         title="Partnership Package"
         description="Our plans helps increase your customer base, boost your revenue and grow your business. Choose the one works best for you!"
@@ -120,7 +152,9 @@ export function PartnershipPackage() {
             key={pkg.id}
             className={cn(
               'rounded-2xl border bg-white p-6 transition-all',
-              selectedPackageId === pkg.id ? 'border-purple-dark' : 'border-gray-200'
+              selectedPackage.selectedPackageId === pkg.id
+                ? 'border-purple-dark'
+                : 'border-gray-200'
             )}
           >
             {/* Icon and Title */}
@@ -156,10 +190,11 @@ export function PartnershipPackage() {
 
             {/* Select Button */}
             <Button
+              type="button"
               onClick={() => handleSelect(pkg.id)}
               className={cn(
                 'mt-6 h-12 w-full rounded-full text-base font-medium',
-                selectedPackageId === pkg.id
+                selectedPackage.selectedPackageId === pkg.id
                   ? 'bg-gradient-yellow hover:bg-gradient-yellow/80 text-black'
                   : 'border-2 border-gray-300 bg-white text-black hover:bg-gray-50'
               )}
@@ -169,6 +204,6 @@ export function PartnershipPackage() {
           </div>
         ))}
       </div>
-    </div>
+    </form>
   );
 }

@@ -2,7 +2,6 @@
 
 import type { OTPInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { signIn, signOut } from 'next-auth/react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
@@ -10,22 +9,13 @@ import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
-import {
   useResendEmailOtp,
   useResendPhoneOtp,
   useVerifyEmail,
   useVerifyPhone,
 } from '@/react-query/auth/mutations';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useAuthStore } from '@/stores/auth-store';
 import { useSignupStore } from '@/stores/signup-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
@@ -68,12 +58,10 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   const [digits, setDigits] = useState<string[]>(
     Array.from({ length: OTP_LENGTH }).fill('') as string[]
   );
-  const [showReviewDialog, setShowReviewDialog] = useState(false);
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  const { formData } = useSignupStore();
-  const flowType = searchParams.get('type');
-  const destination = type === 'email' ? formData.email : formData.phoneNumber;
+  const setAccessToken = useAuthStore((state) => state.setAccessToken);
+  const destination = type === 'email' ? searchParams.get('email') : searchParams.get('phone');
 
   const config = CONFIG[type];
 
@@ -134,107 +122,60 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   };
 
   const onSubmit = async (_data: OTPInput) => {
+    const partnerId = partnerIdState;
+    if (!partnerId) {
+      setError('otp', { message: 'Missing partnerId. Please provide it.' });
+      return;
+    }
+
     try {
+      const otp = digits.join('');
+      const response =
+        type === 'email'
+          ? await verifyEmailMutation.mutateAsync({ partnerId, otp })
+          : await verifyPhoneMutation.mutateAsync({ partnerId, otp });
+
+      if (!response || !response.success) {
+        setError('otp', { message: response?.message || `${config.title} failed` });
+        return;
+      }
+
+      toast.success(response.message || config.successMessage);
+
+      const { setEmailVerified, setPhoneVerified } = useSignupStore.getState();
       if (type === 'email') {
-        const partnerId = partnerIdState;
-        if (!partnerId) {
-          setError('otp', { message: 'Missing partnerId. Please provide it.' });
-          return;
-        }
-        try {
-          const otp = digits.join('');
-          const json = await verifyEmailMutation.mutateAsync({ partnerId, otp });
-          if (!json || !json.success) {
-            setError('otp', { message: json?.message || 'Email verification failed' });
-            return;
-          }
-          toast.success(json.message || config.successMessage);
-        } catch {
-          setError('otp', { message: 'Failed to verify email' });
-          return;
-        }
+        setEmailVerified(true);
       } else {
-        const partnerId = partnerIdState;
-        if (!partnerId) {
-          setError('otp', { message: 'Missing partnerId. Please provide it.' });
-          return;
-        }
-        try {
-          const otp = digits.join('');
-          const json = await verifyPhoneMutation.mutateAsync({ partnerId, otp });
-          if (!json || !json.success) {
-            setError('otp', { message: json?.message || 'Phone verification failed' });
-            return;
-          }
-          toast.success(json.message || config.successMessage);
-        } catch {
-          setError('otp', { message: 'Failed to verify phone' });
-          return;
-        }
-      }
-      if (type === 'phone') {
-        try {
-          const { email, password } = useSignupStore.getState().formData;
-          if (email && password) {
-            const deviceInfo = typeof navigator !== 'undefined' ? navigator.userAgent : 'web';
-            const res = await signIn('login', { redirect: false, email, password, deviceInfo });
-            if (res?.error) {
-              toast.error(res.error || 'Login failed after verification');
-            } else {
-              toast.success('Logged in successfully');
-            }
-          }
-        } catch {}
+        setPhoneVerified(true);
       }
 
-      if (flowType === 'login') {
-        const { completedPhases } = useOnboardingStore.getState();
-        const { accountStatus: currentAccountStatus } = useSignupStore.getState();
-
-        if (
-          completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) &&
-          currentAccountStatus !== 'approved'
-        ) {
-          setShowReviewDialog(true);
-          return;
-        }
-
-        if (completedPhases.includes(OnboardingPhase.OPEN_BUSINESS)) {
-          router.push('/dashboard');
-          return;
-        }
-
-        if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
-          router.push(`/onboarding/${OnboardingStep.OPEN_BUSINESS_INTRO}`);
-          return;
-        }
-
-        router.push(`/onboarding/${OnboardingStep.WELCOME}`);
+      if (response.accountActivated && response.accessToken) {
+        setAccessToken(response.accessToken);
+        useSignupStore.getState().reset();
+        // Navigate to onboarding based on backend's currentStep
+        const targetStep = response.onboarding?.currentStep || 'welcome';
+        router.push(`/onboarding/${targetStep}`);
         return;
       }
 
       if (type === 'email') {
-        const { setEmailVerified } = useSignupStore.getState();
-        setEmailVerified(true);
-        router.push('/verify-phone?type=signup');
+        const phone = searchParams.get('phone') || '';
+        router.push(
+          `/verify-phone?type=signup&partnerId=${partnerId}&phone=${encodeURIComponent(phone)}`
+        );
       } else {
-        const { setPhoneVerified } = useSignupStore.getState();
-        setPhoneVerified(true);
-        router.push('/onboarding/welcome');
+        const email = searchParams.get('email') || '';
+        router.push(
+          `/verify-email?type=signup&partnerId=${partnerId}&email=${encodeURIComponent(email)}`
+        );
       }
     } catch {
       setError('otp', { message: 'An unexpected error occurred' });
     }
   };
 
-  const handleReviewDialogClose = () => {
-    setShowReviewDialog(false);
-    signOut({ redirect: false });
-    router.push('/sign-in');
-  };
-
   const handleResend = async () => {
-    if (resendTimer > 0) {
+    if (resendTimer > 0 || !destination) {
       return;
     }
     if (type === 'email') {
@@ -269,81 +210,60 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   }
 
   return (
-    <>
-      <div className="w-full">
-        <h1 className="mb-2 text-xl font-semibold sm:text-2xl">{config.title}</h1>
-        <p className="mb-6 text-sm text-gray-600">{config.getDescription(destination)}</p>
+    <div className="w-full">
+      <h1 className="mb-2 text-xl font-semibold sm:text-2xl">{config.title}</h1>
+      <p className="mb-6 text-sm text-gray-600">{config.getDescription(destination)}</p>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
-          {errors.otp && (
-            <Alert variant="destructive">
-              <AlertDescription>{errors.otp.message}</AlertDescription>
-            </Alert>
+      <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+        {errors.otp && (
+          <Alert variant="destructive">
+            <AlertDescription>{errors.otp.message}</AlertDescription>
+          </Alert>
+        )}
+
+        <div className="flex items-center justify-center gap-2 sm:gap-3">
+          {/** eslint-disable-next-line react/no-array-index-key -- fixed size OTP inputs */}
+          {digits.map((digit, index) => (
+            <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
+              <input
+                ref={(el) => {
+                  inputRefs.current[index] = el;
+                }}
+                type="text"
+                inputMode="numeric"
+                maxLength={1}
+                value={digit}
+                onChange={(e) => handleChange(index, e.target.value)}
+                onKeyDown={(e) => handleKeyDown(index, e)}
+                className="h-12 w-10 rounded-lg border border-gray-300 text-center text-lg font-medium outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 sm:h-14 sm:w-12 sm:text-xl"
+              />
+              {index === 2 && <span className="text-xl text-gray-400">—</span>}
+            </div>
+          ))}
+        </div>
+
+        <Button
+          type="submit"
+          disabled={isSubmitting || digits.some((d) => !d) || (type === 'email' && !partnerIdState)}
+          className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
+        >
+          {isSubmitting ? 'Verifying...' : 'Submit'}
+        </Button>
+
+        <div className="text-center">
+          {resendTimer > 0 ? (
+            <p className="text-sm text-gray-500">Re-send in -{formatTime(resendTimer)}</p>
+          ) : (
+            <button
+              type="button"
+              onClick={handleResend}
+              className="text-sm font-medium text-amber-500 hover:underline"
+            >
+              {config.resendText}
+            </button>
           )}
-
-          <div className="flex items-center justify-center gap-2 sm:gap-3">
-            {/** eslint-disable-next-line react/no-array-index-key -- fixed size OTP inputs */}
-            {digits.map((digit, index) => (
-              <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
-                <input
-                  ref={(el) => {
-                    inputRefs.current[index] = el;
-                  }}
-                  type="text"
-                  inputMode="numeric"
-                  maxLength={1}
-                  value={digit}
-                  onChange={(e) => handleChange(index, e.target.value)}
-                  onKeyDown={(e) => handleKeyDown(index, e)}
-                  className="h-12 w-10 rounded-lg border border-gray-300 text-center text-lg font-medium outline-none focus:border-amber-400 focus:ring-2 focus:ring-amber-400/50 sm:h-14 sm:w-12 sm:text-xl"
-                />
-                {index === 2 && <span className="text-xl text-gray-400">—</span>}
-              </div>
-            ))}
-          </div>
-
-          <Button
-            type="submit"
-            disabled={
-              isSubmitting || digits.some((d) => !d) || (type === 'email' && !partnerIdState)
-            }
-            className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
-          >
-            {isSubmitting ? 'Verifying...' : 'Submit'}
-          </Button>
-
-          <div className="text-center">
-            {resendTimer > 0 ? (
-              <p className="text-sm text-gray-500">Re-send in -{formatTime(resendTimer)}</p>
-            ) : (
-              <button
-                type="button"
-                onClick={handleResend}
-                className="text-sm font-medium text-amber-500 hover:underline"
-              >
-                {config.resendText}
-              </button>
-            )}
-          </div>
-        </form>
-      </div>
-
-      <Dialog open={showReviewDialog} onOpenChange={setShowReviewDialog}>
-        <DialogContent showCloseButton={false}>
-          <DialogHeader>
-            <DialogTitle>Account Under Review</DialogTitle>
-            <DialogDescription>
-              Your application is currently under review. You will be notified once your account has
-              been approved and you can proceed to set up your business hours.
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
-            <Button onClick={handleReviewDialogClose} className="bg-gradient-yellow text-black">
-              OK
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-    </>
+        </div>
+      </form>
+    </div>
   );
 }

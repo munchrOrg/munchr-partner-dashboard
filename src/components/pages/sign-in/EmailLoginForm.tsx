@@ -34,7 +34,6 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
 
     const profileData = await getProfileMutation.mutateAsync();
 
-    // Navigate based on backend's current step (single source of truth)
     const targetStep = profileData?.onboarding?.currentStep || 'welcome';
     router.push(`/onboarding/${targetStep}`);
   };

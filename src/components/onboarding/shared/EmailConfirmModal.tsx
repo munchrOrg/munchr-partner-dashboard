@@ -1,5 +1,6 @@
 'use client';
 
+import { useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
@@ -15,31 +16,25 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { authKeys } from '@/react-query/auth/keys';
 import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 export function EmailConfirmModal() {
   const router = useRouter();
+  const queryClient = useQueryClient();
   const updateProfileMutation = useUpdateProfile();
-  const {
-    formData,
-    setFormData,
-    completeStep,
-    completePhase,
-    isEmailConfirmModalOpen,
-    closeEmailConfirmModal,
-    profile,
-  } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const { isEmailConfirmModalOpen, closeEmailConfirmModal } = useOnboardingStore();
 
-  // Initialize email from formData - uses key prop on Dialog to reset state when modal opens
-  const initialEmail = formData.businessInfo?.email || '';
-  const [email, setEmail] = useState(initialEmail);
+  const businessEmail = profile?.partner?.businessProfile?.email || profile?.partner?.email || '';
+  const [email, setEmail] = useState(businessEmail);
 
-  // Handle modal open/close - reset email when opening
   const handleOpenChange = (open: boolean) => {
     if (open) {
-      setEmail(formData.businessInfo?.email || '');
+      setEmail(businessEmail);
     } else {
       closeEmailConfirmModal();
     }
@@ -52,31 +47,22 @@ export function EmailConfirmModal() {
       return;
     }
 
-    // Update email in formData if it was changed
-    if (email !== formData.businessInfo?.email && formData.businessInfo) {
-      setFormData('businessInfo', {
-        ...formData.businessInfo,
-        email,
-      });
-    }
     try {
       await updateProfileMutation.mutateAsync({
         currentStep: OnboardingStep.BUSINESS_INFO_REVIEW,
+        completeStep: OnboardingStep.BUSINESS_INFO_REVIEW,
+        completePhase: OnboardingPhase.ADD_BUSINESS,
         email,
       } as any);
+
+      await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+
+      closeEmailConfirmModal();
+      router.push(`/onboarding/${OnboardingStep.WELCOME}`);
     } catch (err) {
       console.error('Failed to update profile with email:', err);
+      toast.error('Failed to save email. Please try again.');
     }
-
-    // Complete the step
-    completeStep(OnboardingStep.BUSINESS_INFO_REVIEW);
-
-    // Complete Phase 1
-    completePhase(OnboardingPhase.ADD_BUSINESS);
-
-    // Close modal and route to Welcome
-    closeEmailConfirmModal();
-    router.push(`/onboarding/${OnboardingStep.WELCOME}`);
   };
 
   return (

@@ -1,10 +1,8 @@
 'use client';
 
-import type { ConfirmModalConfig } from '@/types/onboarding';
-
+import { useQueryClient } from '@tanstack/react-query';
 import { useParams, useRouter } from 'next/navigation';
 import { useCallback, useEffect } from 'react';
-import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
@@ -16,184 +14,41 @@ import {
   PHASE_ENTRY_STEP,
   STEP_PHASE_MAP,
 } from '@/config/onboarding-steps';
-import { convertTo24HourFormat, is24HourFormat } from '@/lib/helpers';
-import { useGetProfile, useUpdateProfile } from '@/react-query/auth/mutations';
+import { authKeys } from '@/react-query/auth/keys';
+import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
-const STEPS_WITH_FORMS: Record<string, string> = {
-  [OnboardingStep.BUSINESS_LOCATION]: 'location-form',
-  [OnboardingStep.LEGAL_TAX_DETAILS]: 'legal-tax-form',
-  [OnboardingStep.BANKING_DETAILS]: 'banking-form',
-};
-
-type StepBehavior = {
-  type: 'modal' | 'emailConfirm' | 'default';
-  modalConfig?: Omit<ConfirmModalConfig, 'onConfirm'>;
-  validate?: (formData: any) => string | null;
-};
-
-const STEP_BEHAVIORS: Partial<Record<OnboardingStep, StepBehavior>> = {
-  [OnboardingStep.BUSINESS_INFO_REVIEW]: {
-    type: 'emailConfirm',
-  },
-  [OnboardingStep.DINE_IN_MENU_UPLOAD]: {
-    type: 'modal',
-    modalConfig: {
-      title: 'Does your menu meet the requirements?',
-      description:
-        'If the menu fails to meet the conditions, we cannot process your request to join munchr.',
-      bulletPoints: [
-        'A minimum of menu items for Regular Restaurants, or 18 items for Home Chefs.',
-        'All menu items have a price',
-      ],
-      confirmText: 'Yes, Continue',
-      cancelText: 'No, Re-upload Menu',
-    },
-    validate: (formData) => {
-      if (!formData.menu?.menuFile) {
-        return 'Please upload your menu before continuing.';
-      }
-      return null;
-    },
-  },
-  [OnboardingStep.OWNER_IDENTITY_UPLOAD]: {
-    type: 'default',
-    validate: (formData) => {
-      const ownerIdentity = formData.ownerIdentity;
-      if (ownerIdentity?.hasSNTN === null || ownerIdentity?.hasSNTN === undefined) {
-        return 'Please select whether you have a Sales Tax Registration Number (SNTN).';
-      }
-      if (ownerIdentity.hasSNTN && !ownerIdentity.sntnFile) {
-        return 'Please upload your SNTN document.';
-      }
-      if (!ownerIdentity.hasSNTN) {
-        if (!ownerIdentity.idCardFrontFile) {
-          return 'Please upload the front of your ID card.';
-        }
-        if (!ownerIdentity.idCardBackFile) {
-          return 'Please upload the back of your ID card.';
-        }
-      }
-      return null;
-    },
-  },
-  [OnboardingStep.BUSINESS_HOURS_SETUP]: {
-    type: 'default',
-    validate: (formData) => {
-      if (!formData.businessHours) {
-        return 'Please configure your business hours.';
-      }
-
-      const days = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'];
-
-      const hasOpenDay = days.some((day) => formData.businessHours[day].isOpen);
-      if (!hasOpenDay) {
-        return 'Please mark at least one day as open.';
-      }
-
-      for (const day of days) {
-        const schedule = formData.businessHours[day];
-
-        if (schedule.isOpen && schedule.slots.length === 0) {
-          return 'Please add time slots for all open days or mark them as closed.';
-        }
-      }
-
-      return null;
-    },
-  },
-  [OnboardingStep.PARTNERSHIP_PACKAGE]: {
-    type: 'default',
-    validate: (formData) => {
-      if (!formData.package?.selectedPackageId) {
-        return 'Please select a partnership package before continuing.';
-      }
-      return null;
-    },
-  },
-  [OnboardingStep.PAYMENT_METHOD_SELECTION]: {
-    type: 'default',
-    validate: (formData) => {
-      if (!formData.paymentMethod?.savedAccounts?.length) {
-        return 'Please add a payment method before continuing.';
-      }
-      if (!formData.paymentMethod.selectedAccountId) {
-        return 'Please select a payment method before continuing.';
-      }
-      return null;
-    },
-  },
-  [OnboardingStep.BANK_STATEMENT_UPLOAD]: {
-    type: 'default',
-    validate: (formData) => {
-      if (!formData.bankStatement?.statementFile) {
-        return 'Please upload your bank statement before continuing.';
-      }
-      return null;
-    },
-  },
-  [OnboardingStep.TRAINING_CALL_PREFERENCE]: {
-    type: 'default',
-    validate: (formData) => {
-      if (!formData.trainingCall?.networkProvider) {
-        return 'Please select your mobile network provider.';
-      }
-      if (!formData.trainingCall.preferredTime) {
-        return 'Please select your preferred time for the training call.';
-      }
-      if (!formData.trainingCall.preferredDate) {
-        return 'Please select your preferred date for the training call.';
-      }
-      return null;
-    },
-  },
-  [OnboardingStep.ONBOARDING_FEE_PAYMENT]: {
-    type: 'default',
-    validate: (formData) => {
-      if (!formData.onboardingFee?.paymentScreenshot) {
-        return 'Please upload your payment screenshot before continuing.';
-      }
-      return null;
-    },
-  },
-};
+const STEPS_WITHOUT_FORMS = new Set([OnboardingStep.WELCOME, OnboardingStep.PORTAL_SETUP_COMPLETE]);
 
 export function OnboardingFooter() {
   const router = useRouter();
   const params = useParams();
+  const queryClient = useQueryClient();
 
   const currentStep = params.step as OnboardingStep;
 
-  const {
-    formData,
-    completeStep,
-    completePhase,
-    completedPhases,
-    openProgressDrawer,
-    openEmailConfirmModal,
-    openConfirmModal,
-    shouldNavigate,
-    navigationStep,
-    clearNavigation,
-  } = useOnboardingStore();
+  const { data: profile } = useProfile();
+  const completedPhases = (profile?.onboarding?.completedPhases || []) as string[];
+
+  const { openProgressDrawer, shouldNavigate, navigationStep, clearNavigation } =
+    useOnboardingStore();
 
   const showBack = canGoBack(currentStep);
-  const formId = STEPS_WITH_FORMS[currentStep];
-  const hasForm = Boolean(formId);
+
+  const formId = 'onboarding-step-form';
+  const hasForm = !STEPS_WITHOUT_FORMS.has(currentStep);
 
   const updateProfileMutation = useUpdateProfile();
-  const getProfileMutation = useGetProfile();
 
   const executeNavigation = useCallback(
     async (step: OnboardingStep) => {
-      // Sync with backend
       const nextStep = getNextStep(step);
       const isPhaseComplete = isLastStepOfPhase(step);
       const phase = STEP_PHASE_MAP[step];
 
       try {
-        // Send onboarding progress to backend
         const onboardingPayload: any = {
           completeStep: step,
           currentStep: nextStep || step,
@@ -204,17 +59,14 @@ export function OnboardingFooter() {
         }
 
         await updateProfileMutation.mutateAsync(onboardingPayload);
+
+        await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
       } catch (error) {
         console.error('Failed to sync onboarding progress:', error);
-        // Continue with local state even if backend sync fails
+        return;
       }
 
-      // Update local state
-      completeStep(step);
-
       if (isPhaseComplete) {
-        completePhase(phase);
-
         const nextPhase = getNextPhase(phase);
         if (nextPhase) {
           router.push(`/onboarding/${OnboardingStep.WELCOME}`);
@@ -228,7 +80,7 @@ export function OnboardingFooter() {
         router.push(`/onboarding/${nextStep}`);
       }
     },
-    [completeStep, completePhase, router, updateProfileMutation]
+    [router, updateProfileMutation, queryClient]
   );
 
   const getNextPhaseEntryStep = useCallback((): OnboardingStep => {
@@ -255,246 +107,12 @@ export function OnboardingFooter() {
     }
   };
 
-  const handleContinue = async () => {
+  const handleContinue = () => {
     if (currentStep === OnboardingStep.WELCOME) {
       router.push(`/onboarding/${getNextPhaseEntryStep()}`);
-      return;
     }
-    if (currentStep === OnboardingStep.OWNER_IDENTITY_UPLOAD) {
-      const { ownerIdentity } = formData;
-      if (ownerIdentity) {
-        const payload: any = {
-          sntn: ownerIdentity.hasSNTN,
-          currentStep,
-        };
-
-        if (ownerIdentity.hasSNTN) {
-          const file: any = ownerIdentity.sntnFile;
-          if (file && file.key) {
-            payload.ntnImageKey = file.key;
-          }
-        } else {
-          // When sntn is false, send cnicFrontKey and cnicBackKey
-          const front = ownerIdentity.idCardFrontFile;
-          const back = ownerIdentity.idCardBackFile;
-          if (front && front.key) {
-            payload.cnicFrontKey = front.key;
-          }
-          if (back && back.key) {
-            payload.cnicBackKey = back.key;
-          }
-        }
-
-        await updateProfileMutation.mutateAsync(payload);
-      }
-    } else if (currentStep === OnboardingStep.BANK_STATEMENT_UPLOAD) {
-      const { bankStatement } = formData;
-      if (bankStatement && bankStatement.statementFile && bankStatement.statementFile.key) {
-        const file: any = bankStatement.statementFile;
-        const payload: any = {
-          currentStep,
-          chequeBookImageKey: file.key,
-        };
-        await updateProfileMutation.mutateAsync(payload);
-      } else {
-        await updateProfileMutation.mutateAsync({ currentStep } as any);
-      }
-    } else if (currentStep === OnboardingStep.DINE_IN_MENU_UPLOAD) {
-      const { menu } = formData;
-      if (menu && menu.menuFile) {
-        const file: any = menu.menuFile;
-        const payload: any = {
-          currentStep,
-          menuImageKey: file.key,
-        };
-        await updateProfileMutation.mutateAsync(payload);
-      } else {
-        await updateProfileMutation.mutateAsync({ currentStep } as any);
-      }
-    } else if (currentStep === OnboardingStep.ONBOARDING_FEE_PAYMENT) {
-      const { onboardingFee } = formData;
-      const file: any = onboardingFee?.paymentScreenshot;
-      const payload: any = {
-        currentStep,
-        paymentTransactionId: onboardingFee?.paymentTransactionId || '',
-        uploadScreenshotImageKey: file?.key || '',
-      };
-      await updateProfileMutation.mutateAsync(payload);
-    } else if (currentStep === OnboardingStep.TRAINING_CALL_PREFERENCE) {
-      const { trainingCall } = formData;
-
-      if (trainingCall) {
-        const time24 = is24HourFormat(trainingCall.preferredTime)
-          ? trainingCall.preferredTime
-          : convertTo24HourFormat(trainingCall.preferredTime);
-
-        const payload: any = {
-          currentStep,
-          bookSlot: {
-            networkPreference: trainingCall.networkProvider,
-            date: trainingCall.preferredDate,
-            time: time24,
-          },
-        };
-
-        await updateProfileMutation.mutateAsync(payload);
-      } else {
-        await updateProfileMutation.mutateAsync({
-          currentStep,
-        } as any);
-      }
-    } else if (currentStep === OnboardingStep.PAYMENT_METHOD_SELECTION) {
-      const { paymentMethod } = formData;
-      if (paymentMethod && paymentMethod.selectedAccountId && paymentMethod.savedAccounts?.length) {
-        const selected = paymentMethod.savedAccounts.find(
-          (acc) => acc.id === paymentMethod.selectedAccountId
-        );
-        if (selected) {
-          const payload: any = {
-            currentStep,
-            paymentMethod: {
-              paymentMethod: selected.method,
-              accountNumber: selected.accountNumber,
-            },
-          };
-          await updateProfileMutation.mutateAsync(payload);
-        } else {
-          await updateProfileMutation.mutateAsync({ currentStep } as any);
-        }
-      } else {
-        await updateProfileMutation.mutateAsync({ currentStep } as any);
-      }
-    } else if (currentStep === OnboardingStep.BUSINESS_HOURS_SETUP) {
-      const { businessHours } = formData;
-      if (businessHours) {
-        const businessHoursPayload: any[] = [];
-        const dayMapping = {
-          monday: 1,
-          tuesday: 2,
-          wednesday: 3,
-          thursday: 4,
-          friday: 5,
-          saturday: 6,
-          sunday: 0,
-        };
-
-        Object.entries(businessHours).forEach(([day, schedule]) => {
-          const dayOfWeek = dayMapping[day as keyof typeof dayMapping];
-          if (schedule.isOpen && schedule.slots.length > 0) {
-            schedule.slots.forEach((slot) => {
-              businessHoursPayload.push({
-                dayOfWeek,
-                startTime: slot.open,
-                endTime: slot.close,
-                isClosed: false,
-              });
-            });
-          } else {
-            businessHoursPayload.push({
-              dayOfWeek,
-              startTime: '00:00',
-              endTime: '00:00',
-              isClosed: true,
-            });
-          }
-        });
-
-        const payload: any = {
-          currentStep,
-          operatingHours: businessHoursPayload,
-        };
-        await updateProfileMutation.mutateAsync(payload);
-      } else {
-        await updateProfileMutation.mutateAsync({ currentStep } as any);
-      }
-    } else {
-      // Handle all other steps that don't have specific API data
-      await updateProfileMutation.mutateAsync({ currentStep } as any);
-    }
-    try {
-      try {
-        const profileResp = await getProfileMutation.mutateAsync();
-        const profileData = (profileResp as any)?.data;
-        if (profileData) {
-          if (
-            profileData.businessName ||
-            profileData.businessDescription ||
-            profileData.cuisines ||
-            profileData.email ||
-            profileData.phoneNumber
-          ) {
-            const businessInfo = {
-              serviceProviderType:
-                (profileData.serviceProviderType as any) ||
-                (useOnboardingStore.getState().formData.businessInfo?.serviceProviderType ??
-                  'restaurant'),
-              businessName: profileData.businessName || '',
-              businessDescription: profileData.businessDescription || '',
-              email:
-                profileData.email ||
-                useOnboardingStore.getState().formData.businessInfo?.email ||
-                '',
-              phoneNumber:
-                profileData.phoneNumber ||
-                useOnboardingStore.getState().formData.businessInfo?.phoneNumber ||
-                '',
-              cuisines:
-                profileData.cuisines ||
-                useOnboardingStore.getState().formData.businessInfo?.cuisines ||
-                [],
-            } as any;
-            useOnboardingStore.getState().setFormData('businessInfo', businessInfo);
-          }
-
-          if (profileData.location) {
-            const loc = profileData.location;
-            const locationPayload = {
-              buildingName: loc.buildingName || '',
-              street: loc.street || '',
-              houseNumber: loc.houseNumber || '',
-              state: loc.state || '',
-              city: loc.city || '',
-              area: loc.area || '',
-              postalCode: loc.postalCode || '',
-              comment: loc.comment || '',
-              coordinates: loc.coordinates || null,
-            } as any;
-            useOnboardingStore.getState().setFormData('location', locationPayload);
-          }
-        }
-      } catch {}
-    } catch {
-      toast.error('Failed to report onboarding progress');
-    }
-
-    const stepBehavior = STEP_BEHAVIORS[currentStep];
-
-    if (stepBehavior?.validate) {
-      const error = stepBehavior.validate(formData);
-      if (error) {
-        toast.error(error);
-        return;
-      }
-    }
-
-    if (stepBehavior) {
-      switch (stepBehavior.type) {
-        case 'emailConfirm':
-          openEmailConfirmModal();
-          return;
-        case 'modal':
-          if (stepBehavior.modalConfig) {
-            openConfirmModal({
-              ...stepBehavior.modalConfig,
-              onConfirm: () => executeNavigation(currentStep),
-            });
-          }
-          return;
-      }
-    }
-
-    executeNavigation(currentStep);
   };
+
   if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
     return null;
   }
@@ -529,9 +147,10 @@ export function OnboardingFooter() {
             type={hasForm ? 'submit' : 'button'}
             form={hasForm ? formId : undefined}
             onClick={hasForm ? undefined : handleContinue}
-            className="bg-gradient-yellow size-full rounded-full px-6 text-lg font-medium text-black"
+            disabled={updateProfileMutation.isPending}
+            className="bg-gradient-yellow size-full rounded-full px-6 text-lg font-medium text-black disabled:opacity-50"
           >
-            Continue
+            {updateProfileMutation.isPending ? 'Saving...' : 'Continue'}
           </Button>
         </div>
       </div>

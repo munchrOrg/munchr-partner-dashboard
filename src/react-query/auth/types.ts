@@ -135,6 +135,27 @@ export type VerifyEmailResponse = {
   emailVerified: boolean;
   phoneVerified: boolean;
   accountActivated: boolean;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    isOwner: boolean;
+    role: string;
+  };
+  partner?: {
+    id: string;
+    businessName: string;
+    serviceProviderType: string;
+  };
+  onboarding?: {
+    currentStep: string;
+    completedSteps: string[];
+    completedPhases: string[];
+    isComplete: boolean;
+  };
 };
 
 export type VerifyPhoneRequest = {
@@ -149,6 +170,27 @@ export type VerifyPhoneResponse = {
   phoneVerified: boolean;
   accountActivated: boolean;
   nextStep?: string;
+  accessToken?: string;
+  refreshToken?: string;
+  expiresIn?: number;
+  user?: {
+    id: string;
+    name: string;
+    email: string;
+    isOwner: boolean;
+    role: string;
+  };
+  partner?: {
+    id: string;
+    businessName: string;
+    serviceProviderType: string;
+  };
+  onboarding?: {
+    currentStep: string;
+    completedSteps: string[];
+    completedPhases: string[];
+    isComplete: boolean;
+  };
 };
 
 // Nested types for UpdateProfileRequest
@@ -191,6 +233,8 @@ export type UpdateProfileRequest = {
   area?: string;
   postalCode?: string;
   addCommentAboutLocation?: string;
+  latitude?: number;
+  longitude?: number;
 
   // Identity fields
   sntn?: boolean;

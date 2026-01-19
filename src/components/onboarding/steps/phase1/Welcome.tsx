@@ -1,30 +1,10 @@
 'use client';
 
-import { useEffect } from 'react';
 import { IntroStep } from '@/components/onboarding/shared/IntroStep';
-import { useGetProfile } from '@/react-query/auth/mutations';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingPhase } from '@/types/onboarding';
-// import { OnboardingPhase } from '@/types/onboarding';
+import { useProfile } from '@/react-query/auth/queries';
 
 export function Welcome() {
-  const { profile } = useOnboardingStore();
-  const completedPhases = [];
-  if (profile?.step1) {
-    completedPhases.push(OnboardingPhase.ADD_BUSINESS);
-  }
-  if (profile?.step2) {
-    completedPhases.push(OnboardingPhase.VERIFY_BUSINESS);
-  }
-  if (profile?.step3) {
-    completedPhases.push(OnboardingPhase.OPEN_BUSINESS);
-  }
-  console.warn('Profile data in Welcome component:', profile);
-  const getProfileMutation = useGetProfile();
-
-  useEffect(() => {
-    getProfileMutation.mutateAsync();
-  }, []);
+  const { data: profile } = useProfile();
 
   const steps = [
     {

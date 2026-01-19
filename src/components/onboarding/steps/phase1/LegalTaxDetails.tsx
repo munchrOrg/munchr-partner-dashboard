@@ -9,6 +9,7 @@ import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useUpdateProfile } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
@@ -22,18 +23,17 @@ const legalTaxSchema = z.object({
 type LegalTaxInput = z.infer<typeof legalTaxSchema>;
 
 export function LegalTaxDetails() {
-  const { formData, setFormData, openExampleDrawer, triggerNavigation, profile } =
-    useOnboardingStore();
+  const { data: profile } = useProfile();
+  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
+
   const businessProfile = profile?.partner?.businessProfile;
-  const legalTax = {
-    cnicNumber: businessProfile?.cnicNumber || formData.legalTax?.cnicNumber || '',
-    taxRegistrationNo:
-      businessProfile?.taxRegistrationNo || formData.legalTax?.taxRegistrationNo || '',
-    firstAndMiddleNameForNic:
-      businessProfile?.firstAndMiddleNameForNic ||
-      formData.legalTax?.firstAndMiddleNameForNic ||
-      '',
-    lastNameForNic: businessProfile?.lastNameForNic || formData.legalTax?.lastNameForNic || '',
+
+  const legalTaxDefaults = {
+    cnicNumber: businessProfile?.cnicNumber || '',
+    taxRegistrationNo: businessProfile?.taxRegistrationNo || '',
+    firstAndMiddleNameForNic: businessProfile?.firstAndMiddleNameForNic || '',
+    lastNameForNic: businessProfile?.lastNameForNic || '',
   };
 
   const {
@@ -42,42 +42,31 @@ export function LegalTaxDetails() {
     formState: { errors },
   } = useForm<LegalTaxInput>({
     resolver: zodResolver(legalTaxSchema),
-    defaultValues: legalTax,
+    defaultValues: legalTaxDefaults,
     mode: 'all',
   });
 
-  const updateProfileMutation = useUpdateProfile();
   const onSubmit = async (data: LegalTaxInput) => {
-    setFormData('legalTax', {
+    const payload = {
+      currentStep: OnboardingStep.LEGAL_TAX_DETAILS,
       cnicNumber: data.cnicNumber,
       taxRegistrationNo: data.taxRegistrationNo,
       firstAndMiddleNameForNic: data.firstAndMiddleNameForNic,
       lastNameForNic: data.lastNameForNic,
-    });
+    };
 
-    const { legalTax } = formData;
-    if (legalTax) {
-      const payload: any = {
-        currentStep: OnboardingStep.LEGAL_TAX_DETAILS,
-        cnicNumber: legalTax.cnicNumber || '',
-        taxRegistrationNo: legalTax.taxRegistrationNo || '',
-        firstAndMiddleNameForNic: legalTax.firstAndMiddleNameForNic || '',
-        lastNameForNic: legalTax.lastNameForNic || '',
-      };
+    try {
+      const resp = await updateProfileMutation.mutateAsync(payload);
 
-      try {
-        const resp = await updateProfileMutation.mutateAsync(payload);
-
-        if (!resp || !resp.success) {
-          toast.error(resp?.message || 'Failed to save legal & tax details');
-          return;
-        }
-
-        triggerNavigation(OnboardingStep.LEGAL_TAX_DETAILS);
-      } catch (err) {
-        toast.error('Something went wrong while saving legal & tax details');
-        console.error(err);
+      if (!resp || !resp.success) {
+        toast.error(resp?.message || 'Failed to save legal & tax details');
+        return;
       }
+
+      triggerNavigation(OnboardingStep.LEGAL_TAX_DETAILS);
+    } catch (err) {
+      toast.error('Something went wrong while saving legal & tax details');
+      console.error(err);
     }
   };
 
@@ -95,7 +84,7 @@ export function LegalTaxDetails() {
         description="We need your tac and company information to create your munchr partner contract."
       />
 
-      <form id="legal-tax-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
+      <form id="onboarding-step-form" onSubmit={handleSubmit(onSubmit)} className="mt-6 space-y-4">
         <div>
           <Input
             placeholder="CNIC Number *"
