@@ -1,10 +1,12 @@
 'use client';
 
+import type { PendingApprovalError, VerificationRequiredError } from '@/react-query/auth/types';
 import type { SignInInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
@@ -22,6 +24,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
     register,
     handleSubmit,
     formState: { errors },
+    getValues,
   } = useForm<SignInInput>({
     resolver: zodResolver(signInSchema),
   });
@@ -37,7 +40,43 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
 
       const targetStep = profileData?.onboarding?.currentStep || 'welcome';
       router.push(`/onboarding/${targetStep}`);
-    } catch {}
+    } catch (err: any) {
+      const status = err?.response?.status;
+      const errorData = err?.response?.data;
+
+      if (status === 403 && errorData?.error === 'verification_required') {
+        const verificationError = errorData as VerificationRequiredError;
+        const email = getValues('email');
+        const partnerId = verificationError.partnerId || '';
+        const phone = verificationError.phone || '';
+
+        if (!verificationError.emailVerified) {
+          const params = new URLSearchParams({
+            type: 'login',
+            partnerId,
+            email,
+            phone,
+          });
+          router.push(`/verify-email?${params.toString()}`);
+        } else if (!verificationError.phoneVerified) {
+          const params = new URLSearchParams({
+            type: 'login',
+            partnerId,
+            email,
+            phone,
+          });
+          router.push(`/verify-phone?${params.toString()}`);
+        }
+        return;
+      }
+
+      if (status === 403 && errorData?.error === 'pending_approval') {
+        const approvalError = errorData as PendingApprovalError;
+        toast.error(
+          approvalError.message || 'Your account is pending approval. Please wait for verification.'
+        );
+      }
+    }
   };
 
   return (

@@ -24,6 +24,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSignUp } from '@/react-query/auth/mutations';
+import { useAuthStore } from '@/stores/auth-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
 import 'react-phone-number-input/style.css';
@@ -103,6 +104,11 @@ export function SignUpForm() {
           const { setPartnerId } = useSignupStore.getState();
           if (resp.partnerId) {
             setPartnerId(resp.partnerId);
+          }
+          // Token can be at root level or nested under 'tokens'
+          const accessToken = resp.accessToken || resp.tokens?.accessToken;
+          if (accessToken) {
+            useAuthStore.getState().setAccessToken(accessToken);
           }
           const params = new URLSearchParams({
             type: 'signup',

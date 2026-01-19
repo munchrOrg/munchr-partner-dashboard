@@ -19,6 +19,7 @@ import { useSignupStore } from '@/stores/signup-store';
 import { otpSchema } from '@/validations/auth';
 
 const OTP_LENGTH = 6;
+const OTP_INPUT_KEYS = Array.from({ length: OTP_LENGTH }, (_, i) => `otp-digit-${i}`);
 
 type VerifyOtpFormProps = {
   type: 'email' | 'phone';
@@ -149,25 +150,34 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         setPhoneVerified(true);
       }
 
-      if (response.accountActivated && response.accessToken) {
-        setAccessToken(response.accessToken);
+      const accessToken = response.accessToken || (response as any).tokens?.accessToken;
+      if (accessToken) {
+        setAccessToken(accessToken);
+      }
+
+      const bothVerified = response.emailVerified && response.phoneVerified;
+
+      if (bothVerified || response.accountActivated) {
         useSignupStore.getState().reset();
-        // Navigate to onboarding based on backend's currentStep
         const targetStep = response.onboarding?.currentStep || 'welcome';
         router.push(`/onboarding/${targetStep}`);
         return;
       }
 
-      if (type === 'email') {
+      if (type === 'email' && !response.phoneVerified) {
         const phone = searchParams.get('phone') || '';
         router.push(
-          `/verify-phone?type=signup&partnerId=${partnerId}&phone=${encodeURIComponent(phone)}`
+          `/verify-phone?type=signup&partnerId=${partnerId}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(searchParams.get('email') || '')}`
         );
-      } else {
+      } else if (type === 'phone' && !response.emailVerified) {
         const email = searchParams.get('email') || '';
         router.push(
-          `/verify-email?type=signup&partnerId=${partnerId}&email=${encodeURIComponent(email)}`
+          `/verify-email?type=signup&partnerId=${partnerId}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(searchParams.get('phone') || '')}`
         );
+      } else {
+        useSignupStore.getState().reset();
+        const targetStep = response.onboarding?.currentStep || 'welcome';
+        router.push(`/onboarding/${targetStep}`);
       }
     } catch {
       setError('otp', { message: 'An unexpected error occurred' });
@@ -222,9 +232,8 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         )}
 
         <div className="flex items-center justify-center gap-2 sm:gap-3">
-          {/** eslint-disable-next-line react/no-array-index-key -- fixed size OTP inputs */}
           {digits.map((digit, index) => (
-            <div key={`otp-input-${index}`} className="flex items-center gap-2 sm:gap-3">
+            <div key={OTP_INPUT_KEYS[index]} className="flex items-center gap-2 sm:gap-3">
               <input
                 ref={(el) => {
                   inputRefs.current[index] = el;
