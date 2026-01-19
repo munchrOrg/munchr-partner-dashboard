@@ -42,9 +42,8 @@ export function PortalSetupComplete() {
 
     return () => {
       clearTimeout(timer);
-      hasRun.current = false;
     };
-  }, [logoutMutation, router]);
+  }, []);
 
   return (
     <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">
