@@ -55,7 +55,7 @@ export function PaymentMethodSelection() {
 
   const prefilledAccount: SavedPaymentAccount | null = businessProfile?.paymentMethodType
     ? {
-        id: Date.now().toString(),
+        id: 'business-prefilled',
         method: businessProfile.paymentMethodType,
         ...(businessProfile.paymentMethodType === PaymentMethod.CARD
           ? {

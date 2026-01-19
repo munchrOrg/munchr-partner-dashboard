@@ -43,7 +43,6 @@ export function OnboardingFeePayment() {
   }));
 
   const handleSubmit = async (e: React.FormEvent) => {
-    console.log(`FORM SUBMITTED`);
     e.preventDefault();
 
     if (!onboardingFee.paymentScreenshot) {
@@ -103,8 +102,6 @@ export function OnboardingFeePayment() {
       return;
     }
     const { key, uploadUrl } = await res.json();
-    console.log('Upload API response:', { key, uploadUrl });
-
     try {
       const uploadRes = await fetch(uploadUrl, {
         method: 'PUT',

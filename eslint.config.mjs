@@ -80,5 +80,5 @@ export default antfu(
     rules: {
       'ts/consistent-type-definitions': 'off', // Allow interfaces in .d.ts files for module augmentation
     },
-  }
+  },
 );

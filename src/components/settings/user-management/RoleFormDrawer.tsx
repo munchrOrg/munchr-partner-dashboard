@@ -4,8 +4,8 @@ import type { Role } from '@/types/roles';
 import type { RoleFormInput } from '@/validations/user-management';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { X } from 'lucide-react';
-import { useEffect, useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useMemo } from 'react';
+import { useForm, useWatch } from 'react-hook-form';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -48,7 +48,6 @@ const initializePermissions = () =>
 
 export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDrawerProps>) {
   const isEditMode = !!role;
-  const [selectAll, setSelectAll] = useState(false);
 
   const form = useForm<RoleFormInput>({
     resolver: zodResolver(roleFormSchema),
@@ -59,13 +58,13 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
     },
   });
 
-  const permissions = form.watch('permissions');
+  const permissions = useWatch({ control: form.control, name: 'permissions' });
 
-  // Update selectAll state based on current permissions
-  useEffect(() => {
+  // Compute selectAll state based on current permissions
+  const selectAll = useMemo(() => {
     const allSelected = permissions.every((p) => p.view && p.edit && p.delete);
     const noneSelected = permissions.every((p) => !p.view && !p.edit && !p.delete);
-    setSelectAll(allSelected && !noneSelected);
+    return allSelected && !noneSelected;
   }, [permissions]);
 
   useEffect(() => {
@@ -98,7 +97,6 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
       delete: checked,
     }));
     form.setValue('permissions', updatedPermissions);
-    setSelectAll(checked);
   };
 
   const handlePermissionChange = (
