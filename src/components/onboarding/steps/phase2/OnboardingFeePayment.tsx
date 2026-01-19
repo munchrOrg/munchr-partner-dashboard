@@ -6,7 +6,6 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
-import { HoverBorderGradient } from '@/components/ui/hover-border-gradient';
 import { createFileUploadFromKey } from '@/lib/helpers';
 import { useUpdateProfile } from '@/react-query/auth/mutations';
 import { useProfile } from '@/react-query/auth/queries';
@@ -44,6 +43,7 @@ export function OnboardingFeePayment() {
   }));
 
   const handleSubmit = async (e: React.FormEvent) => {
+    console.log(`FORM SUBMITTED`);
     e.preventDefault();
 
     if (!onboardingFee.paymentScreenshot) {
@@ -221,11 +221,12 @@ export function OnboardingFeePayment() {
                 </Button>
               </div>
             ) : (
-              <HoverBorderGradient
-                containerClassName="rounded-full w-fit"
-                as="button"
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
                 onClick={() => fileUploadRef.current?.click()}
-                className="text-purple-dark flex min-w-xs cursor-pointer items-center space-x-2 bg-white"
+                className="text-purple-dark flex min-w-xs cursor-pointer items-center justify-start space-x-2 rounded-full bg-white px-2 py-6"
               >
                 <Plus className="size-6" />
                 <input
@@ -236,7 +237,7 @@ export function OnboardingFeePayment() {
                   className="hidden"
                 />
                 <span className="cursor-pointer text-inherit">Upload a screenshot</span>
-              </HoverBorderGradient>
+              </Button>
             )}
           </div>
         </div>
@@ -254,7 +255,7 @@ export function OnboardingFeePayment() {
             <input
               type="text"
               placeholder="Your transaction ID"
-              className="w-full rounded-lg border border-gray-300 px-4 py-2 outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
+              className="w-full rounded-full border border-gray-300 bg-white px-4 py-4 outline-none focus:border-yellow-500 focus:ring-1 focus:ring-yellow-500"
               value={onboardingFee.paymentTransactionId}
               onChange={(e) => handleTransactionIdChange(e.target.value)}
             />

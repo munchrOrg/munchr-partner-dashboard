@@ -2,16 +2,30 @@
 
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
+import { toast } from 'sonner';
 
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProfile } from '@/react-query/auth/queries';
+import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 export function BusinessInfoReview() {
   const router = useRouter();
   const { data: profile } = useProfile();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  const { triggerNavigation } = useOnboardingStore();
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+
+    if (!agreedToTerms) {
+      toast.error('Please agree to the Terms and Conditions to continue');
+      return;
+    }
+
+    triggerNavigation(OnboardingStep.BUSINESS_INFO_REVIEW);
+  };
 
   const partner = profile?.partner;
   const businessProfile = partner?.businessProfile;
@@ -54,7 +68,11 @@ export function BusinessInfoReview() {
     return parts.length ? parts.join(', ') : 'Not provided';
   };
   return (
-    <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
+    <form
+      id="onboarding-step-form"
+      onSubmit={handleSubmit}
+      className="mx-auto max-w-3xl px-4 py-8 sm:px-8"
+    >
       <StepHeader
         title="Make sure everything is correct"
         description="Check all your business information is correct before we add it to our partner portal and create your contract."
@@ -66,6 +84,7 @@ export function BusinessInfoReview() {
           <div className="mb-4 flex items-center justify-between border-t pt-4">
             <h2 className="text-xl font-bold">What does your business do?</h2>
             <button
+              type="button"
               onClick={() => handleChange(OnboardingStep.ADD_BUSINESS_INTRO)}
               className="text-purple-dark text-base font-bold hover:underline"
             >
@@ -123,6 +142,7 @@ export function BusinessInfoReview() {
           <div className="mb-4 flex items-center justify-between border-t pt-4">
             <h2 className="text-xl font-bold">Where is your business located?</h2>
             <button
+              type="button"
               onClick={() => handleChange(OnboardingStep.BUSINESS_LOCATION)}
               className="text-purple-dark text-base font-bold hover:underline"
             >
@@ -142,6 +162,7 @@ export function BusinessInfoReview() {
           <div className="mb-4 flex items-center justify-between border-t pt-4">
             <h2 className="text-xl font-bold">Upload Business Owner ID (Front and Back)</h2>
             <button
+              type="button"
               onClick={() => handleChange(OnboardingStep.OWNER_IDENTITY_UPLOAD)}
               className="text-purple-dark text-base font-bold hover:underline"
             >
@@ -163,6 +184,7 @@ export function BusinessInfoReview() {
           <div className="mb-4 flex items-center justify-between border-t pt-4">
             <h2 className="text-xl font-bold">Add your legal and tax details</h2>
             <button
+              type="button"
               onClick={() => handleChange(OnboardingStep.LEGAL_TAX_DETAILS)}
               className="text-purple-dark text-base font-bold hover:underline"
             >
@@ -194,6 +216,7 @@ export function BusinessInfoReview() {
           <div className="mb-4 flex items-center justify-between border-t pt-4">
             <h2 className="text-xl font-bold">Where do you want to get paid?</h2>
             <button
+              type="button"
               onClick={() => handleChange(OnboardingStep.BANKING_DETAILS)}
               className="text-purple-dark text-base font-bold hover:underline"
             >
@@ -231,6 +254,7 @@ export function BusinessInfoReview() {
           <div className="mb-4 flex items-center justify-between border-t pt-4">
             <h2 className="text-xl font-bold">Partnership Package</h2>
             <button
+              type="button"
               onClick={() => handleChange(OnboardingStep.PARTNERSHIP_PACKAGE)}
               className="text-purple-dark text-base font-bold hover:underline"
             >
@@ -266,6 +290,6 @@ export function BusinessInfoReview() {
           </label>
         </div>
       </div>
-    </div>
+    </form>
   );
 }

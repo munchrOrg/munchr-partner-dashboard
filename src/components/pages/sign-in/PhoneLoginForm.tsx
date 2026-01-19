@@ -37,16 +37,15 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Login with phone (stores token in auth store via mutation onSuccess)
-    const formattedPhone = normalizePhoneNumber(phoneNumber);
-    await phoneLoginMutation.mutateAsync({ phoneNumber: formattedPhone, password });
+    try {
+      const formattedPhone = normalizePhoneNumber(phoneNumber);
+      await phoneLoginMutation.mutateAsync({ phoneNumber: formattedPhone, password });
 
-    // Fetch profile to get current onboarding step
-    const profileData = await getProfileMutation.mutateAsync();
+      const profileData = await getProfileMutation.mutateAsync();
 
-    // Navigate based on backend's current step (single source of truth)
-    const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-    router.push(`/onboarding/${targetStep}`);
+      const targetStep = profileData?.onboarding?.currentStep || 'welcome';
+      router.push(`/onboarding/${targetStep}`);
+    } catch {}
   };
 
   return (

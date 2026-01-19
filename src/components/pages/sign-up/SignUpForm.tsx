@@ -70,7 +70,7 @@ export function SignUpForm() {
     const fetchCuisines = async () => {
       try {
         const base = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const r = await fetch(`${base}v1/partner/cuisines`);
+        const r = await fetch(`${base}/v1/partner/cuisines`);
         if (!r.ok) {
           throw new Error('Failed to fetch');
         }
@@ -166,14 +166,15 @@ export function SignUpForm() {
       if (!res.ok) {
         throw new Error('Failed to get upload URL');
       }
+      // TODO: Add types for return type of upload api.
       const data = await res.json();
-      const { key, uploadUrl } = data;
+      const { uploadUrl, publicUrl } = data;
 
       // Step 2: Try to upload file to uploadUrl (PUT), ignore CORS error
       try {
         await fetch(uploadUrl, {
           method: 'PUT',
-          headers: { 'Content-Type': file.type },
+          // headers: { 'Content-Type': file.type },
           body: file,
         });
       } catch (uploadErr) {
@@ -181,10 +182,10 @@ export function SignUpForm() {
         // Ignore CORS error, proceed anyway
       }
 
-      const logoUrl = `https://pub-xxx.r2.dev/${key}`;
-      setLogoPreview(logoUrl);
+      // const logoUrl = `https://pub-xxx.r2.dev/${key}`;
+      setLogoPreview(publicUrl);
     } catch {
-      setLogoError('Image upload failed');
+      // setLogoError('Image upload failed');
     }
   }, []);
 

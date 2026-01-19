@@ -2,6 +2,7 @@
 
 import { IntroStep } from '@/components/onboarding/shared/IntroStep';
 import { useProfile } from '@/react-query/auth/queries';
+import { OnboardingPhase } from '@/types/onboarding';
 
 export function Welcome() {
   const { data: profile } = useProfile();
@@ -9,15 +10,18 @@ export function Welcome() {
   const steps = [
     {
       label: 'Add your business',
-      completed: Boolean(profile?.step1),
+      completed:
+        profile && profile.onboarding.completedPhases.includes(OnboardingPhase.ADD_BUSINESS),
     },
     {
       label: 'Verify your business',
-      completed: Boolean(profile?.step2),
+      completed:
+        profile && profile.onboarding.completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS),
     },
     {
       label: 'Open your business',
-      completed: Boolean(profile?.step3),
+      completed:
+        profile && profile.onboarding.completedPhases.includes(OnboardingPhase.OPEN_BUSINESS),
     },
   ];
 

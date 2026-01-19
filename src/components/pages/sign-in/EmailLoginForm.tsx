@@ -30,12 +30,14 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
   const error = loginMutation.error?.message || getProfileMutation.error?.message;
 
   const onSubmit = async (data: SignInInput) => {
-    await loginMutation.mutateAsync(data);
+    try {
+      await loginMutation.mutateAsync(data);
 
-    const profileData = await getProfileMutation.mutateAsync();
+      const profileData = await getProfileMutation.mutateAsync();
 
-    const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-    router.push(`/onboarding/${targetStep}`);
+      const targetStep = profileData?.onboarding?.currentStep || 'welcome';
+      router.push(`/onboarding/${targetStep}`);
+    } catch {}
   };
 
   return (

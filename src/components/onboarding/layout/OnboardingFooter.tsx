@@ -20,7 +20,14 @@ import { useProfile } from '@/react-query/auth/queries';
 import { useOnboardingStore } from '@/stores/onboarding-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
-const STEPS_WITHOUT_FORMS = new Set([OnboardingStep.WELCOME, OnboardingStep.PORTAL_SETUP_COMPLETE]);
+const STEPS_WITHOUT_FORMS = new Set([
+  OnboardingStep.WELCOME,
+  OnboardingStep.PORTAL_SETUP_COMPLETE,
+  OnboardingStep.ADD_BUSINESS_INTRO,
+  OnboardingStep.VERIFY_BUSINESS_INTRO,
+  OnboardingStep.GROWTH_INFORMATION,
+  OnboardingStep.OPEN_BUSINESS_INTRO,
+]);
 
 export function OnboardingFooter() {
   const router = useRouter();
@@ -110,6 +117,11 @@ export function OnboardingFooter() {
   const handleContinue = () => {
     if (currentStep === OnboardingStep.WELCOME) {
       router.push(`/onboarding/${getNextPhaseEntryStep()}`);
+      return;
+    }
+
+    if (STEPS_WITHOUT_FORMS.has(currentStep)) {
+      executeNavigation(currentStep);
     }
   };
 

@@ -30,8 +30,14 @@ apiClient.interceptors.response.use(
   (error) => {
     const status = error?.response?.status || error?.request?.status;
 
-    const backendMessage = error?.response?.data?.message;
-    if (backendMessage) {
+    const backendData = error?.response?.data;
+    let backendMessage = backendData?.message;
+
+    if (backendMessage && typeof backendMessage === 'object' && backendMessage.message) {
+      backendMessage = backendMessage.message;
+    }
+
+    if (backendMessage && typeof backendMessage === 'string') {
       error.message = backendMessage;
     }
 
