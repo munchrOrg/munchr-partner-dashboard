@@ -26,13 +26,30 @@ export function PortalSetupComplete() {
     profile?.partner?.businessProfile?.email || profile?.partner?.email || 'your@email.com';
 
   useEffect(() => {
-    if (hasRun.current) {
+    if (hasRun.current || !profile) {
       return undefined;
     }
     hasRun.current = true;
 
+    const partnerStatus = profile.partner?.status;
+
+    if (partnerStatus && partnerStatus !== 'pending_approval') {
+      const advanceToPhase3 = async () => {
+        try {
+          await updateProfileMutation.mutateAsync({
+            currentStep: OnboardingStep.OPEN_BUSINESS_INTRO,
+          });
+        } catch (error) {
+          console.error('Failed to advance to Phase 3:', error);
+        }
+        router.push(`/onboarding/${OnboardingStep.OPEN_BUSINESS_INTRO}`);
+      };
+
+      advanceToPhase3();
+      return undefined;
+    }
+
     const completePhaseAndLogout = async () => {
-      // Mark Phase 2 as complete
       try {
         await updateProfileMutation.mutateAsync({
           completeStep: OnboardingStep.PORTAL_SETUP_COMPLETE,
@@ -60,7 +77,9 @@ export function PortalSetupComplete() {
     return () => {
       hasRun.current = false;
     };
-  }, [logoutMutation, updateProfileMutation, router]);
+  }, [profile]);
+  // Commented to prevent un-necessary re-renders
+  // }, [logoutMutation, updateProfileMutation, router]);
 
   return (
     <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">
