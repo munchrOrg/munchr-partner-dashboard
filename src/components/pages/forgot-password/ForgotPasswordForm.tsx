@@ -234,7 +234,7 @@ export function ForgotPasswordForm() {
     if (type === 'email') {
       const parts = contact.split('@');
       if (parts.length === 2) {
-        const [local, domain] = parts;
+        const [local, domain] = parts as [string, string];
         return `${local.slice(0, 2)}***@${domain}`;
       }
       return contact; // Return as-is if not a valid email format
