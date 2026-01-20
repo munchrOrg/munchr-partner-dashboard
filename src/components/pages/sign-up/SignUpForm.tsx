@@ -102,9 +102,12 @@ export function SignUpForm() {
       onSuccess: (resp) => {
         if (resp.success) {
           toast.success(resp.message || 'Registration successful');
-          const { setPartnerId } = useSignupStore.getState();
+          const { setPartnerId, setUserId } = useSignupStore.getState();
           if (resp.partnerId) {
             setPartnerId(resp.partnerId);
+          }
+          if (resp.userId) {
+            setUserId(resp.userId);
           }
           // Token can be at root level or nested under 'tokens'
           const accessToken = resp.accessToken || resp.tokens?.accessToken;
@@ -114,6 +117,7 @@ export function SignUpForm() {
           const params = new URLSearchParams({
             type: 'signup',
             partnerId: resp.partnerId,
+            userId: resp.userId,
             email: submittedEmail,
             phone: submittedPhone,
           });

@@ -3,11 +3,14 @@
 import type { ResetPasswordInput } from '@/validations/auth';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useResetPassword } from '@/react-query/auth/mutations';
 import { resetPasswordSchema } from '@/validations/auth';
 
 export function ResetPasswordForm() {
@@ -20,14 +23,51 @@ export function ResetPasswordForm() {
     resolver: zodResolver(resetPasswordSchema),
   });
   const router = useRouter();
+  const searchParams = useSearchParams();
 
-  const onSubmit = async (_data: ResetPasswordInput) => {
+  // Get token directly from URL params
+  const resetToken = searchParams.get('token');
+
+  const resetPasswordMutation = useResetPassword();
+
+  // Handle redirect if no token
+  useEffect(() => {
+    if (!resetToken) {
+      toast.error('Invalid reset token. Please try again.');
+      router.push('/forgot-password');
+    }
+  }, [resetToken, router]);
+
+  const onSubmit = async (data: ResetPasswordInput) => {
+    if (!resetToken) {
+      setError('root', { message: 'Invalid reset token' });
+      return;
+    }
+
     try {
-      // Handler to be implemented - should reset password and redirect to sign-in
-      // TODO: Implement password reset API call
-      router.push('/sign-in');
-    } catch {
-      setError('root', { message: 'An unexpected error occurred' });
+      const response = await resetPasswordMutation.mutateAsync({
+        resetToken,
+        newPassword: data.password,
+      });
+
+      if (response.success) {
+        toast.success('Password reset successful! Redirecting to sign-in...');
+        setTimeout(() => {
+          router.push('/sign-in');
+        }, 2000);
+      } else {
+        setError('root', { message: response.message || 'Password reset failed' });
+      }
+    } catch (error: any) {
+      console.warn('Reset password error:', error);
+      if (error?.response?.status === 401) {
+        setError('root', { message: 'Reset token expired. Please request a new password reset.' });
+        setTimeout(() => {
+          router.push('/forgot-password');
+        }, 3000);
+      } else {
+        setError('root', { message: 'An unexpected error occurred' });
+      }
     }
   };
 
@@ -71,10 +111,10 @@ export function ResetPasswordForm() {
 
         <Button
           type="submit"
-          disabled={isSubmitting}
+          disabled={isSubmitting || resetPasswordMutation.isPending || !resetToken}
           className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
         >
-          {isSubmitting ? 'Resetting...' : 'Submit'}
+          {isSubmitting || resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
         </Button>
 
         <div className="text-center">

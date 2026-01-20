@@ -93,7 +93,7 @@ export type SignUpRequest = {
 export type SignUpResponse = {
   success: boolean;
   partnerId: string;
-  entityType: string;
+  userId: string;
   message: string;
   requiresVerification: {
     email: boolean;
@@ -125,30 +125,44 @@ export type VerifyOtpResponse = {
   refreshToken: string;
 };
 
+export type VerifyForgotPasswordOtpRequest = {
+  userId?: string;
+  email?: string;
+  phone?: string;
+  otp: string;
+};
+
+export type VerifyForgotPasswordOtpResponse = {
+  success: boolean;
+  message: string;
+  resetToken: string;
+};
+
 export type ResendOtpRequest = {
   userId: string;
 };
 
 export type ResendOtpResponse = {
+  success: boolean;
   message: string;
+  expiresAt?: string;
+  canResendAt?: string;
 };
 
 export type ResendEmailOtpRequest = {
-  entityId: string;
-  entityType: 'partner';
-  email: string;
-  purpose: 'email_signup';
+  userId: string;
+  email?: string;
+  purpose: 'email_signup' | 'password_reset';
 };
 
 export type ResendPhoneOtpRequest = {
-  entityId: string;
-  entityType: 'partner';
-  phone: string;
-  purpose: 'phone_signup';
+  userId: string;
+  phone?: string;
+  purpose: 'phone_signup' | 'password_reset';
 };
 
 export type VerifyEmailRequest = {
-  partnerId: string;
+  userId: string;
   otp: string;
 };
 
@@ -182,7 +196,7 @@ export type VerifyEmailResponse = {
 };
 
 export type VerifyPhoneRequest = {
-  partnerId: string;
+  userId: string;
   otp: string;
 };
 
@@ -315,18 +329,22 @@ export type UpdateProfileResponse = {
 };
 
 export type ForgotPasswordRequest = {
-  email: string;
+  email?: string;
+  phone?: string;
 };
 
 export type ForgotPasswordResponse = {
   success: boolean;
   message: string;
+  userId?: string;
+  email?: string;
+  phone?: string;
   expiresAt?: string;
+  canResendAt?: string;
 };
 
 export type ResetPasswordRequest = {
-  email: string;
-  otp: string;
+  resetToken: string;
   newPassword: string;
 };
 
