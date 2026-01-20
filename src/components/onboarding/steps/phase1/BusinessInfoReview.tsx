@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
+import { EmailConfirmModal } from '@/components/onboarding/shared/EmailConfirmModal';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { useProfile } from '@/react-query/auth/queries';
@@ -14,7 +15,8 @@ export function BusinessInfoReview() {
   const router = useRouter();
   const { data: profile } = useProfile();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const { triggerNavigation } = useOnboardingStore();
+  const { openEmailConfirmModal } = useOnboardingStore();
+  // const { triggerNavigation } = useOnboardingStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -24,7 +26,8 @@ export function BusinessInfoReview() {
       return;
     }
 
-    triggerNavigation(OnboardingStep.BUSINESS_INFO_REVIEW);
+    openEmailConfirmModal();
+    // triggerNavigation(OnboardingStep.WELCOME);
   };
 
   const partner = profile?.partner;
@@ -290,6 +293,7 @@ export function BusinessInfoReview() {
           </label>
         </div>
       </div>
+      <EmailConfirmModal />
     </form>
   );
 }
