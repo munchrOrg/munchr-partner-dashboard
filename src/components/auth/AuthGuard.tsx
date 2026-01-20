@@ -1,12 +1,12 @@
 'use client';
 
-import type { OnboardingStep } from '@/types/onboarding';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
 import { STEP_ORDER } from '@/config/onboarding-steps';
 import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 type AuthGuardProps = {
   children: React.ReactNode;
@@ -65,6 +65,16 @@ export function AuthGuard({
       };
     }
 
+    if (pathname === `/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`) {
+      return {
+        isChecking: false,
+        isAuthorized: true,
+        redirectTo: null,
+        shouldClearAuth: false,
+        showPendingApprovalToast: false,
+      };
+    }
+
     const emailVerified = profile.emailVerified ?? profile.partner?.emailVerified ?? true;
     const phoneVerified = profile.phoneVerified ?? profile.partner?.phoneVerified ?? true;
 
@@ -110,9 +120,9 @@ export function AuthGuard({
     const completedPhases = profile.onboarding?.completedPhases || [];
 
     if (partnerStatus === 'pending_approval') {
-      const hasCompletedPhase1 = completedPhases.includes('add_business');
-      const hasCompletedPhase2 = completedPhases.includes('verify_business');
-      const hasStartedPhase3 = completedPhases.includes('open_business');
+      const hasCompletedPhase1 = completedPhases.includes(OnboardingPhase.ADD_BUSINESS);
+      const hasCompletedPhase2 = completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS);
+      const hasStartedPhase3 = completedPhases.includes(OnboardingPhase.OPEN_BUSINESS);
 
       if (hasCompletedPhase1 && hasCompletedPhase2 && !hasStartedPhase3) {
         return {
@@ -166,9 +176,6 @@ export function AuthGuard({
         const pathStepIndex = STEP_ORDER.indexOf(pathStep);
         const currentStepIndex = STEP_ORDER.indexOf(currentStep);
 
-        // Allow if:
-        // 1. On current step
-        // 2. On a previous step (back navigation) that was completed
         const isOnCurrentStep = pathStep === currentStep;
         const isBackNavigation =
           pathStepIndex < currentStepIndex && completedSteps.includes(pathStep);

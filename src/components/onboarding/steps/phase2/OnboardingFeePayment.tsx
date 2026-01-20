@@ -11,7 +11,7 @@ import { useUpdateProfile } from '@/react-query/auth/mutations';
 import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { OnboardingStep } from '@/types/onboarding';
 
 const PAYMENT_DETAILS = {
   accountName: 'Food for more',
@@ -54,13 +54,10 @@ export function OnboardingFeePayment() {
     try {
       const file = onboardingFee.paymentScreenshot as FileUpload & { key?: string };
       await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.ONBOARDING_FEE_PAYMENT,
-        completeStep: OnboardingStep.ONBOARDING_FEE_PAYMENT,
-        completePhase: OnboardingPhase.VERIFY_BUSINESS,
         paymentTransactionId: onboardingFee.paymentTransactionId || '',
         uploadScreenshotImageKey: file?.key || '',
       });
-      triggerNavigation(OnboardingStep.PORTAL_SETUP_COMPLETE);
+      triggerNavigation(OnboardingStep.ONBOARDING_FEE_PAYMENT);
     } catch (error) {
       console.error('Failed to save onboarding fee payment:', error);
       toast.error('Failed to save data. Please try again.');

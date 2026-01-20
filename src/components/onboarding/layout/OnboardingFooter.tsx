@@ -70,6 +70,12 @@ export function OnboardingFooter() {
       const nextStep =
         step === OnboardingStep.WELCOME ? getNextStepAfterWelcome() : getNextStep(step);
 
+      console.log('=== FOOTER completeStep DEBUG ===');
+      console.log('step:', step);
+      console.log('phase:', phase);
+      console.log('isPhaseComplete:', isPhaseComplete);
+      console.log('nextStep:', nextStep);
+
       try {
         const onboardingPayload: any = {
           completeStep: step,
@@ -80,7 +86,10 @@ export function OnboardingFooter() {
           onboardingPayload.completePhase = phase;
         }
 
-        await updateProfileMutation.mutateAsync(onboardingPayload);
+        console.log('Sending payload:', onboardingPayload);
+        const response = await updateProfileMutation.mutateAsync(onboardingPayload);
+        console.log('API response:', response);
+
         await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
       } catch (error) {
         console.error('Failed to sync onboarding progress:', error);
@@ -88,9 +97,11 @@ export function OnboardingFooter() {
       }
 
       if (phase === OnboardingPhase.VERIFY_BUSINESS && isPhaseComplete) {
+        console.log('Phase 2 complete - not navigating (AuthGuard handles logout)');
         return;
       }
 
+      console.log('Navigating to:', nextStep ? `/onboarding/${nextStep}` : '/dashboard');
       if (nextStep) {
         router.push(`/onboarding/${nextStep}`);
       } else {
@@ -101,11 +112,23 @@ export function OnboardingFooter() {
   );
 
   useEffect(() => {
+    if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
+      if (shouldNavigate) {
+        clearNavigation();
+      }
+      return;
+    }
+
     if (shouldNavigate && navigationStep) {
+      if (navigationStep !== currentStep) {
+        console.log('Skipping stale navigation:', navigationStep, 'current:', currentStep);
+        clearNavigation();
+        return;
+      }
       completeStep(navigationStep);
       clearNavigation();
     }
-  }, [shouldNavigate, navigationStep, completeStep, clearNavigation]);
+  }, [shouldNavigate, navigationStep, completeStep, clearNavigation, currentStep]);
 
   const handleBack = () => {
     const prevStep = getPrevStep(currentStep);
