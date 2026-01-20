@@ -38,7 +38,20 @@ export function SignUpForm() {
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
   // Removed unused logoFile
-  const [cuisineOptions, setCuisineOptions] = useState<Option[]>([]);
+  const [cuisineOptions, setCuisineOptions] = useState<Option[]>([
+    { value: '1', label: 'Italian', group: 'Cuisines' },
+    { value: '2', label: 'Chinese', group: 'Cuisines' },
+    { value: '3', label: 'Mexican', group: 'Cuisines' },
+    { value: '4', label: 'Indian', group: 'Cuisines' },
+    { value: '5', label: 'Japanese', group: 'Cuisines' },
+    { value: '6', label: 'Thai', group: 'Cuisines' },
+    { value: '7', label: 'American', group: 'Cuisines' },
+    { value: '8', label: 'Mediterranean', group: 'Cuisines' },
+    { value: '9', label: 'French', group: 'Cuisines' },
+    { value: '10', label: 'Pakistani', group: 'Cuisines' },
+    { value: '11', label: 'Middle Eastern', group: 'Cuisines' },
+    { value: '12', label: 'Korean', group: 'Cuisines' },
+  ]);
 
   const {
     register,

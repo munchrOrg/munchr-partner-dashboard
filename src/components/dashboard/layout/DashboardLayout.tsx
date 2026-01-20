@@ -1,4 +1,3 @@
-import { auth } from '@/lib/auth';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 
@@ -12,9 +11,9 @@ const dummyUser = {
   email: 'test@example.com',
 };
 
-export async function DashboardLayout({ children }: Readonly<DashboardLayoutProps>) {
-  const session = await auth();
-  const user = session?.user ?? dummyUser;
+export function DashboardLayout({ children }: Readonly<DashboardLayoutProps>) {
+  // Bypass authentication - use dummy user directly
+  const user = dummyUser;
 
   return (
     <div className="flex h-screen">
