@@ -62,13 +62,11 @@ export function OnboardingFooter() {
     return PHASE_ENTRY_STEP[OnboardingPhase.ADD_BUSINESS];
   }, [completedPhases]);
 
-  // Only updates backend - AuthGuard handles all routing
   const completeStep = useCallback(
     async (step: OnboardingStep) => {
       const isPhaseComplete = isLastStepOfPhase(step);
       const phase = STEP_PHASE_MAP[step];
 
-      // Special handling for WELCOME - determine next step based on completed phases
       const nextStep =
         step === OnboardingStep.WELCOME ? getNextStepAfterWelcome() : getNextStep(step);
 
@@ -83,15 +81,23 @@ export function OnboardingFooter() {
         }
 
         await updateProfileMutation.mutateAsync(onboardingPayload);
-
-        // Invalidate profile - AuthGuard will see new currentStep and redirect
         await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
       } catch (error) {
         console.error('Failed to sync onboarding progress:', error);
+        return;
       }
-      // No navigation here - AuthGuard handles it based on backend state
+
+      if (phase === OnboardingPhase.VERIFY_BUSINESS && isPhaseComplete) {
+        return;
+      }
+
+      if (nextStep) {
+        router.push(`/onboarding/${nextStep}`);
+      } else {
+        router.push('/dashboard');
+      }
     },
-    [updateProfileMutation, queryClient, getNextStepAfterWelcome]
+    [router, updateProfileMutation, queryClient, getNextStepAfterWelcome]
   );
 
   useEffect(() => {
