@@ -5,6 +5,13 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
   Table,
   TableBody,
   TableCell,
@@ -12,51 +19,39 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
+import { useDeletePortalUser } from '@/react-query/portal-users/mutations';
+import { usePortalUsers } from '@/react-query/portal-users/queries';
 import { UserFormDrawer } from './UserFormDrawer';
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  role: string;
-  status: 'approved' | 'pending';
-};
-
-type UserManagementTableProps = {
-  users?: User[];
-};
-
-const mockUsers: User[] = [
-  {
-    id: '1',
-    name: 'Muhammad',
-    email: 'usermail@gmail.com',
-    role: 'Admin',
-    status: 'approved',
-  },
-  {
-    id: '2',
-    name: 'Anas',
-    email: 'usermail@gmail.com',
-    role: 'Super Admin',
-    status: 'pending',
-  },
-  {
-    id: '3',
-    name: 'Omer',
-    email: 'usermail@gmail.com',
-    role: 'Editor',
-    status: 'pending',
-  },
-];
-
-export function UserManagementTable({ users = mockUsers }: Readonly<UserManagementTableProps>) {
+export function UserManagementTable() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
-  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [selectedUser, setSelectedUser] = useState<any | null>(null);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [userToDelete, setUserToDelete] = useState<string | null>(null);
+  const { data, isLoading, isError } = usePortalUsers();
+  const deleteUserMutation = useDeletePortalUser();
 
-  const handleEdit = (user: User) => {
+  const handleEdit = (user: any) => {
     setSelectedUser(user);
     setIsDrawerOpen(true);
+  };
+
+  const handleDeleteClick = (id: string) => {
+    setUserToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleDeleteConfirm = () => {
+    if (userToDelete) {
+      deleteUserMutation.mutate(userToDelete);
+      setDeleteDialogOpen(false);
+      setUserToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteDialogOpen(false);
+    setUserToDelete(null);
   };
 
   const handleDrawerClose = (open: boolean) => {
@@ -65,6 +60,15 @@ export function UserManagementTable({ users = mockUsers }: Readonly<UserManageme
       setSelectedUser(null);
     }
   };
+
+  if (isLoading) {
+    return <div>Loading users...</div>;
+  }
+  if (isError) {
+    return <div>Failed to load users.</div>;
+  }
+
+  const users = data?.data || [];
 
   return (
     <>
@@ -80,11 +84,11 @@ export function UserManagementTable({ users = mockUsers }: Readonly<UserManageme
             </TableRow>
           </TableHeader>
           <TableBody>
-            {users.map((user) => (
+            {users.map((user: any) => (
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role}</TableCell>
+                <TableCell>{user.role || '-'}</TableCell>
                 <TableCell>
                   <Badge
                     className={
@@ -135,7 +139,13 @@ export function UserManagementTable({ users = mockUsers }: Readonly<UserManageme
                       </svg>
                       Edit
                     </Button>
-                    <Button variant="outline" size="icon" className="size-10 rounded-full">
+                    <Button
+                      variant="outline"
+                      size="icon"
+                      className="size-10 rounded-full"
+                      onClick={() => handleDeleteClick(user.id)}
+                      disabled={deleteUserMutation.isPending}
+                    >
                       <Trash2 className="h-4 w-4" />
                     </Button>
                   </div>
@@ -147,6 +157,31 @@ export function UserManagementTable({ users = mockUsers }: Readonly<UserManageme
       </div>
 
       <UserFormDrawer open={isDrawerOpen} onOpenChange={handleDrawerClose} user={selectedUser} />
+
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+          </DialogHeader>
+          <div>Are you sure you want to delete this user?</div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={handleDeleteCancel}
+              disabled={deleteUserMutation.isPending}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleDeleteConfirm}
+              disabled={deleteUserMutation.isPending}
+            >
+              Delete
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 }
