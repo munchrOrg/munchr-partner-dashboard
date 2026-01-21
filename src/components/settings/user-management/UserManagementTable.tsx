@@ -88,7 +88,7 @@ export function UserManagementTable() {
               <TableRow key={user.id}>
                 <TableCell className="font-medium">{user.name}</TableCell>
                 <TableCell>{user.email}</TableCell>
-                <TableCell>{user.role || '-'}</TableCell>
+                <TableCell>{user.roles?.[0]?.name || '-'}</TableCell>
                 <TableCell>
                   <Badge
                     className={
@@ -97,7 +97,11 @@ export function UserManagementTable() {
                         : 'rounded bg-[#FABD19] text-[#2C2F2E]'
                     }
                   >
-                    {user.status === 'approved' ? 'Approved' : 'Pending'}
+                    {user.status === 'approved'
+                      ? 'Approved'
+                      : user.status === 'suspended'
+                        ? 'Suspended'
+                        : 'Pending'}
                   </Badge>
                 </TableCell>
                 <TableCell className="text-right">

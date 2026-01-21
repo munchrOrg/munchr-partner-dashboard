@@ -115,7 +115,10 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
       >
         <div className="flex flex-1 flex-col overflow-hidden">
           <SheetHeader className="flex flex-row items-center justify-between px-[30px] pt-8">
-            <SheetTitle className="text-xl font-bold">Create New User</SheetTitle>
+            <SheetTitle className="text-xl font-bold">
+              {isEditMode ? 'Edit User' : 'Create New User'}
+            </SheetTitle>
+
             <SheetClose asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                 <X className="h-7 w-7" />
@@ -145,37 +148,40 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                     </FormItem>
                   )}
                 />
-                <FormField
-                  control={form.control}
-                  name="email"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Email Address <span className="text-destructive">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="email" placeholder="Enter Email Address" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-
-                <FormField
-                  control={form.control}
-                  name="password"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>
-                        Password <span className="text-destructive">*</span>
-                      </FormLabel>
-                      <FormControl>
-                        <Input type="password" placeholder="Enter Password" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {!isEditMode && (
+                  <FormField
+                    control={form.control}
+                    name="email"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Email Address <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="email" placeholder="Enter Email Address" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+                {!isEditMode && (
+                  <FormField
+                    control={form.control}
+                    name="password"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>
+                          Password <span className="text-destructive">*</span>
+                        </FormLabel>
+                        <FormControl>
+                          <Input type="password" placeholder="Enter Password" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
 
                 <FormField
                   control={form.control}
