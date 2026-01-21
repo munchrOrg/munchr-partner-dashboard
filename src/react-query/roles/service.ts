@@ -8,4 +8,6 @@ export const rolesService = {
     apiClient.post<RoleCreateResponse>('/partner/roles', data).then((res) => res.data),
   update: (id: string, data: { name: string; description: string; permissionIds: string[] }) =>
     apiClient.put<RoleCreateResponse>(`/partner/roles/${id}`, data).then((res) => res.data),
+  getAll: () => apiClient.get('/partner/roles').then((res) => res.data),
+  getById: (id: string) => apiClient.get(`/partner/roles/${id}`).then((res) => res.data),
 };
