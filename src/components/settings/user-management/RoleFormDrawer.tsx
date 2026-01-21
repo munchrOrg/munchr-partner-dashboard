@@ -135,9 +135,24 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
     }));
 
     if (isEditMode && role) {
+      const permLookup: Record<string, Record<string, boolean>> = {};
+      if (Array.isArray(role.permissions)) {
+        role.permissions.forEach((perm: any) => {
+          if (!permLookup[perm.resource]) {
+            permLookup[perm.resource] = {};
+          }
+          (permLookup[perm.resource] as Record<string, boolean>)[perm.code] = true;
+        });
+      }
+
       const mergedPermissions = basePermissions.map((p) => {
-        const existing = role.permissions.find((rp) => rp.page === p.page);
-        return existing ?? p;
+        const resourcePerms = permLookup?.[p.page] ?? {};
+        return {
+          ...p,
+          view: !!resourcePerms?.view,
+          edit: !!(resourcePerms?.edit || resourcePerms?.update || resourcePerms?.create),
+          delete: !!resourcePerms?.delete,
+        };
       });
       form.reset({
         name: role.name,
