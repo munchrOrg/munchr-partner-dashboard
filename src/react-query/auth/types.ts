@@ -33,6 +33,7 @@ export type LoginResponse = {
     completedSteps: string[];
     completedPhases: string[];
     isComplete: boolean;
+    skipOnboarding?: boolean;
   };
 };
 
@@ -41,6 +42,7 @@ export type VerificationRequiredError = {
   emailVerified: boolean;
   phoneVerified: boolean;
   partnerId?: string;
+  userId?: string;
   email?: string;
   phone?: string;
 };
@@ -126,9 +128,7 @@ export type VerifyOtpResponse = {
 };
 
 export type VerifyForgotPasswordOtpRequest = {
-  userId?: string;
-  email?: string;
-  phone?: string;
+  userId: string;
   otp: string;
 };
 
@@ -192,6 +192,7 @@ export type VerifyEmailResponse = {
     completedSteps: string[];
     completedPhases: string[];
     isComplete: boolean;
+    skipOnboarding?: boolean;
   };
 };
 
@@ -227,6 +228,7 @@ export type VerifyPhoneResponse = {
     completedSteps: string[];
     completedPhases: string[];
     isComplete: boolean;
+    skipOnboarding?: boolean;
   };
 };
 
@@ -312,6 +314,7 @@ export type OnboardingState = {
   completedSteps: string[];
   completedPhases: string[];
   isComplete: boolean;
+  skipOnboarding?: boolean;
 };
 
 export type UpdateProfileResponse = {

@@ -7,21 +7,20 @@ import { OnboardingPhase } from '@/types/onboarding';
 export function Welcome() {
   const { data: profile } = useProfile();
 
+  const completedPhases = profile?.onboarding?.completedPhases || [];
+
   const steps = [
     {
       label: 'Add your business',
-      completed:
-        profile && profile.onboarding.completedPhases.includes(OnboardingPhase.ADD_BUSINESS),
+      completed: completedPhases.includes(OnboardingPhase.ADD_BUSINESS),
     },
     {
       label: 'Verify your business',
-      completed:
-        profile && profile.onboarding.completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS),
+      completed: completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS),
     },
     {
       label: 'Open your business',
-      completed:
-        profile && profile.onboarding.completedPhases.includes(OnboardingPhase.OPEN_BUSINESS),
+      completed: completedPhases.includes(OnboardingPhase.OPEN_BUSINESS),
     },
   ];
 

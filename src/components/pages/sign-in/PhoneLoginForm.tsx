@@ -4,7 +4,6 @@ import type { PendingApprovalError, VerificationRequiredError } from '@/react-qu
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useGetProfile, usePhoneLogin } from '@/react-query/auth/mutations';
@@ -23,7 +22,6 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
   const getProfileMutation = useGetProfile();
 
   const isLoading = phoneLoginMutation.isPending || getProfileMutation.isPending;
-  const error = phoneLoginMutation.error?.message || getProfileMutation.error?.message;
 
   const normalizePhoneNumber = (phone: string) => {
     const p = phone.trim();
@@ -45,8 +43,12 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
 
       const profileData = await getProfileMutation.mutateAsync();
 
-      const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-      router.push(`/onboarding/${targetStep}`);
+      if (profileData?.onboarding?.isComplete || profileData?.onboarding?.skipOnboarding) {
+        router.push('/dashboard');
+      } else {
+        const targetStep = profileData?.onboarding?.currentStep || 'welcome';
+        router.push(`/onboarding/${targetStep}`);
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const errorData = err?.response?.data;
@@ -54,13 +56,13 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
       if (status === 403 && errorData?.error === 'verification_required') {
         const verificationError = errorData as VerificationRequiredError;
         const formattedPhone = normalizePhoneNumber(phoneNumber);
-        const partnerId = verificationError.partnerId || '';
+        const userId = verificationError.userId || '';
         const email = verificationError.email || '';
 
         if (!verificationError.emailVerified) {
           const params = new URLSearchParams({
             type: 'login',
-            partnerId,
+            userId,
             email,
             phone: formattedPhone,
           });
@@ -68,7 +70,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
         } else if (!verificationError.phoneVerified) {
           const params = new URLSearchParams({
             type: 'login',
-            partnerId,
+            userId,
             email,
             phone: formattedPhone,
           });
@@ -91,12 +93,6 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
       <h1 className="mb-6 text-center text-xl font-semibold sm:text-2xl">Log in with your phone</h1>
 
       <form onSubmit={onSubmit} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <div>
           <Input
             type="tel"
