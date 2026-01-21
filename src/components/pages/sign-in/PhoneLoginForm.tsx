@@ -43,8 +43,12 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
 
       const profileData = await getProfileMutation.mutateAsync();
 
-      const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-      router.push(`/onboarding/${targetStep}`);
+      if (profileData?.onboarding?.isComplete || profileData?.onboarding?.skipOnboarding) {
+        router.push('/dashboard');
+      } else {
+        const targetStep = profileData?.onboarding?.currentStep || 'welcome';
+        router.push(`/onboarding/${targetStep}`);
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const errorData = err?.response?.data;

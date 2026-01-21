@@ -36,8 +36,12 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
 
       const profileData = await getProfileMutation.mutateAsync();
 
-      const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-      router.push(`/onboarding/${targetStep}`);
+      if (profileData?.onboarding?.isComplete || profileData?.onboarding?.skipOnboarding) {
+        router.push('/dashboard');
+      } else {
+        const targetStep = profileData?.onboarding?.currentStep || 'welcome';
+        router.push(`/onboarding/${targetStep}`);
+      }
     } catch (err: any) {
       const status = err?.response?.status;
       const errorData = err?.response?.data;
@@ -134,14 +138,14 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
           Log in with phone number
         </Button>
 
-        <Button
+        {/* <Button
           type="button"
           variant="outline"
           className="h-11 w-full rounded-full border-gray-300 sm:h-12"
           onClick={() => router.push('/profile-setup')}
         >
           Go to Profile Setup
-        </Button>
+        </Button> */}
 
         <FormFooter />
       </form>

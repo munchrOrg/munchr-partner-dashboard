@@ -104,10 +104,7 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    const requestData =
-      contactType === 'email'
-        ? { email: contactValue }
-        : { phone: contactValue.replace(/^\+/, '') }; // Remove + prefix from phone number
+    const requestData = contactType === 'email' ? { email: contactValue } : { phone: contactValue }; // Keep + prefix - backend stores phone with +
 
     try {
       const response = await forgotPasswordMutation.mutateAsync(requestData);
@@ -182,7 +179,7 @@ export function ForgotPasswordForm() {
       } else if (state.phone) {
         response = await resendPhoneOtpMutation.mutateAsync({
           userId: state.userId,
-          phone: state.phone.replace(/^\+/, ''), // Remove + prefix from phone number
+          phone: state.phone, // Keep + prefix - backend stores phone with +
           purpose: 'password_reset',
         });
       } else {
