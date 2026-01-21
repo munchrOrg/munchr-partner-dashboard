@@ -55,6 +55,7 @@ export function ForgotPasswordForm() {
   const [otpError, setOtpError] = useState('');
   const [timeLeft, setTimeLeft] = useState({ otpExpiry: 0, resendCooldown: 0 });
 
+  // Hooks now automatically show toast errors
   const forgotPasswordMutation = useForgotPassword();
   const verifyOtpMutation = useVerifyForgotPasswordOtp();
   const resendEmailOtpMutation = useResendEmailOtp();
@@ -73,7 +74,7 @@ export function ForgotPasswordForm() {
 
       setTimeLeft({ otpExpiry, resendCooldown });
 
-      // Auto redirect to success if OTP expired
+      // Auto redirect to contact step if OTP expired
       if (state.currentStep === 'enter-otp' && otpExpiry === 0 && state.expiresAt) {
         toast.error('OTP expired, please request a new one');
         setState((prev) => ({
@@ -103,14 +104,13 @@ export function ForgotPasswordForm() {
       return;
     }
 
-    try {
-      const requestData =
-        contactType === 'email'
-          ? { email: contactValue }
-          : { phone: contactValue.replace(/^\+/, '') }; // Remove + prefix from phone number
+    const requestData =
+      contactType === 'email'
+        ? { email: contactValue }
+        : { phone: contactValue.replace(/^\+/, '') }; // Remove + prefix from phone number
 
+    try {
       const response = await forgotPasswordMutation.mutateAsync(requestData);
-      console.warn('Forgot password response:', response, 'Request data:', requestData);
 
       if (response.success && response.userId) {
         // User exists, proceed to OTP step
@@ -125,28 +125,20 @@ export function ForgotPasswordForm() {
         });
         toast.success('OTP sent successfully! Check your email/phone.');
       } else if (response.success) {
+        // User may not exist - show generic message (security best practice)
         toast.success(
           response.message ||
             'If an account with this email/phone exists, a password reset OTP has been sent.'
         );
-        // Still proceed to OTP step for better UX
-        setState((prev) => ({
-          ...prev,
-          email: contactType === 'email' ? contactValue : null,
-          phone: contactType === 'phone' ? contactValue : null,
-          currentStep: 'enter-otp',
-        }));
       } else {
-        toast.error(response.message || 'Failed to send OTP');
+        toast.error(response.message || 'Failed to send OTP. Please try again.');
       }
-    } catch (error) {
-      console.warn('Forgot password error:', error);
-      toast.error('An unexpected error occurred');
-    }
+    } catch {}
   };
 
   const onOtpSubmit = async () => {
-    if (!state.userId && !state.email && !state.phone) {
+    if (!state.userId) {
+      setOtpError('Session expired. Please request a new OTP.');
       return;
     }
 
@@ -156,29 +148,21 @@ export function ForgotPasswordForm() {
     }
 
     try {
-      const requestData: { userId?: string; email?: string; phone?: string; otp: string } = { otp };
-
-      // Use userId if available, otherwise use email or phone for identification
-      if (state.userId) {
-        requestData.userId = state.userId;
-      } else if (state.email) {
-        requestData.email = state.email;
-      } else if (state.phone) {
-        requestData.phone = state.phone.replace(/^\+/, ''); // Remove + prefix
-      }
-
-      const response = await verifyOtpMutation.mutateAsync(requestData);
+      const response = await verifyOtpMutation.mutateAsync({
+        userId: state.userId,
+        otp,
+      });
 
       if (response.success) {
+        toast.success('OTP verified successfully!');
         // Navigate to reset password page with resetToken
         window.location.href = `/reset-password?token=${encodeURIComponent(response.resetToken)}`;
-        toast.success('OTP verified successfully!');
       } else {
-        toast.error(response.message || 'Invalid OTP');
+        setOtpError(response.message || 'Invalid OTP. Please try again.');
       }
-    } catch (error) {
-      console.warn('Verify OTP error:', error);
-      toast.error('An unexpected error occurred');
+    } catch {
+      // Error is already handled by mutation's onError (shows toast)
+      // No additional action needed here
     }
   };
 
@@ -205,19 +189,16 @@ export function ForgotPasswordForm() {
         return; // Should not happen
       }
 
-      if (response.success) {
+      if (response?.success) {
         setState((prev) => ({
           ...prev,
           expiresAt: response.expiresAt ? new Date(response.expiresAt) : prev.expiresAt,
           canResendAt: response.canResendAt ? new Date(response.canResendAt) : prev.canResendAt,
         }));
-        toast.success('OTP sent successfully!');
-      } else {
-        toast.error(response.message || 'Failed to resend OTP');
       }
-    } catch (error) {
-      console.warn('Resend OTP error:', error);
-      toast.error('An unexpected error occurred');
+    } catch {
+      // Error is already handled by mutation's onError (shows toast)
+      // No additional action needed here
     }
   };
 
@@ -342,11 +323,6 @@ export function ForgotPasswordForm() {
               maxLength={6}
             />
             {otpError && <p className="mt-1 ml-4 text-sm text-red-500">{otpError}</p>}
-            {/* {timeLeft.otpExpiry > 0 && (
-              <p className="mt-1 text-xs text-gray-500 text-center">
-                OTP expires in {formatTime(timeLeft.otpExpiry)}
-              </p>
-            )} */}
           </div>
 
           <Button

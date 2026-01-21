@@ -41,6 +41,7 @@ export type VerificationRequiredError = {
   emailVerified: boolean;
   phoneVerified: boolean;
   partnerId?: string;
+  userId?: string;
   email?: string;
   phone?: string;
 };
@@ -126,9 +127,7 @@ export type VerifyOtpResponse = {
 };
 
 export type VerifyForgotPasswordOtpRequest = {
-  userId?: string;
-  email?: string;
-  phone?: string;
+  userId: string;
   otp: string;
 };
 

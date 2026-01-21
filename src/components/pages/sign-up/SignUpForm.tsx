@@ -12,7 +12,6 @@ import { useCallback, useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import PhoneInput from 'react-phone-number-input';
 import { toast } from 'sonner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
@@ -57,7 +56,6 @@ export function SignUpForm() {
     register,
     handleSubmit,
     control,
-    setError,
     watch,
     formState: { errors, isSubmitting, isValid },
   } = useForm<SignUpInput>({
@@ -111,49 +109,30 @@ export function SignUpForm() {
   const [submittedPhone, setSubmittedPhone] = useState<string>('');
 
   const signUpMutation = useSignUp({
-    options: {
-      onSuccess: (resp) => {
-        if (resp.success) {
-          toast.success(resp.message || 'Registration successful');
-          const { setPartnerId, setUserId } = useSignupStore.getState();
-          if (resp.partnerId) {
-            setPartnerId(resp.partnerId);
-          }
-          if (resp.userId) {
-            setUserId(resp.userId);
-          }
-          // Token can be at root level or nested under 'tokens'
-          const accessToken = resp.accessToken || resp.tokens?.accessToken;
-          if (accessToken) {
-            useAuthStore.getState().setAccessToken(accessToken);
-          }
-          const params = new URLSearchParams({
-            type: 'signup',
-            partnerId: resp.partnerId,
-            userId: resp.userId,
-            email: submittedEmail,
-            phone: submittedPhone,
-          });
-          router.push(`/verify-email?${params.toString()}`);
-        } else {
-          toast.error(resp.message || 'Registration failed');
+    onSuccess: (resp) => {
+      if (resp.success) {
+        toast.success(resp.message || 'Registration successful');
+        const { setPartnerId, setUserId } = useSignupStore.getState();
+        if (resp.partnerId) {
+          setPartnerId(resp.partnerId);
         }
-      },
-      onError: (err: any) => {
-        const status = err?.response?.status;
-        const serverMsg = err?.response?.data?.message || err?.message || 'Registration failed';
-        if (status === 400) {
-          setError('root', { message: serverMsg });
-          toast.error(serverMsg);
-          return;
+        if (resp.userId) {
+          setUserId(resp.userId);
         }
-        if (status === 409) {
-          setError('email', { message: serverMsg });
-          toast.error(serverMsg);
-          return;
+        // Token can be at root level or nested under 'tokens'
+        const accessToken = resp.accessToken || resp.tokens?.accessToken;
+        if (accessToken) {
+          useAuthStore.getState().setAccessToken(accessToken);
         }
-        toast.error(serverMsg);
-      },
+        const params = new URLSearchParams({
+          type: 'signup',
+          partnerId: resp.partnerId,
+          userId: resp.userId,
+          email: submittedEmail,
+          phone: submittedPhone,
+        });
+        router.push(`/verify-email?${params.toString()}`);
+      }
     },
   });
 
@@ -225,51 +204,47 @@ export function SignUpForm() {
 
   const onSubmit = async (data: SignUpInput) => {
     if (!isValidPhoneNumber(data.phoneNumber)) {
-      setError('phoneNumber', { message: 'Invalid phone number' });
+      toast.error('Invalid phone number');
       return;
     }
 
+    // Store email/phone for URL params (all business data goes to backend, not localStorage)
+    setSubmittedEmail(data.email);
+    setSubmittedPhone(data.phoneNumber);
+
+    const phoneRaw = (data.phoneNumber ?? '').toString();
+    const phone = phoneRaw.slice(0, 20);
+    const parsed = parsePhoneNumberFromString(phoneRaw);
+    const countryCode = parsed ? `+${parsed.countryCallingCode}` : '';
+
+    // Get sntnFile from onboarding store
+    let ntnImageKey;
     try {
-      // Store email/phone for URL params (all business data goes to backend, not localStorage)
-      setSubmittedEmail(data.email);
-      setSubmittedPhone(data.phoneNumber);
+      // Use dynamic import instead of require
+      const onboardingStore =
+        (window as any).__zustandOnboardingStore ||
+        (await import('@/stores/onboarding-store')).useOnboardingStore;
+      const onboardingData = onboardingStore.getState().formData;
+      ntnImageKey = onboardingData?.ownerIdentity?.sntnFile?.key;
+    } catch {}
 
-      const phoneRaw = (data.phoneNumber ?? '').toString();
-      const phone = phoneRaw.slice(0, 20);
-      const parsed = parsePhoneNumberFromString(phoneRaw);
-      const countryCode = parsed ? `+${parsed.countryCallingCode}` : '';
-
-      // Get sntnFile from onboarding store
-      let ntnImageKey;
-      try {
-        // Use dynamic import instead of require
-        const onboardingStore =
-          (window as any).__zustandOnboardingStore ||
-          (await import('@/stores/onboarding-store')).useOnboardingStore;
-        const onboardingData = onboardingStore.getState().formData;
-        ntnImageKey = onboardingData?.ownerIdentity?.sntnFile?.key;
-      } catch {}
-
-      const payload: any = {
-        email: data.email,
-        phone,
-        countryCode,
-        password: (data as any).password || '',
-        serviceProviderType: data.serviceProviderType.replace('-', '_'),
-        businessName: data.businessName,
-        cuisineIds: data.cuisines,
-        description: data.businessDescription,
-        logoUrl: logoPreview,
-      };
-      // Only add ntnImageKey if present. Do NOT add frontNicKey or backNicKey.
-      if (ntnImageKey) {
-        payload.ntnImageKey = ntnImageKey;
-      }
-
-      signUpMutation.mutate(payload);
-    } catch {
-      setError('root', { message: 'An unexpected error occurred' });
+    const payload: any = {
+      email: data.email,
+      phone,
+      countryCode,
+      password: (data as any).password || '',
+      serviceProviderType: data.serviceProviderType.replace('-', '_'),
+      businessName: data.businessName,
+      cuisineIds: data.cuisines,
+      description: data.businessDescription,
+      logoUrl: logoPreview,
+    };
+    // Only add ntnImageKey if present. Do NOT add frontNicKey or backNicKey.
+    if (ntnImageKey) {
+      payload.ntnImageKey = ntnImageKey;
     }
+
+    signUpMutation.mutate(payload);
   };
 
   return (
@@ -277,12 +252,6 @@ export function SignUpForm() {
       <h1 className="mb-6 text-xl font-semibold sm:text-2xl">Sign up with your email</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {errors.root && (
-          <Alert variant="destructive">
-            <AlertDescription>{errors.root.message}</AlertDescription>
-          </Alert>
-        )}
-
         {/* Service Provider Type - First */}
         <div>
           <Controller

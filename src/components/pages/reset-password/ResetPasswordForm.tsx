@@ -7,7 +7,6 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useResetPassword } from '@/react-query/auth/mutations';
@@ -17,7 +16,6 @@ export function ResetPasswordForm() {
   const {
     register,
     handleSubmit,
-    setError,
     formState: { errors, isSubmitting },
   } = useForm<ResetPasswordInput>({
     resolver: zodResolver(resetPasswordSchema),
@@ -40,7 +38,7 @@ export function ResetPasswordForm() {
 
   const onSubmit = async (data: ResetPasswordInput) => {
     if (!resetToken) {
-      setError('root', { message: 'Invalid reset token' });
+      toast.error('Invalid reset token');
       return;
     }
 
@@ -51,24 +49,9 @@ export function ResetPasswordForm() {
       });
 
       if (response.success) {
-        toast.success('Password reset successful! Redirecting to sign-in...');
-        setTimeout(() => {
-          router.push('/sign-in');
-        }, 2000);
-      } else {
-        setError('root', { message: response.message || 'Password reset failed' });
+        router.push('/sign-in');
       }
-    } catch (error: any) {
-      console.warn('Reset password error:', error);
-      if (error?.response?.status === 401) {
-        setError('root', { message: 'Reset token expired. Please request a new password reset.' });
-        setTimeout(() => {
-          router.push('/forgot-password');
-        }, 3000);
-      } else {
-        setError('root', { message: 'An unexpected error occurred' });
-      }
-    }
+    } catch {}
   };
 
   return (
@@ -79,12 +62,6 @@ export function ResetPasswordForm() {
       </p>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {errors.root && (
-          <Alert variant="destructive">
-            <AlertDescription>{errors.root.message}</AlertDescription>
-          </Alert>
-        )}
-
         <div>
           <Input
             type="password"
