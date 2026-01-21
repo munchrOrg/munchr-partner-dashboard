@@ -32,7 +32,7 @@ import {
 } from '@/components/ui/table';
 import { Textarea } from '@/components/ui/textarea';
 
-import { useCreateRole } from '@/react-query/roles/mutations';
+import { useCreateRole, useUpdateRole } from '@/react-query/roles/mutations';
 import { useRolePermissions } from '@/react-query/roles/queries';
 import { roleFormSchema } from '@/validations/user-management';
 
@@ -127,14 +127,18 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
       return;
     }
 
-    const basePermissions = mapApiPermissionsToForm(permissionsResponse.data);
+    const basePermissions = mapApiPermissionsToForm(permissionsResponse.data).map((p) => ({
+      ...p,
+      view: false,
+      edit: false,
+      delete: false,
+    }));
 
     if (isEditMode && role) {
       const mergedPermissions = basePermissions.map((p) => {
         const existing = role.permissions.find((rp) => rp.page === p.page);
         return existing ?? p;
       });
-
       form.reset({
         name: role.name,
         description: role.description,
@@ -177,6 +181,7 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
   };
 
   const createRoleMutation: any = useCreateRole();
+  const updateRoleMutation: any = useUpdateRole();
 
   const onSubmit = async (data: RoleFormInput) => {
     try {
@@ -197,12 +202,24 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
         });
       }
 
-      await createRoleMutation.mutateAsync({
-        name: data.name,
-        description: data.description,
-        permissionIds: selectedPermissionIds,
-      });
-      toast.success('Role created successfully');
+      if (isEditMode && role) {
+        await updateRoleMutation.mutateAsync({
+          id: role.id,
+          data: {
+            name: data.name,
+            description: data.description,
+            permissionIds: selectedPermissionIds,
+          },
+        });
+        toast.success('Role updated successfully');
+      } else {
+        await createRoleMutation.mutateAsync({
+          name: data.name,
+          description: data.description,
+          permissionIds: selectedPermissionIds,
+        });
+        toast.success('Role created successfully');
+      }
       onOpenChange(false);
       form.reset();
     } catch (error: any) {
@@ -210,7 +227,7 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
     }
   };
 
-  const isLoading = createRoleMutation.isLoading;
+  const isLoading = createRoleMutation.isLoading || updateRoleMutation.isLoading;
 
   /* =========================
      Render

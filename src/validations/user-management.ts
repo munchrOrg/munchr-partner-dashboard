@@ -4,7 +4,7 @@ export const userFormSchema = z.object({
   name: z.string().min(1, 'User name is required'),
   email: z.string().email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  role: z.enum(['Admin', 'Super Admin', 'Editor']),
+  roleIds: z.array(z.string()).min(1, 'At least one role is required'),
 });
 
 export type UserFormInput = z.infer<typeof userFormSchema>;

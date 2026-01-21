@@ -2,6 +2,7 @@
 
 import type { UserFormInput } from '@/validations/user-management';
 import { zodResolver } from '@hookform/resolvers/zod';
+import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
@@ -16,22 +17,18 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+// ...existing code...
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { useCreateUser, useUpdateUser } from '@/react-query/users/mutations';
+import { useCreatePortalUser } from '@/react-query/portal-users/mutations.create';
+import { rolesKeys } from '@/react-query/roles/keys';
+import { rolesService } from '@/react-query/roles/service.all';
 import { userFormSchema } from '@/validations/user-management';
 
 type User = {
   id: string;
   name: string;
   email: string;
-  role: string;
+  roleIds: string[];
   status?: 'approved' | 'pending';
 };
 
@@ -43,8 +40,13 @@ type UserFormDrawerProps = {
 
 export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDrawerProps>) {
   const isEditMode = !!user;
-  const createUserMutation = useCreateUser();
-  const updateUserMutation = useUpdateUser();
+  const createUserMutation = useCreatePortalUser();
+
+  const { data: roles, isLoading: rolesLoading } = useQuery({
+    queryKey: rolesKeys.all,
+    queryFn: rolesService.getAll,
+  });
+  console.log('Roles data:', rolesLoading);
 
   const form = useForm<UserFormInput>({
     resolver: zodResolver(userFormSchema),
@@ -52,7 +54,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
       name: '',
       email: '',
       password: '',
-      role: undefined,
+      roleIds: [],
     },
   });
 
@@ -62,30 +64,28 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
         name: user.name,
         email: user.email,
         password: '',
-        role: user.role as 'Admin' | 'Super Admin' | 'Editor',
+        roleIds: user.roleIds || [],
       });
     } else if (open && !user) {
       form.reset({
         name: '',
         email: '',
         password: '',
-        role: undefined,
+        roleIds: [],
       });
     }
   }, [open, user, form]);
 
   const onSubmit = async (data: UserFormInput) => {
     try {
-      if (isEditMode && user) {
-        await updateUserMutation.mutateAsync({
-          id: user.id,
-          data,
-        });
-        toast.success('User updated successfully');
-      } else {
-        await createUserMutation.mutateAsync(data);
-        toast.success('User created successfully');
-      }
+      // Only create user, not update
+      await createUserMutation.mutateAsync({
+        name: data.name,
+        email: data.email,
+        password: data.password,
+        roleIds: data.roleIds,
+      });
+      toast.success('User created successfully');
       onOpenChange(false);
       form.reset();
     } catch (error: any) {
@@ -94,7 +94,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
     }
   };
 
-  const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
+  const isLoading = createUserMutation.isPending;
 
   const getButtonText = () => {
     if (isLoading) {
@@ -115,9 +115,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
       >
         <div className="flex flex-1 flex-col overflow-hidden">
           <SheetHeader className="flex flex-row items-center justify-between px-[30px] pt-8">
-            <SheetTitle className="text-xl font-bold">
-              {isEditMode ? 'Update User' : 'Create New User'}
-            </SheetTitle>
+            <SheetTitle className="text-xl font-bold">Create New User</SheetTitle>
             <SheetClose asChild>
               <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
                 <X className="h-7 w-7" />
@@ -147,7 +145,6 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                     </FormItem>
                   )}
                 />
-
                 <FormField
                   control={form.control}
                   name="email"
@@ -182,24 +179,31 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
 
                 <FormField
                   control={form.control}
-                  name="role"
+                  name="roleIds"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Role <span className="text-destructive">*</span>
+                        Roles <span className="text-destructive">*</span>
                       </FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
-                        <FormControl>
-                          <SelectTrigger className="w-full">
-                            <SelectValue placeholder="Choose a Role" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="Admin">Admin</SelectItem>
-                          <SelectItem value="Super Admin">Super Admin</SelectItem>
-                          <SelectItem value="Editor">Editor</SelectItem>
-                        </SelectContent>
-                      </Select>
+                      <select
+                        multiple
+                        value={field.value}
+                        onChange={(e) => {
+                          const selected = Array.from(
+                            e.target.selectedOptions,
+                            (option) => option.value
+                          );
+                          field.onChange(selected);
+                        }}
+                        className="w-full rounded border px-2 py-1"
+                        required
+                      >
+                        {roles?.data?.map((role: any) => (
+                          <option key={role.id} value={role.id}>
+                            {role.name}
+                          </option>
+                        ))}
+                      </select>
                       <FormMessage />
                     </FormItem>
                   )}
