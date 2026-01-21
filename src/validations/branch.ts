@@ -12,7 +12,7 @@ export const branchStep1Schema = z.object({
     .max(500, 'Business description must be under 500 characters'),
   businessEmail: z.string().min(1, 'Business email is required').email('Invalid email address'),
   password: z.string().min(8, 'Password must be at least 8 characters'),
-  cuisine: z.string().min(1, 'Cuisine is required'),
+  cuisines: z.array(z.string()).min(1, 'Select at least one cuisine'),
 });
 
 export const branchStep2Schema = z.object({

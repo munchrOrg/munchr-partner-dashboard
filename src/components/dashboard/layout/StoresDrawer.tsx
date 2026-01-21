@@ -20,39 +20,30 @@ type Store = {
   isEnabled: boolean;
 };
 
-// Mock data matching the image
-const mockStores: Store[] = [
-  {
-    id: '1',
-    name: 'Kababjees Fried Chicken',
-    address: 'Fortune Tower, 45a Shahra-e-Faisal, Block-6 Block 6 PECHS, Karachi, 75400',
-    isEnabled: false,
-  },
-  {
-    id: '2',
-    name: 'Kababjees Fried Chicken - SMCHS',
-    address: 'Block A Sindhi Muslim CHS (SMCHS), Karachi',
-    isEnabled: false,
-  },
-  {
-    id: '3',
-    name: 'Kababjees Fried Chicken - Garden East Branch',
-    address: 'Nusserwanji Rd, Garden East Karachi',
-    isEnabled: false,
-  },
-];
-
 type StoresDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
 };
 
 export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
-  const [stores, setStores] = useState<Store[]>(mockStores);
   const [showAddBranchForm, setShowAddBranchForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showMapView, setShowMapView] = useState(false);
   const [step2FormData, setStep2FormData] = useState<Partial<BranchStep2Input>>({});
+  // const { data: branchesData } = useBranches();
+  const [stores, setStores] = useState<Store[]>([]);
+
+  // useEffect(() => {
+  //   if (branchesData?.data) {
+  //     const mappedStores: Store[] = branchesData.data.map((branch : any) => ({
+  //       id: branch.id,
+  //       name: branch.branchName || 'Unnamed Branch',
+  //       address: `${branch.buildingPlaceName}, ${branch.street}, ${branch.city}`,
+  //       isEnabled: branch.isActive ?? false,
+  //     }));
+  //     setStores(mappedStores);
+  //   }
+  // }, [branchesData]);
 
   const handleToggleStore = (storeId: string, enabled: boolean) => {
     setStores((prevStores) =>
