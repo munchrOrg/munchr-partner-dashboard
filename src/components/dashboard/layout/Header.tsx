@@ -2,7 +2,7 @@
 
 import type { HeaderProps } from '../types';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
-import { Bell, ChevronLeft, HelpCircle, LogOut, Menu, User } from 'lucide-react';
+import { Bell, ChevronDown, ChevronLeft, HelpCircle, LogOut, Menu, User } from 'lucide-react';
 import { signOut } from 'next-auth/react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -17,6 +17,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { StoresDrawer } from './StoresDrawer';
 
 const pathLabels: Record<string, string> = {
   dashboard: 'Dashboard',
@@ -33,7 +34,11 @@ const pathLabels: Record<string, string> = {
   settings: 'Settings',
 };
 
-function Breadcrumbs() {
+function Breadcrumbs({
+  onStoreClick,
+}: Readonly<{
+  onStoreClick: () => void;
+}>) {
   const pathname = usePathname();
   const segments = pathname.split('/').filter(Boolean);
 
@@ -60,6 +65,14 @@ function Breadcrumbs() {
         {parentLabel}
       </Link>
       <span className="text-[30px] leading-none font-bold text-[#0C0017]">{currentLabel}</span>
+      <Button
+        variant="ghost"
+        className="items-left mt-1 -ml-2 flex h-auto justify-start gap-1 p-0 text-left text-sm font-normal text-[#918D8C] hover:text-[#918D8C]"
+        onClick={onStoreClick}
+      >
+        <span>Kababjees Fried Chicken</span>
+        <ChevronDown className="h-4 w-4" />
+      </Button>
     </nav>
   );
 }
@@ -101,10 +114,14 @@ function MobileRightSection({
 // DESKTOP SECTIONS
 // ============================================================================
 
-function DesktopLeftSection() {
+function DesktopLeftSection({
+  onStoreClick,
+}: Readonly<{
+  onStoreClick: () => void;
+}>) {
   return (
     <div className="hidden items-center gap-4 md:flex">
-      <Breadcrumbs />
+      <Breadcrumbs onStoreClick={onStoreClick} />
     </div>
   );
 }
@@ -233,6 +250,7 @@ function UserMenu({
 export function Header({ user }: Readonly<HeaderProps>) {
   const [isOpen, setIsOpen] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isStoresDrawerOpen, setIsStoresDrawerOpen] = useState(false);
 
   const userInitials = user?.name
     ? user.name
@@ -243,21 +261,25 @@ export function Header({ user }: Readonly<HeaderProps>) {
     : user?.email?.[0]?.toUpperCase() || 'U';
 
   return (
-    <header className="flex h-16 items-center justify-between bg-white px-4 md:h-[105px] lg:px-10">
-      <div className="flex items-center gap-4">
-        <MobileLeftSection onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
-        <DesktopLeftSection />
-      </div>
+    <>
+      <header className="flex h-16 items-center justify-between bg-white px-4 md:h-[105px] lg:px-10">
+        <div className="flex items-center gap-4">
+          <MobileLeftSection onMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)} />
+          <DesktopLeftSection onStoreClick={() => setIsStoresDrawerOpen(true)} />
+        </div>
 
-      <div className="flex items-center gap-3">
-        <MobileRightSection user={user} userInitials={userInitials} />
-        <DesktopRightSection
-          isOpen={isOpen}
-          onToggleOpen={setIsOpen}
-          user={user}
-          userInitials={userInitials}
-        />
-      </div>
-    </header>
+        <div className="flex items-center gap-3">
+          <MobileRightSection user={user} userInitials={userInitials} />
+          <DesktopRightSection
+            isOpen={isOpen}
+            onToggleOpen={setIsOpen}
+            user={user}
+            userInitials={userInitials}
+          />
+        </div>
+      </header>
+
+      <StoresDrawer isOpen={isStoresDrawerOpen} onClose={() => setIsStoresDrawerOpen(false)} />
+    </>
   );
 }
