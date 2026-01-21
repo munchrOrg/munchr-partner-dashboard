@@ -31,3 +31,13 @@ export const useDeletePortalUser = () => {
     },
   });
 };
+
+export const useCreatePortalUser = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: portalUsersService.create,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: portalUsersKeys.all });
+    },
+  });
+};

@@ -3,9 +3,8 @@
 import type { HeaderProps } from '../types';
 import * as SwitchPrimitive from '@radix-ui/react-switch';
 import { Bell, ChevronDown, ChevronLeft, HelpCircle, LogOut, Menu, User } from 'lucide-react';
-import { signOut } from 'next-auth/react';
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
@@ -17,6 +16,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
+import { useLogout } from '@/react-query/auth/mutations';
 import { StoresDrawer } from './StoresDrawer';
 
 const pathLabels: Record<string, string> = {
@@ -206,6 +206,18 @@ function UserMenu({
   user?: HeaderProps['user'];
   userInitials: string;
 }>) {
+  const logoutMutation = useLogout();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      await logoutMutation.mutateAsync({});
+    } catch {
+      console.warn(`Signout error`);
+    }
+    router.push('/sign-in');
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -231,10 +243,7 @@ function UserMenu({
           </Link>
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => signOut({ callbackUrl: '/sign-in' })}
-          className="text-red-600 focus:text-red-600"
-        >
+        <DropdownMenuItem onClick={handleSignOut} className="text-red-600 focus:text-red-600">
           <LogOut className="mr-2 h-4 w-4" />
           Sign out
         </DropdownMenuItem>
