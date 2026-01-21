@@ -92,9 +92,9 @@ export function UserManagementTable() {
                 <TableCell>
                   <Badge
                     className={
-                      user.status === 'approved'
-                        ? 'rounded bg-green-500 text-[#2C2F2E]'
-                        : 'rounded bg-[#FABD19] text-[#2C2F2E]'
+                      user.status === 'suspended'
+                        ? 'rounded bg-red-500 text-white'
+                        : 'rounded bg-green-500 text-[#2C2F2E]'
                     }
                   >
                     {user.status === 'approved'
@@ -104,6 +104,7 @@ export function UserManagementTable() {
                         : 'Pending'}
                   </Badge>
                 </TableCell>
+
                 <TableCell className="text-right">
                   <div className="flex items-center justify-end gap-2 rounded-full">
                     <Button
@@ -148,7 +149,7 @@ export function UserManagementTable() {
                       size="icon"
                       className="size-10 rounded-full"
                       onClick={() => handleDeleteClick(user.id)}
-                      disabled={deleteUserMutation.isPending}
+                      disabled={deleteUserMutation.isPending || user.status === 'suspended'}
                     >
                       <Trash2 className="h-4 w-4" />
                     </Button>
