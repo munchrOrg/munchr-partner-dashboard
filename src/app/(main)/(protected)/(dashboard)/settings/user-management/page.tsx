@@ -10,7 +10,7 @@ import { UserFormDrawer } from '@/components/settings/user-management/UserFormDr
 import { UserManagementTable } from '@/components/settings/user-management/UserManagementTable';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { rolesService } from '@/react-query/roles/service.all';
+import { rolesService } from '@/react-query/roles/service';
 
 export default function UserManagementPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
