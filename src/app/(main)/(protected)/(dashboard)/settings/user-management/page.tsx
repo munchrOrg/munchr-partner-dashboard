@@ -1,6 +1,7 @@
 'use client';
 
 import type { Role } from '@/types/roles';
+import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
 import { RoleCard } from '@/components/settings/user-management/RoleCard';
@@ -9,16 +10,30 @@ import { UserFormDrawer } from '@/components/settings/user-management/UserFormDr
 import { UserManagementTable } from '@/components/settings/user-management/UserManagementTable';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { ROLES } from '@/types/roles';
+import { rolesService } from '@/react-query/roles/service';
 
 export default function UserManagementPage() {
   const [isDrawerOpen, setIsDrawerOpen] = useState(false);
   const [isRoleDrawerOpen, setIsRoleDrawerOpen] = useState(false);
   const [selectedRole, setSelectedRole] = useState<Role | null>(null);
+  const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('user-management');
 
-  const handleEditRole = (role: Role) => {
+  const { data: roles, isLoading: rolesLoading } = useQuery({
+    queryKey: ['roles', 'all'],
+    queryFn: rolesService.getAll,
+  });
+
+  const handleEditRole = async (role: Role, id: string) => {
     setSelectedRole(role);
+    setSelectedRoleId(id);
+    try {
+      // const latestRole = await rolesService.getById(id);
+      // setSelectedRole(latestRole);
+    } catch (e) {
+      console.log('Error fetching role by ID:', e);
+      setSelectedRole(role); // fallback
+    }
     setIsRoleDrawerOpen(true);
   };
 
@@ -78,9 +93,18 @@ export default function UserManagementPage() {
 
         <TabsContent value="roles-access" className="mt-6">
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {ROLES.map((role) => (
-              <RoleCard key={role.id} role={role} onEdit={handleEditRole} />
-            ))}
+            {rolesLoading ? (
+              <div>Loading roles...</div>
+            ) : (
+              roles?.data?.map((role: Role) => (
+                <RoleCard
+                  key={role.id}
+                  role={role}
+                  onEdit={handleEditRole}
+                  selected={role.id === selectedRoleId}
+                />
+              ))
+            )}
           </div>
         </TabsContent>
       </Tabs>
