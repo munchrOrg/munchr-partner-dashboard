@@ -21,6 +21,8 @@ type OnboardingUIState = {
 
   shouldNavigate: boolean;
   navigationStep: OnboardingStep | null;
+
+  isUploading: boolean;
 };
 
 type OnboardingUIActions = {
@@ -43,6 +45,8 @@ type OnboardingUIActions = {
   triggerNavigation: (step: OnboardingStep) => void;
   clearNavigation: () => void;
 
+  setIsUploading: (isUploading: boolean) => void;
+
   reset: () => void;
 };
 
@@ -60,6 +64,7 @@ const initialState: OnboardingUIState = {
   confirmModalConfig: null,
   shouldNavigate: false,
   navigationStep: null,
+  isUploading: false,
 };
 
 export const useOnboardingStore = create<OnboardingUIStore>()((set) => ({
@@ -87,6 +92,8 @@ export const useOnboardingStore = create<OnboardingUIStore>()((set) => ({
 
   triggerNavigation: (step: OnboardingStep) => set({ shouldNavigate: true, navigationStep: step }),
   clearNavigation: () => set({ shouldNavigate: false, navigationStep: null }),
+
+  setIsUploading: (isUploading: boolean) => set({ isUploading }),
 
   reset: () => set(initialState),
 }));

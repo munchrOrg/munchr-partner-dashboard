@@ -1,7 +1,7 @@
 'use client';
 
 import type { FileUpload, MenuFormData } from '@/types/onboarding';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
@@ -12,7 +12,8 @@ import { useOnboardingStore } from '@/stores/onboarding-store';
 import { AssetType, OnboardingStep } from '@/types/onboarding';
 
 export function DineInMenuUpload() {
-  const { openExampleDrawer, openConfirmModal, triggerNavigation } = useOnboardingStore();
+  const { openExampleDrawer, openConfirmModal, triggerNavigation, setIsUploading } =
+    useOnboardingStore();
   const { data: profile } = useProfile();
   const businessProfile = profile?.partner?.businessProfile;
   const updateProfileMutation = useUpdateProfile();
@@ -67,6 +68,13 @@ export function DineInMenuUpload() {
     setMenu({ menuFile: file });
   };
 
+  const handleUploadingChange = useCallback(
+    (isUploading: boolean) => {
+      setIsUploading(isUploading);
+    },
+    [setIsUploading]
+  );
+
   const showExample = () => {
     openExampleDrawer({
       title: 'Menu Example',
@@ -96,6 +104,7 @@ export function DineInMenuUpload() {
           acceptedFormats=".jpg, .png, .jpeg, .pdf, .tiff, .docx, .xlsx"
           maxSizeMB={4}
           assetType={AssetType.MENU}
+          onUploadingChange={handleUploadingChange}
         />
       </div>
     </form>

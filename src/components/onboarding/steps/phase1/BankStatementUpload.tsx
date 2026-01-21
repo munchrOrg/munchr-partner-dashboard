@@ -2,7 +2,7 @@
 
 import type { BankStatementFormData, FileUpload } from '@/types/onboarding';
 import { CircleAlert } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
@@ -13,7 +13,7 @@ import { useOnboardingStore } from '@/stores/onboarding-store';
 import { AssetType, OnboardingStep } from '@/types/onboarding';
 
 export function BankStatementUpload() {
-  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
+  const { openExampleDrawer, triggerNavigation, setIsUploading } = useOnboardingStore();
   const { data: profile } = useProfile();
   const billingInfo = profile?.partner?.businessProfile?.billingInfo;
   const updateProfileMutation = useUpdateProfile();
@@ -56,6 +56,13 @@ export function BankStatementUpload() {
   const handleFileChange = (file: FileUpload | null) => {
     setBankStatement({ statementFile: file });
   };
+
+  const handleUploadingChange = useCallback(
+    (isUploading: boolean) => {
+      setIsUploading(isUploading);
+    },
+    [setIsUploading]
+  );
 
   const showExample = () => {
     openExampleDrawer({
@@ -100,6 +107,7 @@ export function BankStatementUpload() {
           value={bankStatement.statementFile}
           onChange={handleFileChange}
           assetType={AssetType.CHEQUE_BOOK}
+          onUploadingChange={handleUploadingChange}
         />
       </div>
     </form>
