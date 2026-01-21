@@ -1,10 +1,25 @@
+import type { UseQueryOptions } from '@tanstack/react-query';
+import type { AxiosError } from 'axios';
+import type { ProfileResponse } from './types';
 import { useQuery } from '@tanstack/react-query';
 import { authKeys } from './keys';
 import { authService } from './service';
 
-export const useProfile = () =>
+type ApiErrorResponse = {
+  message?: string;
+  error?: string;
+  statusCode?: number;
+};
+
+type QueryOptions<TData> = Omit<
+  UseQueryOptions<TData, AxiosError<ApiErrorResponse>, TData>,
+  'queryKey' | 'queryFn'
+>;
+
+export const useProfile = (options?: QueryOptions<ProfileResponse>) =>
   useQuery({
     queryKey: authKeys.profile(),
     queryFn: authService.getProfile,
     staleTime: 60 * 1000,
+    ...options,
   });

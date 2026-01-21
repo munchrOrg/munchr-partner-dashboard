@@ -17,7 +17,6 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
-// ...existing code...
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { useCreatePortalUser, useUpdatePortalUser } from '@/react-query/portal-users/mutations';
 import { rolesKeys } from '@/react-query/roles/keys';
@@ -28,7 +27,8 @@ type User = {
   id: string;
   name: string;
   email: string;
-  roleIds: string[];
+  // roleIds: string[];
+  roles: { id: string; name: string; description: string }[];
   status?: 'approved' | 'pending';
 };
 
@@ -43,12 +43,12 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
   const createUserMutation = useCreatePortalUser();
   const updateUserMutation = useUpdatePortalUser();
 
+  // Fetch roles
   const { data: roles, isLoading: rolesLoading } = useQuery({
     queryKey: rolesKeys.all,
     queryFn: rolesService.getAll,
   });
-  console.log('Roles data:', rolesLoading);
-
+  console.log('roles data:', rolesLoading);
   const form = useForm<UserFormInput>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -65,7 +65,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
         name: user.name,
         email: user.email,
         password: '',
-        roleIds: user.roleIds || [],
+        roleIds: user.roles.map((r) => r.id), // backend se id nikal ke daal do
       });
     } else if (open && !user) {
       form.reset({
@@ -77,6 +77,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
     }
   }, [open, user, form]);
 
+  // Submit handler
   const onSubmit = async (data: UserFormInput) => {
     try {
       if (isEditMode && user) {
@@ -143,6 +144,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
               className="flex flex-1 flex-col overflow-hidden"
             >
               <div className="mt-2 flex-1 space-y-6 overflow-y-auto px-[30px]">
+                {/* Name */}
                 <FormField
                   control={form.control}
                   name="name"
@@ -158,6 +160,8 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                     </FormItem>
                   )}
                 />
+
+                {/* Email & Password (only create mode) */}
                 {!isEditMode && (
                   <FormField
                     control={form.control}
@@ -193,27 +197,22 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                   />
                 )}
 
+                {/* Roles Dropdown */}
                 <FormField
                   control={form.control}
                   name="roleIds"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>
-                        Roles <span className="text-destructive">*</span>
+                        Role <span className="text-destructive">*</span>
                       </FormLabel>
                       <select
-                        multiple
-                        value={field.value}
-                        onChange={(e) => {
-                          const selected = Array.from(
-                            e.target.selectedOptions,
-                            (option) => option.value
-                          );
-                          field.onChange(selected);
-                        }}
+                        value={field.value[0] || ''} // single role
+                        onChange={(e) => field.onChange([e.target.value])} // wrap in array
                         className="w-full rounded border px-2 py-1"
                         required
                       >
+                        <option value="">Select Role</option>
                         {roles?.data?.map((role: any) => (
                           <option key={role.id} value={role.id}>
                             {role.name}
@@ -226,6 +225,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                 />
               </div>
 
+              {/* Buttons */}
               <div
                 className="mt-auto flex w-full gap-2 border-t px-[30px] py-4"
                 style={{ boxShadow: '0px -4px 20px 0px rgba(0, 0, 0, 0.1)' }}

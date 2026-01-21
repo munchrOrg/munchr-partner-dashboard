@@ -26,9 +26,18 @@ export const otpSchema = z.object({
   otp: z.string().length(6, 'OTP must be 6 digits').regex(/^\d+$/, 'OTP must be numeric'),
 });
 
-export const forgotPasswordSchema = z.object({
-  email: z.string().email('Invalid email address'),
-});
+export const forgotPasswordSchema = z
+  .object({
+    email: z.string().email('Invalid email address').optional(),
+    phone: z
+      .string()
+      .regex(/^923\d{9}$/, 'Phone must be in format 923XXXXXXXXX')
+      .optional(),
+  })
+  .refine((data) => data.email || data.phone, {
+    message: 'Either email or phone is required',
+    path: ['email'],
+  });
 
 export const resetPasswordSchema = z
   .object({

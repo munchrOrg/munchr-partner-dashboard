@@ -7,7 +7,6 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { toast } from 'sonner';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
@@ -30,7 +29,6 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
   });
 
   const isLoading = loginMutation.isPending || getProfileMutation.isPending;
-  const error = loginMutation.error?.message || getProfileMutation.error?.message;
 
   const onSubmit = async (data: SignInInput) => {
     try {
@@ -47,13 +45,13 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       if (status === 403 && errorData?.error === 'verification_required') {
         const verificationError = errorData as VerificationRequiredError;
         const email = getValues('email');
-        const partnerId = verificationError.partnerId || '';
+        const userId = verificationError.userId || '';
         const phone = verificationError.phone || '';
 
         if (!verificationError.emailVerified) {
           const params = new URLSearchParams({
             type: 'login',
-            partnerId,
+            userId,
             email,
             phone,
           });
@@ -61,7 +59,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
         } else if (!verificationError.phoneVerified) {
           const params = new URLSearchParams({
             type: 'login',
-            partnerId,
+            userId,
             email,
             phone,
           });
@@ -84,12 +82,6 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       <h1 className="mb-6 text-center text-xl font-semibold sm:text-2xl">Log in with your email</h1>
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-        {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
-        )}
-
         <div>
           <Input
             type="email"

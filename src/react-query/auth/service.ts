@@ -66,7 +66,7 @@ export const authService = {
     apiClient.post<ResendOtpResponse>('partner/otp/resend-email', data).then((res) => res.data),
 
   resendPhoneOtp: (data: ResendPhoneOtpRequest) =>
-    apiClient.post<ResendOtpResponse>('api/partner/otp/resend-phone', data).then((res) => res.data),
+    apiClient.post<ResendOtpResponse>('partner/otp/resend-phone', data).then((res) => res.data),
 
   verifyEmail: (data: VerifyEmailRequest) =>
     apiClient.post<VerifyEmailResponse>('v1/auth/verify-email', data).then((res) => res.data),
