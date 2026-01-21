@@ -16,6 +16,7 @@ import { Input } from '@/components/ui/input';
 import { MultiSelect } from '@/components/ui/multi-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useCuisines } from '@/react-query/cuisine/queries';
 import { branchStep1Schema } from '@/validations/branch';
 
 type Step1Props = {
@@ -53,39 +54,15 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
     }
   }, [initialData, form]);
 
+  const { data: cuisinesList = [] } = useCuisines();
   useEffect(() => {
-    let mounted = true;
-    const fetchCuisines = async () => {
-      try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const r = await fetch(`${base}/v1/partner/cuisines`);
-        if (!r.ok) {
-          throw new Error('Failed to fetch cuisines');
-        }
-        const resJson = await r.json();
-        const items = Array.isArray(resJson)
-          ? resJson
-          : Array.isArray(resJson?.data)
-            ? resJson.data
-            : [];
-        const opts = items.map((c: any) => ({
-          value: c.id,
-          label: c.name,
-          group: 'Cuisines',
-        }));
-        if (mounted) {
-          setCuisineOptions(opts);
-        }
-      } catch (error) {
-        console.error(error);
-      }
-    };
-    fetchCuisines();
-    return () => {
-      mounted = false;
-    };
-  }, []);
-
+    const opts = cuisinesList.map((c: any) => ({
+      value: c.id,
+      label: c.name,
+      group: 'Cuisines',
+    }));
+    setCuisineOptions(opts);
+  }, [cuisinesList]);
   const handleSubmit = (data: BranchStep1Input) => {
     onSubmit(data); // now using the prop properly
   };
