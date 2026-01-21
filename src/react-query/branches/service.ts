@@ -6,6 +6,7 @@ export const branchesService = {
   create: (data: Branch) => apiClient.post('/partner/branches', data).then((res) => res.data),
   getOnboardingProfile: () =>
     apiClient.get('/partner/branches/onboarding/profile').then((res) => res.data),
+  getById: (id: string) => apiClient.get(`/partner/branches/${id}`).then((res) => res.data.data),
   update: (data: Branch) =>
-    apiClient.post('/partner/branches/onboarding/update', data).then((res) => res.data),
+    apiClient.put('/partner/branches/onboarding/update', data).then((res) => res.data),
 };

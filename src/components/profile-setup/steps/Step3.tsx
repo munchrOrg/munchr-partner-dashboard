@@ -15,30 +15,68 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { useUpdateBranch } from '@/react-query/branches/mutations';
+import { useBranchOnboardingProfile } from '@/react-query/branches/queries';
 import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step3Schema } from '@/validations/profile-setup';
 
 export function Step3() {
   const { formData, setStepData, completeStep, nextStep } = useProfileSetupStore();
-  const [useExistingAddress, setUseExistingAddress] = React.useState(false);
-
+  const { mutate: updateBranch } = useUpdateBranch();
+  const [useExistingAddress, setUseExistingAddress] = React.useState(
+    formData.step3?.useExistingAddress || false
+  );
   const form = useForm<Step3Input>({
     resolver: zodResolver(step3Schema),
     defaultValues: formData.step3 || {
       accountTitle: '',
       bankName: '',
       iban: '',
+      useExistingAddress,
     },
   });
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  }: any = form;
 
   useEffect(() => {
     if (formData.step3 && !form.formState.isDirty) {
-      form.reset(formData.step3);
+      form.reset({
+        ...formData.step3,
+        useExistingAddress: formData.step3.useExistingAddress || false,
+      });
     }
   }, [formData.step3, form]);
 
-  const onSubmit = (data: Step3Input) => {
+  const { data: branchData }: any = useBranchOnboardingProfile();
+  const branchName = branchData?.data?.branch?.branchName;
+  const address = branchData?.data?.branch?.location;
+
+  const onSubmit = async (data: Step3Input) => {
     setStepData('step3', data);
+    const payload: any = {
+      accountDetail: data.accountTitle,
+      bankName: data.bankName,
+      iban: data.iban,
+      businessName: branchName,
+      billingAddressAreSame: data.useExistingAddress,
+    };
+
+    if (!data.useExistingAddress) {
+      // payload.address = data.address;
+      payload.buildingPlaceName = data.buildingName;
+      payload.street = data.street;
+      payload.houseNumber = data.houseNumber;
+      payload.state = data.billingState;
+      payload.city = data.billingCity;
+      payload.area = data.area;
+      payload.postalCode = data.billingPostalCode;
+    }
+
+    await updateBranch(payload);
+
     completeStep(3);
     nextStep();
   };
@@ -49,7 +87,7 @@ export function Step3() {
         <Form {...form}>
           <form
             id="profile-setup-step3-form"
-            onSubmit={form.handleSubmit(onSubmit)}
+            onSubmit={handleSubmit(onSubmit)}
             className="space-y-6 md:w-[450px]"
           >
             <FormField
@@ -115,8 +153,20 @@ export function Step3() {
                 <Checkbox
                   id="useExistingAddress"
                   checked={useExistingAddress}
-                  onCheckedChange={(checked) => setUseExistingAddress(checked === true)}
+                  onCheckedChange={(checked) => {
+                    const newValue = checked === true;
+                    setUseExistingAddress(newValue);
+                    form.setValue('useExistingAddress', newValue, {
+                      shouldValidate: true,
+                      shouldDirty: true,
+                    });
+                    setStepData('step3', {
+                      ...form.getValues(), // saare current form values
+                      useExistingAddress: newValue, // toggle ka updated value
+                    });
+                  }}
                 />
+
                 <label
                   htmlFor="useExistingAddress"
                   className="text-base leading-none font-medium peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
@@ -125,11 +175,83 @@ export function Step3() {
                 </label>
               </div>
 
-              {formData?.step1?.location && (
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <div className="mb-2 text-base font-bold text-gray-900">Billing Address</div>
-                  <div className="text-base whitespace-pre-line text-gray-700">
-                    {formData?.step1?.location}
+              {useExistingAddress ? (
+                address && (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <div className="mb-2 text-base font-bold text-gray-900">Billing Address</div>
+                    <div className="text-base whitespace-pre-line text-gray-700">
+                      {`
+${address.buildingPlaceName || ''} ${address.houseNumber || ''}
+${address.street || ''}, ${address.area || ''}
+${address.city || ''}, ${address.state || ''} ${address.postalCode || ''}
+            `}
+                    </div>
+                  </div>
+                )
+              ) : (
+                <div className="space-y-4">
+                  <Input
+                    placeholder="Building or Place Name"
+                    {...register('buildingName')}
+                    className="h-12 rounded-full border-gray-300 px-4"
+                  />
+
+                  <div>
+                    <Input
+                      placeholder="Street *"
+                      {...register('street')}
+                      className="h-12 rounded-full border-gray-300 px-4"
+                    />
+                    {errors.street && (
+                      <p className="mt-1 text-sm text-red-500">{errors.street.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Input
+                      placeholder="House Number *"
+                      {...register('houseNumber')}
+                      className="h-12 rounded-full border-gray-300 px-4"
+                    />
+                    {errors.houseNumber && (
+                      <p className="mt-1 text-sm text-red-500">{errors.houseNumber.message}</p>
+                    )}
+                  </div>
+
+                  <div>
+                    <Input
+                      placeholder="State *"
+                      {...register('billingState')}
+                      className="h-12 rounded-full border-gray-300 px-4"
+                    />
+                    {errors.billingState && (
+                      <p className="mt-1 text-sm text-red-500">{errors.billingState.message}</p>
+                    )}
+                  </div>
+
+                  <Input
+                    placeholder="City"
+                    {...register('billingCity')}
+                    className="h-12 rounded-full border-gray-300 px-4"
+                  />
+
+                  <Input
+                    placeholder="Area"
+                    {...register('area')}
+                    className="h-12 rounded-full border-gray-300 px-4"
+                  />
+
+                  <div>
+                    <Input
+                      placeholder="Postal Code *"
+                      {...register('billingPostalCode')}
+                      className="h-12 rounded-full border-gray-300 px-4"
+                    />
+                    {errors.billingPostalCode && (
+                      <p className="mt-1 text-sm text-red-500">
+                        {errors.billingPostalCode.message}
+                      </p>
+                    )}
                   </div>
                 </div>
               )}
@@ -138,7 +260,7 @@ export function Step3() {
         </Form>
       </div>
 
-      {/* Illustration Section - Right */}
+      {/* Illustration Section */}
       <div className="hidden justify-center lg:flex lg:w-1/2 lg:justify-end">
         <Image
           src="/assets/images/step-3-bank.png"

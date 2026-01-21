@@ -3,8 +3,8 @@
 import type { Step1Input } from '@/validations/profile-setup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Image from 'next/image';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
   Form,
   FormControl,
@@ -16,6 +16,10 @@ import {
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/react-query/auth/queries';
+import { useUpdateBranch } from '@/react-query/branches/mutations';
+import { branchesService } from '@/react-query/branches/service';
+import { useCuisines } from '@/react-query/cuisine/queries';
 import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step1Schema } from '@/validations/profile-setup';
 
@@ -32,21 +36,61 @@ export function Step1() {
     },
   });
 
+  const {
+    control,
+    setValue,
+    reset,
+    formState: { errors },
+  } = form;
   useEffect(() => {
     if (formData.step1 && !form.formState.isDirty) {
-      form.reset(formData.step1);
+      reset(formData.step1);
     }
-  }, [formData.step1, form]);
+  }, [formData.step1, reset, form.formState.isDirty]);
 
-  // Update form when location changes from map drawer
   useEffect(() => {
     if (formData.step1?.location) {
-      form.setValue('location', formData.step1.location);
+      setValue('location', formData.step1.location);
     }
-  }, [formData.step1?.location, form]);
+  }, [formData.step1?.location, setValue]);
+  const { mutate: updateBranch } = useUpdateBranch();
+  const { data: profile }: any = useProfile();
+  const [branchData, setBranchData] = useState<any>(null);
+  console.warn('branchData', branchData);
+  const { data: cuisinesList = [] } = useCuisines();
+  const cuisineOptions = cuisinesList.map((c) => ({ label: c.name, value: c.id }));
+  useEffect(() => {
+    const id = profile?.onboarding?.branchId;
+    if (!id) {
+      return;
+    }
+    const fetchBranch = async () => {
+      try {
+        const data = await branchesService.getById(id);
+        setBranchData(data);
+        reset({
+          businessName: data.branchName || '',
+          businessDescription: data.description || '',
+          cuisines: data.cuisineIds?.[0] || '',
+          location: data.area || '',
+        });
+      } catch (err) {
+        console.error('Error fetching branch:', err);
+      }
+    };
+    fetchBranch();
+  }, [profile, reset]);
 
-  const onSubmit = (data: Step1Input) => {
+  const onSubmit = async (data: Step1Input) => {
     setStepData('step1', data);
+
+    await updateBranch({
+      businessName: data.businessName,
+      description: data.businessDescription,
+      cuisineIds: [data.cuisines],
+      area: data.location,
+    } as any);
+
     completeStep(1);
     nextStep();
   };
@@ -61,7 +105,7 @@ export function Step1() {
             className="space-y-6 md:w-[450px]"
           >
             <FormField
-              control={form.control}
+              control={control}
               name="businessName"
               render={({ field }) => (
                 <FormItem>
@@ -72,8 +116,8 @@ export function Step1() {
                   <FormControl>
                     <Input
                       placeholder="Kababjees Fried Chicken"
-                      className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
                       {...field}
+                      className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
                     />
                   </FormControl>
                   <FormMessage />
@@ -82,7 +126,7 @@ export function Step1() {
             />
 
             <FormField
-              control={form.control}
+              control={control}
               name="businessDescription"
               render={({ field }) => (
                 <FormItem>
@@ -90,16 +134,14 @@ export function Step1() {
                   <FormControl>
                     <textarea
                       placeholder="Kababjees Fried Chicken"
+                      {...field}
                       rows={4}
                       className={cn(
                         'w-full rounded-2xl border border-gray-300 bg-transparent px-4 py-3 text-base',
                         'focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[1px]',
                         'aria-invalid:ring-destructive/20 aria-invalid:border-destructive',
-                        'placeholder:text-muted-foreground',
-                        'resize-none',
-                        'min-h-[100px]'
+                        'placeholder:text-muted-foreground min-h-[100px] resize-none'
                       )}
-                      {...field}
                     />
                   </FormControl>
                   <FormMessage />
@@ -107,26 +149,34 @@ export function Step1() {
               )}
             />
 
-            <FormField
-              control={form.control}
-              name="cuisines"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-medium">Cuisines</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Pakistani"
-                      className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
+            <FormItem>
+              <FormLabel className="text-base font-medium">Cuisines</FormLabel>
+              <FormControl>
+                <Controller
+                  name="cuisines"
+                  control={control}
+                  render={({ field }) => (
+                    <select
                       {...field}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
+                      className="focus:border-ring focus:ring-ring h-11 w-full rounded-full border border-gray-300 px-4 focus:ring-1 focus:outline-none sm:h-12 sm:px-5"
+                    >
+                      <option value="">Select cuisine</option>
+                      {cuisineOptions.map((c) => (
+                        <option key={c.value} value={c.value}>
+                          {c.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+                />
+              </FormControl>
+              {errors.cuisines && (
+                <p className="mt-1 ml-4 text-sm text-red-500">{errors.cuisines.message}</p>
               )}
-            />
+            </FormItem>
 
             <FormField
-              control={form.control}
+              control={control}
               name="location"
               render={({ field }) => (
                 <FormItem>
@@ -134,8 +184,8 @@ export function Step1() {
                   <FormControl>
                     <Input
                       placeholder="Location Here"
-                      className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
                       {...field}
+                      className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
                     />
                   </FormControl>
                   <div className="flex w-full justify-end">
@@ -155,7 +205,6 @@ export function Step1() {
         </Form>
       </div>
 
-      {/* Illustration Section - Right */}
       <div className="hidden justify-center lg:flex lg:w-1/2 lg:justify-end">
         <div className="relative h-64 w-64 sm:h-80 sm:w-80">
           <Image
