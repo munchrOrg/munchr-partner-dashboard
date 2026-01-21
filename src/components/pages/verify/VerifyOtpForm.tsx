@@ -80,13 +80,13 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   const verifyPhoneMutation = useVerifyPhone();
   const resendEmailOtpMutation = useResendEmailOtp();
   const resendPhoneOtpMutation = useResendPhoneOtp();
-  const urlPartnerId =
-    searchParams.get('partnerId') ??
+  const urlUserId =
+    searchParams.get('userId') ??
     (typeof window !== 'undefined'
-      ? new URLSearchParams(window.location.search).get('partnerId')
+      ? new URLSearchParams(window.location.search).get('userId')
       : null);
-  const [partnerIdState] = useState<string | null>(
-    urlPartnerId ?? useSignupStore.getState().partnerId ?? null
+  const [userIdState] = useState<string | null>(
+    urlUserId ?? useSignupStore.getState().userId ?? null
   );
 
   useEffect(() => {
@@ -123,9 +123,9 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
   };
 
   const onSubmit = async (_data: OTPInput) => {
-    const partnerId = partnerIdState;
-    if (!partnerId) {
-      setError('otp', { message: 'Missing partnerId. Please provide it.' });
+    const userId = userIdState;
+    if (!userId) {
+      setError('otp', { message: 'Missing userId. Please provide it.' });
       return;
     }
 
@@ -133,8 +133,8 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
       const otp = digits.join('');
       const response =
         type === 'email'
-          ? await verifyEmailMutation.mutateAsync({ partnerId, otp })
-          : await verifyPhoneMutation.mutateAsync({ partnerId, otp });
+          ? await verifyEmailMutation.mutateAsync({ userId, otp })
+          : await verifyPhoneMutation.mutateAsync({ userId, otp });
 
       if (!response || !response.success) {
         setError('otp', { message: response?.message || `${config.title} failed` });
@@ -167,12 +167,12 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
       if (type === 'email' && !response.phoneVerified) {
         const phone = searchParams.get('phone') || '';
         router.push(
-          `/verify-phone?type=signup&partnerId=${partnerId}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(searchParams.get('email') || '')}`
+          `/verify-phone?type=signup&userId=${userId}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(searchParams.get('email') || '')}`
         );
       } else if (type === 'phone' && !response.emailVerified) {
         const email = searchParams.get('email') || '';
         router.push(
-          `/verify-email?type=signup&partnerId=${partnerId}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(searchParams.get('phone') || '')}`
+          `/verify-email?type=signup&userId=${userId}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(searchParams.get('phone') || '')}`
         );
       } else {
         useSignupStore.getState().reset();
@@ -190,13 +190,15 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
     }
     if (type === 'email') {
       await resendEmailOtpMutation.mutateAsync({
-        partnerId: partnerIdState!,
+        userId: userIdState!,
         email: destination,
+        purpose: 'email_signup',
       });
     } else {
       await resendPhoneOtpMutation.mutateAsync({
-        partnerId: partnerIdState!,
+        userId: userIdState!,
         phone: normalizePhone(destination),
+        purpose: 'phone_signup',
       });
     }
 
@@ -253,7 +255,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
         <Button
           type="submit"
-          disabled={isSubmitting || digits.some((d) => !d) || (type === 'email' && !partnerIdState)}
+          disabled={isSubmitting || digits.some((d) => !d) || (type === 'email' && !userIdState)}
           className="bg-gradient-yellow h-11 w-full rounded-full text-black sm:h-12"
         >
           {isSubmitting ? 'Verifying...' : 'Submit'}

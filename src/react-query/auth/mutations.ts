@@ -16,6 +16,7 @@ import type {
   UpdateProfileRequest,
   UpdateProfileResponse,
   VerifyEmailRequest,
+  VerifyForgotPasswordOtpRequest,
   VerifyOtpRequest,
   VerifyPhoneRequest,
 } from './types';
@@ -118,6 +119,12 @@ export const useVerifyPhone = () => {
   });
 };
 
+export const useVerifyForgotPasswordOtp = () => {
+  return useMutation({
+    mutationFn: (data: VerifyForgotPasswordOtpRequest) => authService.verifyForgotPasswordOtp(data),
+  });
+};
+
 export const useResendOtp = () => {
   return useMutation({
     mutationFn: (data: ResendOtpRequest) => authService.resendOtp(data),
@@ -154,24 +161,38 @@ export const useGetProfile = () => {
 
 export const useResendEmailOtp = () => {
   return useMutation({
-    mutationFn: ({ partnerId, email }: { partnerId: string; email: string }) =>
+    mutationFn: ({
+      userId,
+      email,
+      purpose,
+    }: {
+      userId: string;
+      email?: string;
+      purpose: 'email_signup' | 'password_reset';
+    }) =>
       authService.resendEmailOtp({
-        entityId: partnerId,
-        entityType: 'partner',
+        userId,
         email,
-        purpose: 'email_signup',
+        purpose,
       }),
   });
 };
 
 export const useResendPhoneOtp = () => {
   return useMutation({
-    mutationFn: ({ partnerId, phone }: { partnerId: string; phone: string }) =>
+    mutationFn: ({
+      userId,
+      phone,
+      purpose,
+    }: {
+      userId: string;
+      phone?: string;
+      purpose: 'phone_signup' | 'password_reset';
+    }) =>
       authService.resendPhoneOtp({
-        entityId: partnerId,
-        entityType: 'partner',
+        userId,
         phone,
-        purpose: 'phone_signup',
+        purpose,
       }),
   });
 };

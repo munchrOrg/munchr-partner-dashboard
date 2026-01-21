@@ -7,7 +7,6 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
   canGoBack,
-  getNextPhase,
   getNextStep,
   getPrevStep,
   isLastStepOfPhase,
@@ -52,11 +51,30 @@ export function OnboardingFooter() {
 
   const updateProfileMutation = useUpdateProfile();
 
-  const executeNavigation = useCallback(
+  // Determine next step after WELCOME based on completed phases
+  const getNextStepAfterWelcome = useCallback((): OnboardingStep => {
+    if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+      return PHASE_ENTRY_STEP[OnboardingPhase.OPEN_BUSINESS];
+    }
+    if (completedPhases.includes(OnboardingPhase.ADD_BUSINESS)) {
+      return PHASE_ENTRY_STEP[OnboardingPhase.VERIFY_BUSINESS];
+    }
+    return PHASE_ENTRY_STEP[OnboardingPhase.ADD_BUSINESS];
+  }, [completedPhases]);
+
+  const completeStep = useCallback(
     async (step: OnboardingStep) => {
-      const nextStep = getNextStep(step);
       const isPhaseComplete = isLastStepOfPhase(step);
       const phase = STEP_PHASE_MAP[step];
+
+      const nextStep =
+        step === OnboardingStep.WELCOME ? getNextStepAfterWelcome() : getNextStep(step);
+
+      console.log('=== FOOTER completeStep DEBUG ===');
+      console.log('step:', step);
+      console.log('phase:', phase);
+      console.log('isPhaseComplete:', isPhaseComplete);
+      console.log('nextStep:', nextStep);
 
       try {
         const onboardingPayload: any = {
@@ -68,7 +86,9 @@ export function OnboardingFooter() {
           onboardingPayload.completePhase = phase;
         }
 
-        await updateProfileMutation.mutateAsync(onboardingPayload);
+        console.log('Sending payload:', onboardingPayload);
+        const response = await updateProfileMutation.mutateAsync(onboardingPayload);
+        console.log('API response:', response);
 
         await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
       } catch (error) {
@@ -76,39 +96,39 @@ export function OnboardingFooter() {
         return;
       }
 
-      if (isPhaseComplete) {
-        const nextPhase = getNextPhase(phase);
-        if (nextPhase) {
-          router.push(`/onboarding/${PHASE_ENTRY_STEP[nextPhase]}`);
-        } else {
-          router.push('/dashboard');
-        }
+      if (phase === OnboardingPhase.VERIFY_BUSINESS && isPhaseComplete) {
+        console.log('Phase 2 complete - not navigating (AuthGuard handles logout)');
         return;
       }
 
+      console.log('Navigating to:', nextStep ? `/onboarding/${nextStep}` : '/dashboard');
       if (nextStep) {
         router.push(`/onboarding/${nextStep}`);
+      } else {
+        router.push('/dashboard');
       }
     },
-    [router, updateProfileMutation, queryClient]
+    [router, updateProfileMutation, queryClient, getNextStepAfterWelcome]
   );
 
-  const getNextPhaseEntryStep = useCallback((): OnboardingStep => {
-    if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
-      return PHASE_ENTRY_STEP[OnboardingPhase.OPEN_BUSINESS];
-    }
-    if (completedPhases.includes(OnboardingPhase.ADD_BUSINESS)) {
-      return PHASE_ENTRY_STEP[OnboardingPhase.VERIFY_BUSINESS];
-    }
-    return PHASE_ENTRY_STEP[OnboardingPhase.ADD_BUSINESS];
-  }, [completedPhases]);
-
   useEffect(() => {
+    if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
+      if (shouldNavigate) {
+        clearNavigation();
+      }
+      return;
+    }
+
     if (shouldNavigate && navigationStep) {
-      executeNavigation(navigationStep);
+      if (navigationStep !== currentStep) {
+        console.log('Skipping stale navigation:', navigationStep, 'current:', currentStep);
+        clearNavigation();
+        return;
+      }
+      completeStep(navigationStep);
       clearNavigation();
     }
-  }, [shouldNavigate, navigationStep, executeNavigation, clearNavigation]);
+  }, [shouldNavigate, navigationStep, completeStep, clearNavigation, currentStep]);
 
   const handleBack = () => {
     const prevStep = getPrevStep(currentStep);
@@ -118,13 +138,8 @@ export function OnboardingFooter() {
   };
 
   const handleContinue = () => {
-    if (currentStep === OnboardingStep.WELCOME) {
-      router.push(`/onboarding/${getNextPhaseEntryStep()}`);
-      return;
-    }
-
     if (STEPS_WITHOUT_FORMS.has(currentStep)) {
-      executeNavigation(currentStep);
+      completeStep(currentStep);
     }
   };
 

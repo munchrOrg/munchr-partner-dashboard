@@ -42,17 +42,17 @@ export function EmailConfirmModal() {
 
   const handleConfirm = async () => {
     // Check if email matches partner email
-    if (profile?.partner?.email && email === profile.partner.email) {
-      toast.error('This email is already in use. Please use a different email address.');
-      return;
-    }
+    // if (profile?.partner?.email && email === profile.partner.email) {
+    //   toast.error('This email is already in use. Please use a different email address.');
+    //   return;
+    // }
 
     try {
       await updateProfileMutation.mutateAsync({
         currentStep: OnboardingStep.BUSINESS_INFO_REVIEW,
         completeStep: OnboardingStep.BUSINESS_INFO_REVIEW,
         completePhase: OnboardingPhase.ADD_BUSINESS,
-        email,
+        // email,
       } as any);
 
       await queryClient.invalidateQueries({ queryKey: authKeys.profile() });

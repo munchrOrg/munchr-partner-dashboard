@@ -54,11 +54,9 @@ export function OnboardingFeePayment() {
     try {
       const file = onboardingFee.paymentScreenshot as FileUpload & { key?: string };
       await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.ONBOARDING_FEE_PAYMENT,
         paymentTransactionId: onboardingFee.paymentTransactionId || '',
         uploadScreenshotImageKey: file?.key || '',
       });
-
       triggerNavigation(OnboardingStep.ONBOARDING_FEE_PAYMENT);
     } catch (error) {
       console.error('Failed to save onboarding fee payment:', error);

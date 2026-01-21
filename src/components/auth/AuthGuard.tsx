@@ -1,12 +1,12 @@
 'use client';
 
-import type { OnboardingStep } from '@/types/onboarding';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
-import { getNextStep } from '@/config/onboarding-steps';
+import { STEP_ORDER } from '@/config/onboarding-steps';
 import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
+import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 type AuthGuardProps = {
   children: React.ReactNode;
@@ -65,6 +65,16 @@ export function AuthGuard({
       };
     }
 
+    if (pathname === `/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`) {
+      return {
+        isChecking: false,
+        isAuthorized: true,
+        redirectTo: null,
+        shouldClearAuth: false,
+        showPendingApprovalToast: false,
+      };
+    }
+
     const emailVerified = profile.emailVerified ?? profile.partner?.emailVerified ?? true;
     const phoneVerified = profile.phoneVerified ?? profile.partner?.phoneVerified ?? true;
 
@@ -110,12 +120,9 @@ export function AuthGuard({
     const completedPhases = profile.onboarding?.completedPhases || [];
 
     if (partnerStatus === 'pending_approval') {
-      const hasCompletedPhase1 =
-        completedPhases.includes('phase1') || completedPhases.includes('add_business');
-      const hasCompletedPhase2 =
-        completedPhases.includes('phase2') || completedPhases.includes('verify_business');
-      const hasStartedPhase3 =
-        completedPhases.includes('phase3') || completedPhases.includes('open_business');
+      const hasCompletedPhase1 = completedPhases.includes(OnboardingPhase.ADD_BUSINESS);
+      const hasCompletedPhase2 = completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS);
+      const hasStartedPhase3 = completedPhases.includes(OnboardingPhase.OPEN_BUSINESS);
 
       if (hasCompletedPhase1 && hasCompletedPhase2 && !hasStartedPhase3) {
         return {
@@ -128,8 +135,8 @@ export function AuthGuard({
       }
     }
 
-    const currentStep = profile.onboarding?.currentStep;
-    const completedSteps = profile.onboarding?.completedSteps || [];
+    const currentStep = profile.onboarding?.currentStep as OnboardingStep;
+    const completedSteps = (profile.onboarding?.completedSteps || []) as string[];
 
     if (enforceCurrentStep && currentStep) {
       const expectedPath = `/onboarding/${currentStep}`;
@@ -154,6 +161,7 @@ export function AuthGuard({
           };
         }
       } else {
+        // Not on onboarding page - redirect to current step
         if (!pathname.startsWith('/onboarding')) {
           return {
             isChecking: false,
@@ -164,14 +172,15 @@ export function AuthGuard({
           };
         }
 
-        const pathStep = pathname.replace('/onboarding/', '').split('/')[0];
-        const nextStep = getNextStep(currentStep as OnboardingStep);
+        const pathStep = pathname.replace('/onboarding/', '').split('/')[0] as OnboardingStep;
+        const pathStepIndex = STEP_ORDER.indexOf(pathStep);
+        const currentStepIndex = STEP_ORDER.indexOf(currentStep);
 
-        const isCompletedStep = completedSteps.includes(pathStep as string);
-        const isCurrentStep = pathStep === currentStep;
-        const isNextStep = pathStep === nextStep;
+        const isOnCurrentStep = pathStep === currentStep;
+        const isBackNavigation =
+          pathStepIndex < currentStepIndex && completedSteps.includes(pathStep);
 
-        const isAllowed = isCompletedStep || isCurrentStep || isNextStep;
+        const isAllowed = isOnCurrentStep || isBackNavigation;
 
         if (!isAllowed && pathStep) {
           return {

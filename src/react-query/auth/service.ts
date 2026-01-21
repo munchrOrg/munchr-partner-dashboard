@@ -23,6 +23,8 @@ import type {
   UpdateProfileResponse,
   VerifyEmailRequest,
   VerifyEmailResponse,
+  VerifyForgotPasswordOtpRequest,
+  VerifyForgotPasswordOtpResponse,
   VerifyOtpRequest,
   VerifyOtpResponse,
   VerifyPhoneRequest,
@@ -64,13 +66,18 @@ export const authService = {
     apiClient.post<ResendOtpResponse>('partner/otp/resend-email', data).then((res) => res.data),
 
   resendPhoneOtp: (data: ResendPhoneOtpRequest) =>
-    apiClient.post<ResendOtpResponse>('partner/otp/resend-phone', data).then((res) => res.data),
+    apiClient.post<ResendOtpResponse>('api/partner/otp/resend-phone', data).then((res) => res.data),
 
   verifyEmail: (data: VerifyEmailRequest) =>
     apiClient.post<VerifyEmailResponse>('v1/auth/verify-email', data).then((res) => res.data),
 
   verifyPhone: (data: VerifyPhoneRequest) =>
     apiClient.post<VerifyPhoneResponse>('v1/auth/verify-phone', data).then((res) => res.data),
+
+  verifyForgotPasswordOtp: (data: VerifyForgotPasswordOtpRequest) =>
+    apiClient
+      .post<VerifyForgotPasswordOtpResponse>('v1/auth/verify-forgot-password-otp', data)
+      .then((res) => res.data),
 
   updateProfile: (data: UpdateProfileRequest) =>
     apiClient.put<UpdateProfileResponse>('v1/auth/update/profile', data).then((res) => res.data),

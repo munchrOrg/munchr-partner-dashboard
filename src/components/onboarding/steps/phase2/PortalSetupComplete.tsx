@@ -25,35 +25,20 @@ export function PortalSetupComplete() {
   const email =
     profile?.partner?.businessProfile?.email || profile?.partner?.email || 'your@email.com';
 
+  // Simple: update backend, show toast, logout
   useEffect(() => {
     if (hasRun.current || !profile) {
       return undefined;
     }
     hasRun.current = true;
 
-    const partnerStatus = profile.partner?.status;
-
-    if (partnerStatus && partnerStatus !== 'pending_approval') {
-      const advanceToPhase3 = async () => {
-        try {
-          await updateProfileMutation.mutateAsync({
-            currentStep: OnboardingStep.OPEN_BUSINESS_INTRO,
-          });
-        } catch (error) {
-          console.error('Failed to advance to Phase 3:', error);
-        }
-        router.push(`/onboarding/${OnboardingStep.OPEN_BUSINESS_INTRO}`);
-      };
-
-      advanceToPhase3();
-      return undefined;
-    }
-
     const completePhaseAndLogout = async () => {
+      // Update backend: complete step, complete phase, set next step to WELCOME
       try {
         await updateProfileMutation.mutateAsync({
           completeStep: OnboardingStep.PORTAL_SETUP_COMPLETE,
           completePhase: OnboardingPhase.VERIFY_BUSINESS,
+          currentStep: OnboardingStep.WELCOME,
         });
       } catch (error) {
         console.error('Failed to mark phase as complete:', error);

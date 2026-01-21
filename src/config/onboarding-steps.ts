@@ -91,7 +91,15 @@ export const PHASE_LAST_STEP: Record<OnboardingPhase, OnboardingStep> = {
 
 // Navigation helpers
 export function getNextStep(current: OnboardingStep): OnboardingStep | null {
+  console.log('currentStep', current);
+  const isLastStep = isLastStepOfPhase(current);
+  if (isLastStep) {
+    return OnboardingStep.WELCOME;
+  }
+  console.log('isLastStep', isLastStep);
+
   const index = STEP_ORDER.indexOf(current);
+  console.log('steporder', STEP_ORDER[index + 1]);
   return STEP_ORDER[index + 1] ?? null;
 }
 
