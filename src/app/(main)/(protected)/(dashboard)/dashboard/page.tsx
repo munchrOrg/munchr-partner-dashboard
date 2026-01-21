@@ -11,11 +11,15 @@ export default function DashboardPage() {
   const router = useRouter();
 
   const completedPhases = (profile?.onboarding?.completedPhases || []) as OnboardingPhase[];
+  const skipOnboarding = profile?.onboarding?.skipOnboarding || false;
+  const isOnboardingComplete = profile?.onboarding?.isComplete || false;
 
   const allPhasesCompleted =
-    completedPhases.includes(OnboardingPhase.ADD_BUSINESS) &&
-    completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) &&
-    completedPhases.includes(OnboardingPhase.OPEN_BUSINESS);
+    skipOnboarding ||
+    isOnboardingComplete ||
+    (completedPhases.includes(OnboardingPhase.ADD_BUSINESS) &&
+      completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS) &&
+      completedPhases.includes(OnboardingPhase.OPEN_BUSINESS));
 
   useEffect(() => {
     if (profile && !allPhasesCompleted) {

@@ -31,7 +31,7 @@ export const forgotPasswordSchema = z
     email: z.string().email('Invalid email address').optional(),
     phone: z
       .string()
-      .regex(/^923\d{9}$/, 'Phone must be in format 923XXXXXXXXX')
+      .regex(/^\+923\d{9}$/, 'Phone must be in format +923XXXXXXXXX')
       .optional(),
   })
   .refine((data) => data.email || data.phone, {

@@ -33,6 +33,7 @@ export type LoginResponse = {
     completedSteps: string[];
     completedPhases: string[];
     isComplete: boolean;
+    skipOnboarding?: boolean;
   };
 };
 
@@ -191,6 +192,7 @@ export type VerifyEmailResponse = {
     completedSteps: string[];
     completedPhases: string[];
     isComplete: boolean;
+    skipOnboarding?: boolean;
   };
 };
 
@@ -226,6 +228,7 @@ export type VerifyPhoneResponse = {
     completedSteps: string[];
     completedPhases: string[];
     isComplete: boolean;
+    skipOnboarding?: boolean;
   };
 };
 
@@ -311,6 +314,7 @@ export type OnboardingState = {
   completedSteps: string[];
   completedPhases: string[];
   isComplete: boolean;
+  skipOnboarding?: boolean;
 };
 
 export type UpdateProfileResponse = {
