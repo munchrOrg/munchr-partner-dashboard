@@ -9,6 +9,11 @@ export const userFormSchema = z.object({
 
 export type UserFormInput = z.infer<typeof userFormSchema>;
 
+export const updateUserSchema = z.object({
+  name: z.string().min(1),
+  roleIds: z.array(z.string()).min(1),
+});
+
 export const pagePermissionSchema = z.object({
   page: z.string().min(1, 'Page name is required'),
   view: z.boolean(),

@@ -19,6 +19,7 @@ import {
 import { Input } from '@/components/ui/input';
 // ...existing code...
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { useUpdatePortalUser } from '@/react-query/portal-users/mutations';
 import { useCreatePortalUser } from '@/react-query/portal-users/mutations.create';
 import { rolesKeys } from '@/react-query/roles/keys';
 import { rolesService } from '@/react-query/roles/service.all';
@@ -41,6 +42,7 @@ type UserFormDrawerProps = {
 export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDrawerProps>) {
   const isEditMode = !!user;
   const createUserMutation = useCreatePortalUser();
+  const updateUserMutation = useUpdatePortalUser();
 
   const { data: roles, isLoading: rolesLoading } = useQuery({
     queryKey: rolesKeys.all,
@@ -78,14 +80,23 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
 
   const onSubmit = async (data: UserFormInput) => {
     try {
-      // Only create user, not update
-      await createUserMutation.mutateAsync({
-        name: data.name,
-        email: data.email,
-        password: data.password,
-        roleIds: data.roleIds,
-      });
-      toast.success('User created successfully');
+      if (isEditMode && user) {
+        await updateUserMutation.mutateAsync({
+          id: user.id,
+          name: data.name,
+          roleIds: data.roleIds,
+          status: 'active',
+        });
+        toast.success('User updated successfully');
+      } else {
+        await createUserMutation.mutateAsync({
+          name: data.name,
+          email: data.email,
+          password: data.password,
+          roleIds: data.roleIds,
+        });
+        toast.success('User created successfully');
+      }
       onOpenChange(false);
       form.reset();
     } catch (error: any) {
@@ -94,7 +105,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
     }
   };
 
-  const isLoading = createUserMutation.isPending;
+  const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
 
   const getButtonText = () => {
     if (isLoading) {
