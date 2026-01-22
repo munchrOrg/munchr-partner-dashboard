@@ -2,8 +2,8 @@
 
 import type { BranchStep1Input } from '@/validations/branch';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useState } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import {
   Form,
   FormControl,
@@ -13,8 +13,10 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
+import { useCuisines } from '@/react-query/cuisine/queries';
 import { branchStep1Schema } from '@/validations/branch';
 
 type Step1Props = {
@@ -23,6 +25,11 @@ type Step1Props = {
 };
 
 export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
+  //  const { mutate: createBranch } = useCreateBranch();
+  //  const [step1Data, setStep1Data] = useState<BranchStep1Input | null>(null);
+  const [cuisineOptions, setCuisineOptions] = useState<
+    { value: string; label: string; group: string }[]
+  >([]);
   const form = useForm<BranchStep1Input>({
     resolver: zodResolver(branchStep1Schema),
     defaultValues: initialData || {
@@ -30,11 +37,16 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
       description: '',
       businessEmail: '',
       password: '',
-      cuisine: '',
+      cuisines: [],
     },
   });
 
-  const description = form.watch('description') ?? '';
+  const {
+    control,
+    formState: { errors },
+    watch,
+  } = form;
+  const description = watch('description') ?? '';
 
   useEffect(() => {
     if (initialData) {
@@ -42,8 +54,17 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
     }
   }, [initialData, form]);
 
+  const { data: cuisinesList = [] } = useCuisines();
+  useEffect(() => {
+    const opts = cuisinesList.map((c: any) => ({
+      value: c.id,
+      label: c.name,
+      group: 'Cuisines',
+    }));
+    setCuisineOptions(opts);
+  }, [cuisinesList]);
   const handleSubmit = (data: BranchStep1Input) => {
-    onSubmit(data);
+    onSubmit(data); // now using the prop properly
   };
 
   return (
@@ -54,7 +75,7 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
         className="space-y-6"
       >
         <FormField
-          control={form.control}
+          control={control}
           name="businessName"
           render={({ field }) => (
             <FormItem>
@@ -72,7 +93,7 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
         />
 
         <FormField
-          control={form.control}
+          control={control}
           name="description"
           render={({ field }) => (
             <FormItem>
@@ -93,7 +114,7 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
                 />
               </FormControl>
               <div className="mt-1 flex justify-between px-1">
-                {form.formState.errors.description ? <FormMessage /> : <span />}
+                {errors.description ? <FormMessage /> : <span />}
                 <span
                   className={cn(
                     'text-xs',
@@ -110,7 +131,7 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
         />
 
         <FormField
-          control={form.control}
+          control={control}
           name="businessEmail"
           render={({ field }) => (
             <FormItem>
@@ -129,7 +150,7 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
         />
 
         <FormField
-          control={form.control}
+          control={control}
           name="password"
           render={({ field }) => (
             <FormItem>
@@ -147,23 +168,22 @@ export function Step1({ initialData, onSubmit }: Readonly<Step1Props>) {
           )}
         />
 
-        <FormField
-          control={form.control}
-          name="cuisine"
+        <Controller
+          name="cuisines"
+          control={control}
           render={({ field }) => (
-            <FormItem>
-              <FormLabel className="text-base font-medium">Cuisine</FormLabel>
-              <FormControl>
-                <Input
-                  placeholder="Enter cuisine"
-                  className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
-                  {...field}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
+            <MultiSelect
+              options={cuisineOptions}
+              selected={field.value}
+              onChange={field.onChange}
+              placeholder="Select cuisines *"
+              emptyMessage="No cuisines found."
+            />
           )}
         />
+        {errors.cuisines && (
+          <p className="mt-1 ml-4 text-sm text-red-500">{errors.cuisines.message}</p>
+        )}
       </form>
     </Form>
   );

@@ -25,11 +25,48 @@ export const step2Schema = z.object({
     .min(1, 'At least one bank proof file is required'),
 });
 
-export const step3Schema = z.object({
-  accountTitle: z.string().min(1, 'Account title is required'),
-  bankName: z.string().min(1, 'Bank name is required'),
-  iban: z.string().min(1, 'IBAN is required'),
-});
+export const step3Schema = z
+  .object({
+    accountTitle: z.string().min(1, 'Account title is required'),
+    bankName: z.string().min(1, 'Bank name is required'),
+    iban: z.string().min(1, 'IBAN is required'),
+    useExistingAddress: z.boolean().optional(),
+    address: z.string().optional(),
+    buildingName: z.string().optional(),
+    street: z.string().optional(),
+    houseNumber: z.string().optional(),
+    billingState: z.string().optional(),
+    billingCity: z.string().optional(),
+    area: z.string().optional(),
+    billingPostalCode: z.string().optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (!data.useExistingAddress) {
+      // if (!data.address || data.address.trim() === '') {
+      //   ctx.addIssue({ path: ['address'], message: 'Address is required', code: 'custom' });
+      // }
+      if (!data.street || data.street.trim() === '') {
+        ctx.addIssue({ path: ['street'], message: 'Street is required', code: 'custom' });
+      }
+      if (!data.houseNumber || data.houseNumber.trim() === '') {
+        ctx.addIssue({
+          path: ['houseNumber'],
+          message: 'House number is required',
+          code: 'custom',
+        });
+      }
+      if (!data.billingState || data.billingState.trim() === '') {
+        ctx.addIssue({ path: ['billingState'], message: 'State is required', code: 'custom' });
+      }
+      if (!data.billingPostalCode || data.billingPostalCode.trim() === '') {
+        ctx.addIssue({
+          path: ['billingPostalCode'],
+          message: 'Postal code is required',
+          code: 'custom',
+        });
+      }
+    }
+  });
 
 const timeSlotSchema = z.object({
   open: z.string().min(1, 'Open time is required'),

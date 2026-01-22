@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem } from '@/components/ui/form';
 import { Icon } from '@/components/ui/icon';
 import profilestep4 from '@/public/assets/images/profile-step-4.png';
+import { useUpdateBranch } from '@/react-query/branches/mutations';
+import { useBranchOnboardingProfile } from '@/react-query/branches/queries';
 import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step4Schema } from '@/validations/profile-setup';
 
@@ -51,13 +53,15 @@ export function Step4() {
   });
 
   const businessHours = formData.step4 || defaultBusinessHours;
+  const { mutate: updateBranch } = useUpdateBranch();
 
   useEffect(() => {
     if (formData.step4) {
       form.reset(formData.step4);
     }
   }, [formData.step4, form]);
-
+  const { data: branchData }: any = useBranchOnboardingProfile();
+  const branchName = branchData?.data?.branch?.branchName;
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
     const updatedBusinessHours: BusinessHoursFormData = {
       ...businessHours,
@@ -71,6 +75,64 @@ export function Step4() {
     setIsSubmitting(true);
     try {
       setStepData('step4', data);
+      const days = [
+        'monday',
+        'tuesday',
+        'wednesday',
+        'thursday',
+        'friday',
+        'saturday',
+        'sunday',
+      ] as const;
+      const hasOpenDay = days.some((day) => businessHours[day].isOpen);
+      if (!hasOpenDay) {
+        toast.error('Please mark at least one day as open.');
+        return;
+      }
+
+      for (const day of days) {
+        const schedule = businessHours[day];
+        if (schedule.isOpen && schedule.slots.length === 0) {
+          toast.error('Please add time slots for all open days or mark them as closed.');
+          return;
+        }
+      }
+
+      const dayMapping = {
+        monday: 1,
+        tuesday: 2,
+        wednesday: 3,
+        thursday: 4,
+        friday: 5,
+        saturday: 6,
+        sunday: 0,
+      };
+
+      const operatingHoursPayload: any[] = [];
+      Object.entries(businessHours).forEach(([day, schedule]) => {
+        const dayOfWeek = dayMapping[day as keyof typeof dayMapping];
+        if (schedule.isOpen && schedule.slots.length > 0) {
+          schedule.slots.forEach((slot) => {
+            operatingHoursPayload.push({
+              dayOfWeek,
+              startTime: slot.open,
+              endTime: slot.close,
+              isClosed: false,
+            });
+          });
+        } else {
+          operatingHoursPayload.push({
+            dayOfWeek,
+            startTime: '00:00',
+            endTime: '00:00',
+            isClosed: true,
+          });
+        }
+      });
+      await updateBranch({
+        openingTiming: operatingHoursPayload,
+        businessName: branchName,
+      } as any);
       completeStep(4);
       completeSetup();
 

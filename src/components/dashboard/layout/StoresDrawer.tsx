@@ -9,6 +9,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Separator } from '@/components/ui/separator';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
+import { useCreateBranch } from '@/react-query/branches/mutations';
+import { useBranches } from '@/react-query/branches/queries';
 import { BranchMapView } from './AddBranchForm/BranchMapView';
 import { Step1 } from './AddBranchForm/Step1';
 import { Step2 } from './AddBranchForm/Step2';
@@ -20,39 +22,37 @@ type Store = {
   isEnabled: boolean;
 };
 
-// Mock data matching the image
-const mockStores: Store[] = [
-  {
-    id: '1',
-    name: 'Kababjees Fried Chicken',
-    address: 'Fortune Tower, 45a Shahra-e-Faisal, Block-6 Block 6 PECHS, Karachi, 75400',
-    isEnabled: false,
-  },
-  {
-    id: '2',
-    name: 'Kababjees Fried Chicken - SMCHS',
-    address: 'Block A Sindhi Muslim CHS (SMCHS), Karachi',
-    isEnabled: false,
-  },
-  {
-    id: '3',
-    name: 'Kababjees Fried Chicken - Garden East Branch',
-    address: 'Nusserwanji Rd, Garden East Karachi',
-    isEnabled: false,
-  },
-];
-
 type StoresDrawerProps = {
   isOpen: boolean;
   onClose: () => void;
 };
 
 export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
-  const [stores, setStores] = useState<Store[]>(mockStores);
   const [showAddBranchForm, setShowAddBranchForm] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [showMapView, setShowMapView] = useState(false);
   const [step2FormData, setStep2FormData] = useState<Partial<BranchStep2Input>>({});
+  const [step1FormData, setStep1FormData] = useState<BranchStep1Input | null>(null);
+  const { data: branchesData } = useBranches();
+  const { mutate: createBranch } = useCreateBranch();
+  const [stores, setStores] = useState<Store[]>(
+    () =>
+      branchesData?.data.map((branch: any) => ({
+        id: branch.id,
+        name: branch.branchName || 'Unnamed Branch',
+        address: `${branch.buildingPlaceName}, ${branch.street}, ${branch.city}`,
+        isEnabled: branch.isActive ?? false,
+      })) || []
+  );
+  if (branchesData?.data && branchesData.data.length !== stores.length) {
+    const mappedStores: Store[] = branchesData.data.map((branch: any) => ({
+      id: branch.id,
+      name: branch.branchName || 'Unnamed Branch',
+      address: `${branch.buildingPlaceName}, ${branch.street}, ${branch.city}`,
+      isEnabled: branch.isActive ?? false,
+    }));
+    setStores(mappedStores);
+  }
 
   const handleToggleStore = (storeId: string, enabled: boolean) => {
     setStores((prevStores) =>
@@ -66,17 +66,45 @@ export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
   };
 
   const handleStep1Submit = (_data: BranchStep1Input) => {
-    // Store Step 1 data for final submission (can be used later)
+    setStep1FormData(_data);
     setCurrentStep(2);
   };
 
-  const handleStep2Submit = (_data: BranchStep2Input) => {
-    // TODO: Handle form submission (API call, add to stores list, etc.)
-    // Combine Step 1 and Step 2 data for final submission
-    setShowAddBranchForm(false);
-    setCurrentStep(1);
-    setStep2FormData({});
-    setShowMapView(false);
+  const handleStep2Submit = (data: BranchStep2Input) => {
+    if (!step1FormData) {
+      return;
+    }
+
+    const payload: any = {
+      businessName: step1FormData.businessName,
+      description: step1FormData.description,
+      email: step1FormData.businessEmail,
+      password: step1FormData.password,
+      cuisineIds: step1FormData.cuisines,
+      buildingPlaceName: data.buildingPlaceName,
+      street: data.street,
+      houseNumber: data.houseNumber,
+      state: data.state,
+      city: data.city,
+      area: data.area,
+      postalCode: data.postalCode,
+      addCommentAboutLocation: data.addCommentAboutLocation,
+      coordinates: data.coordinates,
+    };
+
+    createBranch(payload, {
+      onSuccess: (res) => {
+        console.log('Branch created:', res);
+        setShowAddBranchForm(false);
+        setCurrentStep(1);
+        setStep1FormData(null);
+        setStep2FormData({});
+        setShowMapView(false);
+      },
+      onError: (err) => {
+        console.error('Create branch failed', err);
+      },
+    });
   };
 
   const handleMapClick = () => {
@@ -84,7 +112,6 @@ export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
   };
 
   const handleMapConfirm = (location: LocationFormData) => {
-    // Update Step 2 form data with map location data
     const updatedData: BranchStep2Input = {
       buildingPlaceName: location.buildingPlaceName,
       street: location.street,
@@ -176,7 +203,6 @@ export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
                     <div key={store.id}>
                       <div className="flex items-center gap-4 py-4">
                         <Checkbox className="shrink-0" />
-
                         <div className="min-w-0 flex-1">
                           <h3 className="text-base leading-tight font-semibold text-[#0C0017]">
                             {store.name}
@@ -185,7 +211,6 @@ export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
                             {store.address}
                           </p>
                         </div>
-
                         <div className="shrink-0">
                           <Switch
                             checked={store.isEnabled}
@@ -194,7 +219,6 @@ export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
                           />
                         </div>
                       </div>
-
                       {index < stores.length - 1 && <Separator className="bg-gray-200" />}
                     </div>
                   ))}

@@ -26,6 +26,7 @@ export type Step3FormData = {
   accountTitle: string;
   bankName: string;
   iban: string;
+  useExistingAddress?: boolean;
 };
 
 export type Step4FormData = BusinessHoursFormData;
