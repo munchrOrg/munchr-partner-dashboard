@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import Image from 'next/image';
 import { useEffect, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import {
   Form,
   FormControl,
@@ -82,17 +83,21 @@ export function Step1() {
   }, [profile, reset]);
 
   const onSubmit = async (data: Step1Input) => {
-    setStepData('step1', data);
+    try {
+      setStepData('step1', data);
 
-    await updateBranch({
-      businessName: data.businessName,
-      description: data.businessDescription,
-      cuisineIds: [data.cuisines],
-      area: data.location,
-    } as any);
-
-    completeStep(1);
-    nextStep();
+      await updateBranch({
+        businessName: data.businessName,
+        description: data.businessDescription,
+        cuisineIds: [data.cuisines],
+        area: data.location,
+      } as any);
+      toast.success('Branch updated successfully');
+      completeStep(1);
+      nextStep();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Something went wrong');
+    }
   };
 
   return (

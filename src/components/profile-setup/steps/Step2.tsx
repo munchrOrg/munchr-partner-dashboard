@@ -5,6 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { Info } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm } from 'react-hook-form';
+import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { Form, FormControl, FormField, FormItem, FormMessage } from '@/components/ui/form';
 import { useUpdateBranch } from '@/react-query/branches/mutations';
@@ -37,17 +38,38 @@ export function Step2() {
       imageContainerClass: 'w-[400px] h-[250px]',
     });
   };
-
   const { data: branchData }: any = useBranchOnboardingProfile();
   const branchName = branchData?.data?.branch?.branchName;
+  const chequeBookImageKey = branchData?.data?.billingInfo?.chequeBookImageKey;
+  useEffect(() => {
+    if (chequeBookImageKey) {
+      reset({
+        bankProofFiles: [
+          {
+            name: chequeBookImageKey,
+            url: chequeBookImageKey,
+            size: 0,
+          },
+        ],
+      });
+    }
+  }, [chequeBookImageKey, reset]);
+
   const onSubmit = async (data: Step2Input) => {
-    setStepData('step2', data);
-    await updateBranch({
-      chequeBookImageKey: data?.bankProofFiles[0]?.name,
-      businessName: branchName,
-    } as any);
-    completeStep(2);
-    nextStep();
+    try {
+      setStepData('step2', data);
+      const imageKey = data?.bankProofFiles?.[0]?.name || chequeBookImageKey;
+
+      await updateBranch({
+        chequeBookImageKey: imageKey,
+        businessName: branchName,
+      } as any);
+      toast.success('Bank data uploaded successfully');
+      completeStep(2);
+      nextStep();
+    } catch (error: any) {
+      toast.error(error?.response?.data?.message || 'Bank proof upload failed');
+    }
   };
 
   return (
