@@ -8,7 +8,7 @@ import { Loader2, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import PhoneInput from 'react-phone-number-input';
 import { toast } from 'sonner';
@@ -23,6 +23,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSignUp } from '@/react-query/auth/mutations';
+import { useCuisines } from '@/react-query/partner/queries';
 import { useAuthStore } from '@/stores/auth-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
@@ -36,21 +37,12 @@ export function SignUpForm() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  // Removed unused logoFile
-  const [cuisineOptions, setCuisineOptions] = useState<Option[]>([
-    { value: '1', label: 'Italian', group: 'Cuisines' },
-    { value: '2', label: 'Chinese', group: 'Cuisines' },
-    { value: '3', label: 'Mexican', group: 'Cuisines' },
-    { value: '4', label: 'Indian', group: 'Cuisines' },
-    { value: '5', label: 'Japanese', group: 'Cuisines' },
-    { value: '6', label: 'Thai', group: 'Cuisines' },
-    { value: '7', label: 'American', group: 'Cuisines' },
-    { value: '8', label: 'Mediterranean', group: 'Cuisines' },
-    { value: '9', label: 'French', group: 'Cuisines' },
-    { value: '10', label: 'Pakistani', group: 'Cuisines' },
-    { value: '11', label: 'Middle Eastern', group: 'Cuisines' },
-    { value: '12', label: 'Korean', group: 'Cuisines' },
-  ]);
+  const { data: cuisinesData, isLoading: isLoadingCuisines } = useCuisines();
+  const cuisineOptions: Option[] = (cuisinesData || []).map((c) => ({
+    value: c.id,
+    label: c.name,
+    group: 'Cuisines',
+  }));
 
   const {
     register,
@@ -78,32 +70,6 @@ export function SignUpForm() {
     }
     return 'Enter your Business/Kitchen Name *';
   };
-  useEffect(() => {
-    let mounted = true;
-    const fetchCuisines = async () => {
-      try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const r = await fetch(`${base}/v1/partner/cuisines`);
-        if (!r.ok) {
-          throw new Error('Failed to fetch');
-        }
-        const resJson = await r.json();
-        const items = Array.isArray(resJson)
-          ? resJson
-          : Array.isArray(resJson?.data)
-            ? resJson.data
-            : [];
-        const opts = items.map((c: any) => ({ value: c.id, label: c.name, group: 'Cuisines' }));
-        if (mounted) {
-          setCuisineOptions(opts);
-        }
-      } catch {}
-    };
-    fetchCuisines();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const [submittedEmail, setSubmittedEmail] = useState<string>('');
   const [submittedPhone, setSubmittedPhone] = useState<string>('');
@@ -147,11 +113,13 @@ export function SignUpForm() {
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       setLogoError('File must be JPG, PNG, or WebP');
+      setIsUploadingLogo(false);
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
       setLogoError('File size must be under 5MB');
+      setIsUploadingLogo(false);
       return;
     }
 
@@ -356,6 +324,7 @@ export function SignUpForm() {
                 onChange={field.onChange}
                 placeholder="Select cuisines *"
                 emptyMessage="No cuisines found."
+                isLoading={isLoadingCuisines}
               />
             )}
           />
@@ -437,10 +406,20 @@ export function SignUpForm() {
 
         <Button
           type="submit"
-          disabled={isSubmitting || !isValid}
+          disabled={
+            isSubmitting ||
+            signUpMutation.isPending ||
+            !isValid ||
+            isUploadingLogo ||
+            isLoadingCuisines
+          }
           className="bg-gradient-yellow h-11 w-full rounded-full font-medium text-black sm:h-12"
         >
-          {isSubmitting ? 'Creating account...' : 'Continue'}
+          {isSubmitting || signUpMutation.isPending
+            ? 'Creating account...'
+            : isUploadingLogo
+              ? 'Uploading logo...'
+              : 'Continue'}
         </Button>
 
         <p className="mt-4 text-center text-xs text-gray-400">

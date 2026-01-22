@@ -41,7 +41,7 @@ export function OnboardingFooter() {
     [profile?.onboarding?.completedPhases]
   );
 
-  const { openProgressDrawer, shouldNavigate, navigationStep, clearNavigation } =
+  const { openProgressDrawer, shouldNavigate, navigationStep, clearNavigation, isUploading } =
     useOnboardingStore();
 
   const showBack = canGoBack(currentStep);
@@ -177,10 +177,14 @@ export function OnboardingFooter() {
             type={hasForm ? 'submit' : 'button'}
             form={hasForm ? formId : undefined}
             onClick={hasForm ? undefined : handleContinue}
-            disabled={updateProfileMutation.isPending}
+            disabled={updateProfileMutation.isPending || isUploading}
             className="bg-gradient-yellow size-full rounded-full px-6 text-lg font-medium text-black disabled:opacity-50"
           >
-            {updateProfileMutation.isPending ? 'Saving...' : 'Continue'}
+            {updateProfileMutation.isPending
+              ? 'Saving...'
+              : isUploading
+                ? 'Uploading...'
+                : 'Continue'}
           </Button>
         </div>
       </div>

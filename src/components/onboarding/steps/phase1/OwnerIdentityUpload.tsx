@@ -1,7 +1,7 @@
 'use client';
 
 import type { FileUpload, OwnerIdentityFormData } from '@/types/onboarding';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
@@ -14,10 +14,19 @@ import { useOnboardingStore } from '@/stores/onboarding-store';
 import { AssetType, OnboardingStep } from '@/types/onboarding';
 
 export function OwnerIdentityUpload() {
-  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
+  const { openExampleDrawer, triggerNavigation, setIsUploading } = useOnboardingStore();
   const { data: profile } = useProfile();
   const businessProfile = profile?.businessProfile;
   const updateProfileMutation = useUpdateProfile();
+
+  const uploadCountRef = useRef(0);
+  const handleUploadingChange = useCallback(
+    (isUploading: boolean) => {
+      uploadCountRef.current += isUploading ? 1 : -1;
+      setIsUploading(uploadCountRef.current > 0);
+    },
+    [setIsUploading]
+  );
 
   const [ownerIdentity, setOwnerIdentity] = useState<OwnerIdentityFormData>(() => ({
     hasSNTN: businessProfile?.sntn ?? null,
@@ -173,6 +182,7 @@ export function OwnerIdentityUpload() {
               value={ownerIdentity.sntnFile}
               onChange={handleSntnChange}
               assetType={AssetType.NTN}
+              onUploadingChange={handleUploadingChange}
             />
           )}
 
@@ -183,12 +193,14 @@ export function OwnerIdentityUpload() {
                 value={ownerIdentity.idCardFrontFile}
                 onChange={handleIdCardFrontChange}
                 assetType={AssetType.CNIC_FRONT}
+                onUploadingChange={handleUploadingChange}
               />
               <FileUploadBox
                 label="ID Card (Back)"
                 value={ownerIdentity.idCardBackFile}
                 onChange={handleIdCardBackChange}
                 assetType={AssetType.CNIC_BACK}
+                onUploadingChange={handleUploadingChange}
               />
             </div>
           )}
