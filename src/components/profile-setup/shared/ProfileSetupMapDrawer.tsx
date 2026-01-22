@@ -203,6 +203,12 @@ export function ProfileSetupMapDrawer() {
     return null;
   }
 
+  //   const handleSearchKeyDown = useCallback((e: React.KeyboardEvent) => {
+  //   if (e.key === 'Enter') {
+  //     e.preventDefault();
+  //   }
+  // }, []);
+
   return (
     <Sheet open={isMapDrawerOpen} onOpenChange={closeMapDrawer}>
       <SheetContent
@@ -236,6 +242,7 @@ export function ProfileSetupMapDrawer() {
                       placeholder="Search address or landmark"
                       value={searchAddress}
                       onChange={(e) => setSearchAddress(e.target.value)}
+                      // onKeyDown={handleSearchKeyDown}
                       className="h-12 rounded-full border-gray-300 px-6 py-7 pl-12"
                     />
                   </form>

@@ -90,7 +90,7 @@ export function Step1() {
         businessName: data.businessName,
         description: data.businessDescription,
         cuisineIds: [data.cuisines],
-        area: data.location,
+        buildingPlaceName: data.location,
       } as any);
       toast.success('Branch updated successfully');
       completeStep(1);
@@ -99,6 +99,12 @@ export function Step1() {
       toast.error(error?.response?.data?.message || 'Something went wrong');
     }
   };
+
+  useEffect(() => {
+    if (formData.step1?.location) {
+      setValue('location', formData.step1.location);
+    }
+  }, [formData.step1?.location, setValue]);
 
   return (
     <div className="mx-auto mt-9 flex max-w-4xl flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
