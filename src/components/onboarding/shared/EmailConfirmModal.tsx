@@ -29,7 +29,7 @@ export function EmailConfirmModal() {
   const { data: profile } = useProfile();
   const { isEmailConfirmModalOpen, closeEmailConfirmModal } = useOnboardingStore();
 
-  const businessEmail = profile?.partner?.businessProfile?.email || profile?.partner?.email || '';
+  const businessEmail = profile?.user?.email || profile?.partner?.email || '';
   const [email, setEmail] = useState(businessEmail);
 
   const handleOpenChange = (open: boolean) => {

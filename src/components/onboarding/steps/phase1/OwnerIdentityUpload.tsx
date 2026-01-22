@@ -16,7 +16,7 @@ import { AssetType, OnboardingStep } from '@/types/onboarding';
 export function OwnerIdentityUpload() {
   const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
   const { data: profile } = useProfile();
-  const businessProfile = profile?.partner?.businessProfile;
+  const businessProfile = profile?.businessProfile;
   const updateProfileMutation = useUpdateProfile();
 
   const [ownerIdentity, setOwnerIdentity] = useState<OwnerIdentityFormData>(() => ({

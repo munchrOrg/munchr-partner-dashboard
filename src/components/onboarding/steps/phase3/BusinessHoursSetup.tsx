@@ -80,7 +80,7 @@ export function BusinessHoursSetup() {
   const [editingDay, setEditingDay] = useState<DayKey | null>(null);
 
   const [businessHours, setBusinessHours] = useState<BusinessHoursFormData>(() =>
-    convertOperatingHoursToFormData(profile?.operatingHours)
+    convertOperatingHoursToFormData(profile?.primaryBranch?.operatingHours)
   );
 
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {

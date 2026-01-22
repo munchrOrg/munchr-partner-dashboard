@@ -8,8 +8,10 @@ export const useBranches = () =>
     queryFn: branchesService.getAll,
   });
 
-export const useBranchOnboardingProfile = () =>
+export const useBranchProfile = () =>
   useQuery({
-    queryKey: [...branchesKeys.all, 'onboarding-profile'],
-    queryFn: branchesService.getOnboardingProfile,
+    queryKey: [...branchesKeys.all, 'profile'],
+    queryFn: branchesService.getBranchProfile,
   });
+
+export const useBranchOnboardingProfile = useBranchProfile;

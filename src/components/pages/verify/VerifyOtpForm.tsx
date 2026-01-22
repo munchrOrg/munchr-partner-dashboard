@@ -150,9 +150,9 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         setPhoneVerified(true);
       }
 
-      const accessToken = response.accessToken || (response as any).tokens?.accessToken;
-      if (accessToken) {
-        setAccessToken(accessToken);
+      // Tokens are now in a separate 'tokens' property
+      if (response.tokens?.accessToken) {
+        setAccessToken(response.tokens.accessToken);
       }
 
       const bothVerified = response.emailVerified && response.phoneVerified;

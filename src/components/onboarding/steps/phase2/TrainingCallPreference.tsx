@@ -42,12 +42,12 @@ const TIME_SLOTS = [
 
 export function TrainingCallPreference() {
   const { data: profile } = useProfile();
-  const bookSlot = profile?.partner?.businessProfile?.bookSlot;
+  const bookSlot = profile?.bookSlot;
   const { triggerNavigation } = useOnboardingStore();
   const updateProfileMutation = useUpdateProfile();
 
   const [trainingCall, setTrainingCall] = useState<TrainingCallFormData>(() => ({
-    networkProvider: bookSlot?.networkPreference || null,
+    networkProvider: (bookSlot?.networkPreference as NetworkProvider) || null,
     preferredDate: bookSlot?.bookingDate || '',
     preferredTime: bookSlot?.bookingTime ? formatToHHMM(bookSlot.bookingTime) : '',
   }));

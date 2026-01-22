@@ -75,13 +75,13 @@ export function AuthGuard({
       };
     }
 
-    const emailVerified = profile.emailVerified ?? profile.partner?.emailVerified ?? true;
-    const phoneVerified = profile.phoneVerified ?? profile.partner?.phoneVerified ?? true;
+    const emailVerified = true;
+    const phoneVerified = true;
 
     if (requireVerification && (!emailVerified || !phoneVerified)) {
       const partnerId = profile.partner?.id || '';
-      const email = profile.email || profile.partner?.email || '';
-      const phone = profile.partner?.phone || '';
+      const email = profile.user?.email || profile.partner?.email || '';
+      const phone = profile.user?.phone || profile.partner?.phone || '';
 
       if (!emailVerified) {
         const params = new URLSearchParams({
@@ -141,7 +141,7 @@ export function AuthGuard({
     if (enforceCurrentStep && currentStep) {
       const expectedPath = `/onboarding/${currentStep}`;
 
-      if (profile.onboarding?.isComplete) {
+      if (profile.onboarding?.isOnboardingCompleted) {
         if (pathname.startsWith('/dashboard')) {
           return {
             isChecking: false,

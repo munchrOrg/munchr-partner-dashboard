@@ -119,10 +119,9 @@ export function SignUpForm() {
         if (resp.userId) {
           setUserId(resp.userId);
         }
-        // Token can be at root level or nested under 'tokens'
-        const accessToken = resp.accessToken || resp.tokens?.accessToken;
-        if (accessToken) {
-          useAuthStore.getState().setAccessToken(accessToken);
+        // Tokens are now in a separate 'tokens' object
+        if (resp.tokens?.accessToken) {
+          useAuthStore.getState().setAccessToken(resp.tokens.accessToken);
         }
         const params = new URLSearchParams({
           type: 'signup',

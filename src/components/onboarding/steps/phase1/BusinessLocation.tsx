@@ -56,7 +56,7 @@ export function BusinessLocation() {
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinates | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const addressData: { [key: string]: any } = profile?.partner?.businessProfile || {};
+  const addressData: { [key: string]: any } = profile?.location || {};
   const getDefault = (key: string) => {
     return addressData[key] ?? '';
   };

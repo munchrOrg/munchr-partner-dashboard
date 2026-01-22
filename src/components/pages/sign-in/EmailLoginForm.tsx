@@ -36,7 +36,16 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
 
       const profileData = await getProfileMutation.mutateAsync();
 
-      if (profileData?.onboarding?.isComplete || profileData?.onboarding?.skipOnboarding) {
+      const isOwner = profileData?.user?.isOwner;
+      const skipOnboarding = profileData?.onboarding?.skipOnboarding;
+      const isOnboardingCompleted = profileData?.onboarding?.isOnboardingCompleted;
+
+      if (isOwner === false && !skipOnboarding && !isOnboardingCompleted) {
+        router.push('/profile-setup');
+        return;
+      }
+
+      if (isOnboardingCompleted || skipOnboarding) {
         router.push('/dashboard');
       } else {
         const targetStep = profileData?.onboarding?.currentStep || 'welcome';

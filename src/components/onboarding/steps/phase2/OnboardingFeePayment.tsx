@@ -22,7 +22,7 @@ const PAYMENT_DETAILS = {
 
 export function OnboardingFeePayment() {
   const { data: profile } = useProfile();
-  const businessProfile = profile?.partner?.businessProfile;
+  const businessProfile = profile?.businessProfile;
   const { triggerNavigation } = useOnboardingStore();
   const updateProfileMutation = useUpdateProfile();
 
@@ -34,13 +34,7 @@ export function OnboardingFeePayment() {
     paymentTransactionId: businessProfile?.paymentTransactionId || '',
     paymentScreenshot: businessProfile?.uploadScreenshotImageKey
       ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
-      : businessProfile?.uploadScreenshotImage
-        ? {
-            name: businessProfile.uploadScreenshotImage.fileName || 'Unknown',
-            size: businessProfile.uploadScreenshotImage.size || 0,
-            url: businessProfile.uploadScreenshotImage.url || '',
-          }
-        : null,
+      : null,
   }));
 
   const handleSubmit = async (e: React.FormEvent) => {

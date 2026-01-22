@@ -14,19 +14,13 @@ import { AssetType, OnboardingStep } from '@/types/onboarding';
 export function DineInMenuUpload() {
   const { openExampleDrawer, openConfirmModal, triggerNavigation } = useOnboardingStore();
   const { data: profile } = useProfile();
-  const businessProfile = profile?.partner?.businessProfile;
+  const businessProfile = profile?.businessProfile;
   const updateProfileMutation = useUpdateProfile();
 
   const [menu, setMenu] = useState<MenuFormData>(() => {
     const prefilled = businessProfile?.menuImageKey
       ? createFileUploadFromKey(businessProfile.menuImageKey, 'Menu')
-      : businessProfile?.menuImage
-        ? {
-            name: businessProfile.menuImage.fileName || 'Unknown',
-            size: businessProfile.menuImage.size || 0,
-            url: businessProfile.menuImage.url || '',
-          }
-        : null;
+      : null;
     return { menuFile: prefilled };
   });
 

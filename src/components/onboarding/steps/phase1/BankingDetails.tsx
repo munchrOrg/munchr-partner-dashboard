@@ -37,22 +37,22 @@ export function BankingDetails() {
   const { triggerNavigation } = useOnboardingStore();
   const updateProfileMutation = useUpdateProfile();
 
-  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
-  const businessProfileAddressData = profile?.partner?.businessProfile;
+  const billingInfoData = profile?.billingInfo;
+  const locationData = profile?.location;
 
   const bankingPrefill = {
-    accountTitle: businessProfile?.bankAccountOwner || '',
-    bankName: businessProfile?.bankName || '',
-    iban: businessProfile?.IBAN || '',
-    sameAsBusinessAddress: businessProfile?.billingAddressAreSame || false,
+    accountTitle: billingInfoData?.bankAccountOwner || '',
+    bankName: billingInfoData?.bankName || '',
+    iban: billingInfoData?.IBAN || '',
+    sameAsBusinessAddress: billingInfoData?.billingAddressAreSame || false,
     address: '',
-    buildingName: businessProfile?.billingBuildingPlaceName || '',
-    street: businessProfile?.billingStreet || '',
-    houseNumber: businessProfile?.billingHouseNumber || '',
-    billingState: businessProfile?.billingState || '',
-    billingCity: businessProfile?.billingCity || '',
-    area: businessProfile?.billingArea || '',
-    billingPostalCode: businessProfile?.billingPostalCode || '',
+    buildingName: billingInfoData?.billingAddress?.buildingPlaceName || '',
+    street: billingInfoData?.billingAddress?.street || '',
+    houseNumber: billingInfoData?.billingAddress?.houseNumber || '',
+    billingState: billingInfoData?.billingAddress?.state || '',
+    billingCity: billingInfoData?.billingAddress?.city || '',
+    area: billingInfoData?.billingAddress?.area || '',
+    billingPostalCode: billingInfoData?.billingAddress?.postalCode || '',
   };
 
   const {
@@ -71,14 +71,14 @@ export function BankingDetails() {
 
   useEffect(() => {
     if (sameAsBusinessAddress) {
-      setValue('address', businessProfileAddressData?.address || '');
-      setValue('buildingName', businessProfileAddressData?.buildingPlaceName || '');
-      setValue('street', businessProfileAddressData?.street || '');
-      setValue('houseNumber', businessProfileAddressData?.houseNumber || '');
-      setValue('billingState', businessProfileAddressData?.state || '');
-      setValue('billingCity', businessProfileAddressData?.city || '');
-      setValue('area', businessProfileAddressData?.area || '');
-      setValue('billingPostalCode', businessProfileAddressData?.postalCode || '');
+      setValue('address', '');
+      setValue('buildingName', locationData?.buildingPlaceName || '');
+      setValue('street', locationData?.street || '');
+      setValue('houseNumber', locationData?.houseNumber || '');
+      setValue('billingState', locationData?.state || '');
+      setValue('billingCity', locationData?.city || '');
+      setValue('area', locationData?.area || '');
+      setValue('billingPostalCode', locationData?.postalCode || '');
     } else {
       // Clear all fields
       setValue('address', '');
@@ -90,7 +90,7 @@ export function BankingDetails() {
       setValue('area', '');
       setValue('billingPostalCode', '');
     }
-  }, [sameAsBusinessAddress, businessProfileAddressData, setValue]);
+  }, [sameAsBusinessAddress, locationData, setValue]);
 
   const onSubmit = async (data: BankingInput) => {
     const payload: any = {

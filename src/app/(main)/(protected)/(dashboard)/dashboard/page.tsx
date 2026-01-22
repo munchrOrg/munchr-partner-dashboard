@@ -12,7 +12,7 @@ export default function DashboardPage() {
 
   const completedPhases = (profile?.onboarding?.completedPhases || []) as OnboardingPhase[];
   const skipOnboarding = profile?.onboarding?.skipOnboarding || false;
-  const isOnboardingComplete = profile?.onboarding?.isComplete || false;
+  const isOnboardingComplete = profile?.onboarding?.isOnboardingCompleted || false;
 
   const allPhasesCompleted =
     skipOnboarding ||
@@ -36,8 +36,8 @@ export default function DashboardPage() {
   }
 
   const user = {
-    name: profile.name || null,
-    email: profile.email || null,
+    name: profile.user?.name || null,
+    email: profile.user?.email || null,
   };
 
   return <DashboardContent user={user} />;

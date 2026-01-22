@@ -15,19 +15,13 @@ import { AssetType, OnboardingStep } from '@/types/onboarding';
 export function BankStatementUpload() {
   const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
   const { data: profile } = useProfile();
-  const billingInfo = profile?.partner?.businessProfile?.billingInfo;
+  const billingInfo = profile?.billingInfo;
   const updateProfileMutation = useUpdateProfile();
 
   const [bankStatement, setBankStatement] = useState<BankStatementFormData>(() => {
     const prefilled = billingInfo?.chequeBookImageKey
       ? createFileUploadFromKey(billingInfo.chequeBookImageKey, 'Bank Statement')
-      : billingInfo?.checkBookImage
-        ? {
-            name: billingInfo.checkBookImage.fileName || 'Unknown',
-            size: billingInfo.checkBookImage.size || 0,
-            url: billingInfo.checkBookImage.url || '',
-          }
-        : null;
+      : null;
     return { statementFile: prefilled };
   });
 

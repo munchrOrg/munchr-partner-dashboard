@@ -51,20 +51,20 @@ export function PaymentMethodSelection() {
   const { data: profile } = useProfile();
   const { triggerNavigation } = useOnboardingStore();
   const updateProfileMutation = useUpdateProfile();
-  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
+  const billingInfoData = profile?.billingInfo;
 
-  const prefilledAccount: SavedPaymentAccount | null = businessProfile?.paymentMethodType
+  const prefilledAccount: SavedPaymentAccount | null = billingInfoData?.paymentMethodType
     ? {
         id: 'business-prefilled',
-        method: businessProfile.paymentMethodType,
-        ...(businessProfile.paymentMethodType === PaymentMethod.CARD
+        method: billingInfoData.paymentMethodType as PaymentMethod,
+        ...(billingInfoData.paymentMethodType === PaymentMethod.CARD
           ? {
-              accountTitle: businessProfile.accountTitle || '',
-              cardNumber: businessProfile.cardNumber || '',
-              cardExpiry: businessProfile.cardExpiry || '',
+              accountTitle: billingInfoData.accountTitle || '',
+              cardNumber: billingInfoData.cardNumber || '',
+              cardExpiry: billingInfoData.cardExpiry || '',
             }
           : {
-              accountNumber: businessProfile.paymentAccountNumber || '',
+              accountNumber: billingInfoData.paymentAccountNumber || '',
             }),
       }
     : null;

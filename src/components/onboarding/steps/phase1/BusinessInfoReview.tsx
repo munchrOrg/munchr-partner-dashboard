@@ -31,19 +31,21 @@ export function BusinessInfoReview() {
   };
 
   const partner = profile?.partner;
-  const businessProfile = partner?.businessProfile;
+  const businessProfile = profile?.businessProfile;
+  const location = profile?.location;
+  const billingInfo = profile?.billingInfo;
 
   const handleChange = (step: OnboardingStep) => {
     router.push(`/onboarding/${step}`);
   };
 
   const formatAddress = () => {
-    const buildingPlaceName = businessProfile?.buildingPlaceName || '';
-    const street = businessProfile?.street || '';
-    const houseNumber = businessProfile?.houseNumber || '';
-    const postalCode = businessProfile?.postalCode || '';
-    const city = businessProfile?.city || '';
-    const state = businessProfile?.state || '';
+    const buildingPlaceName = location?.buildingPlaceName || '';
+    const street = location?.street || '';
+    const houseNumber = location?.houseNumber || '';
+    const postalCode = location?.postalCode || '';
+    const city = location?.city || '';
+    const state = location?.state || '';
 
     const parts = [buildingPlaceName, street, houseNumber, postalCode, city, state].filter(Boolean);
 
@@ -51,14 +53,14 @@ export function BusinessInfoReview() {
   };
 
   const formatBillingAddress = () => {
-    const billingInfo = businessProfile?.billingInfo;
-    const buildingName = billingInfo?.billingBuildingPlaceName || '';
-    const street = billingInfo?.billingStreet || '';
-    const houseNumber = billingInfo?.billingHouseNumber || '';
-    const billingState = billingInfo?.billingState || '';
-    const billingCity = billingInfo?.billingCity || '';
-    const area = billingInfo?.billingArea || '';
-    const postalCode = billingInfo?.billingPostalCode || '';
+    const billingAddress = billingInfo?.billingAddress;
+    const buildingName = billingAddress?.buildingPlaceName || '';
+    const street = billingAddress?.street || '';
+    const houseNumber = billingAddress?.houseNumber || '';
+    const billingState = billingAddress?.state || '';
+    const billingCity = billingAddress?.city || '';
+    const area = billingAddress?.area || '';
+    const postalCode = billingAddress?.postalCode || '';
     const parts = [
       buildingName,
       street,
@@ -97,7 +99,7 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Business name</span>
-              <span className="font-medium">{partner?.businessName || 'Not provided'}</span>
+              <span className="font-medium">{businessProfile?.businessName || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business type</span>
@@ -229,21 +231,15 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Bank Account Owner/Title</span>
-              <span className="font-medium">
-                {businessProfile?.billingInfo?.bankAccountOwner || 'Not provided'}
-              </span>
+              <span className="font-medium">{billingInfo?.bankAccountOwner || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Bank name</span>
-              <span className="font-medium">
-                {businessProfile?.billingInfo?.bankName || 'Not provided'}
-              </span>
+              <span className="font-medium">{billingInfo?.bankName || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">IBAN</span>
-              <span className="font-medium">
-                {businessProfile?.billingInfo?.IBAN || 'Not provided'}
-              </span>
+              <span className="font-medium">{billingInfo?.IBAN || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Billing Address</span>

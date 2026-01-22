@@ -27,7 +27,7 @@ export function LegalTaxDetails() {
   const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
   const updateProfileMutation = useUpdateProfile();
 
-  const businessProfile = profile?.partner?.businessProfile;
+  const businessProfile = profile?.businessProfile;
 
   const legalTaxDefaults = {
     cnicNumber: businessProfile?.cnicNumber || '',

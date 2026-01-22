@@ -22,8 +22,7 @@ export function PortalSetupComplete() {
   const router = useRouter();
   const hasRun = useRef(false);
 
-  const email =
-    profile?.partner?.businessProfile?.email || profile?.partner?.email || 'your@email.com';
+  const email = profile?.user?.email || profile?.partner?.email || 'your@email.com';
 
   // Simple: update backend, show toast, logout
   useEffect(() => {

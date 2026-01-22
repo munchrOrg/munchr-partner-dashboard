@@ -23,17 +23,14 @@ export type LoginResponse = {
     isOwner: boolean;
     role: string;
   };
-  partner?: {
-    id: string;
-    businessName: string;
-    serviceProviderType: string;
-  };
   onboarding?: {
-    currentStep: string;
-    completedSteps: string[];
-    completedPhases: string[];
-    isComplete: boolean;
+    currentStep?: string;
+    completedSteps?: string[];
+    completedPhases?: string[];
+    isOnboardingCompleted: boolean;
     skipOnboarding?: boolean;
+    branchId?: string;
+    steps?: string[];
   };
 };
 
@@ -97,18 +94,32 @@ export type SignUpResponse = {
   partnerId: string;
   userId: string;
   message: string;
-  requiresVerification: {
-    email: boolean;
-    phone: boolean;
-  };
-  // Tokens can be at root level or nested under 'tokens'
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
-  tokens?: {
+  tokens: {
     accessToken: string;
     refreshToken: string;
     expiresIn: number;
+  } | null;
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    isOwner: boolean;
+    role: string;
+  };
+  partner: {
+    id: string;
+    businessName: string;
+    serviceProviderType: string;
+  };
+  onboarding: {
+    currentStep: string;
+    completedSteps: string[];
+    completedPhases: string[];
+    isOnboardingCompleted: boolean;
+  };
+  requiresVerification: {
+    email: boolean;
+    phone: boolean;
   };
 };
 
@@ -172,27 +183,16 @@ export type VerifyEmailResponse = {
   emailVerified: boolean;
   phoneVerified: boolean;
   accountActivated: boolean;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    isOwner: boolean;
-    role: string;
-  };
-  partner?: {
-    id: string;
-    businessName: string;
-    serviceProviderType: string;
-  };
+  tokens?: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  } | null;
   onboarding?: {
     currentStep: string;
     completedSteps: string[];
     completedPhases: string[];
-    isComplete: boolean;
-    skipOnboarding?: boolean;
+    isOnboardingCompleted: boolean;
   };
 };
 
@@ -207,28 +207,16 @@ export type VerifyPhoneResponse = {
   emailVerified: boolean;
   phoneVerified: boolean;
   accountActivated: boolean;
-  nextStep?: string;
-  accessToken?: string;
-  refreshToken?: string;
-  expiresIn?: number;
-  user?: {
-    id: string;
-    name: string;
-    email: string;
-    isOwner: boolean;
-    role: string;
-  };
-  partner?: {
-    id: string;
-    businessName: string;
-    serviceProviderType: string;
-  };
+  tokens?: {
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+  } | null;
   onboarding?: {
     currentStep: string;
     completedSteps: string[];
     completedPhases: string[];
-    isComplete: boolean;
-    skipOnboarding?: boolean;
+    isOnboardingCompleted: boolean;
   };
 };
 
@@ -310,11 +298,13 @@ export type UpdateProfileRequest = {
 };
 
 export type OnboardingState = {
-  currentStep: OnboardingStep | null;
-  completedSteps: string[];
-  completedPhases: string[];
-  isComplete: boolean;
+  currentStep?: OnboardingStep | null;
+  completedSteps?: string[];
+  completedPhases?: string[];
+  isOnboardingCompleted: boolean;
   skipOnboarding?: boolean;
+  branchId?: string;
+  steps?: string[];
 };
 
 export type UpdateProfileResponse = {
@@ -356,30 +346,139 @@ export type ResetPasswordResponse = {
   message: string;
 };
 
-export type ProfileResponse = {
+export type ProfilePermission = {
   id: string;
   name: string;
-  email: string;
-  isOwner: boolean;
-  status: string;
-  role: string;
+  code: string;
+  resource: string;
+  description: string;
+};
+
+export type ProfileRole = {
+  id: string;
+  name: string;
+  permissions: ProfilePermission[];
+};
+
+export type ProfileBranchAccess = {
+  id: string;
+  branchId: string;
+  hasAllLocations: boolean;
+  branch: {
+    id: string;
+    branchName: string;
+    isPrimary: boolean;
+  } | null;
+};
+
+export type ProfilePrimaryBranch = {
+  id: string;
+  branchName: string;
+  description: string;
+  contactEmail: string;
+  cuisineIds: string[];
+  operatingHours: OperatingHoursType[];
+};
+
+export type ProfileBusinessProfile = {
+  id: string;
+  businessName: string;
+  description: string;
+  logoImageUrl: string;
+  menuImageKey: string;
+  cnicNumber: string;
+  cnicFrontKey: string;
+  cnicBackKey: string;
+  ntnImageKey: string;
+  sntn: boolean;
+  taxRegistrationNo: string;
+  firstAndMiddleNameForNic: string;
+  lastNameForNic: string;
+  uploadScreenshotImageKey: string;
+  paymentTransactionId: string;
+  // Additional fields that may be present
+  cuisines?: string[];
+  businessPhone?: string;
+  partnershipPackage?: string;
+};
+
+export type ProfileLocation = {
+  buildingPlaceName: string;
+  street: string;
+  houseNumber: string;
+  state: string;
+  city: string;
+  area: string;
+  postalCode: string;
+  addCommentAboutLocation: string;
+  latitude: number;
+  longitude: number;
+};
+
+export type ProfileBillingInfo = {
+  id: string;
+  bankAccountOwner: string;
+  bankName: string;
+  IBAN: string;
+  chequeBookImageKey: string;
+  billingAddressAreSame: boolean;
+  paymentAccountNumber: string;
+  paymentMethodType: string;
+  billingAddress: {
+    buildingPlaceName: string;
+    street: string;
+    houseNumber: string;
+    state: string;
+    city: string;
+    area: string;
+    postalCode: string;
+    addCommentAboutLocation: string;
+  };
+  // Card payment fields (optional)
+  accountTitle?: string;
+  cardNumber?: string;
+  cardExpiry?: string;
+};
+
+export type ProfileBookSlot = {
+  id: string;
+  networkPreference: string;
+  bookingDate: string;
+  bookingTime: string;
+};
+
+export type ProfileOnboarding = {
+  currentStep?: string;
+  completedSteps?: string[];
+  completedPhases?: string[];
+  isOnboardingCompleted: boolean;
+  skipOnboarding?: boolean;
+  branchId?: string;
+  steps?: string[];
+};
+
+export type ProfileResponse = {
+  user: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string | null;
+    isOwner: boolean;
+    status: string;
+  };
   partner: {
     id: string;
-    email: string;
-    phone: string;
-    businessName: string;
     serviceProviderType: string;
     status: string;
-    businessProfile: any;
-    emailVerified?: boolean;
-    phoneVerified?: boolean;
-  };
-  operatingHours: OperatingHoursType[];
-  step1: boolean;
-  step2: boolean;
-  step3: boolean;
-  onboarding: OnboardingState;
-  // Verification status (should be included in profile response)
-  emailVerified?: boolean;
-  phoneVerified?: boolean;
+    phone: string;
+    email: string;
+  } | null;
+  businessProfile: ProfileBusinessProfile | null;
+  location: ProfileLocation | null;
+  billingInfo: ProfileBillingInfo | null;
+  bookSlot: ProfileBookSlot | null;
+  roles: ProfileRole[];
+  branchAccess: ProfileBranchAccess[];
+  primaryBranch: ProfilePrimaryBranch | null;
+  onboarding: ProfileOnboarding;
 };

@@ -21,6 +21,7 @@ export function StepHeader({
           {showExamples && (
             <Button
               variant="link"
+              type="button"
               className="text-purple-dark ml-1 p-0 text-base font-bold"
               onClick={onViewExample}
             >
