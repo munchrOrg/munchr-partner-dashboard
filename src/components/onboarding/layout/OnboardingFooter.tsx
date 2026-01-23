@@ -13,6 +13,8 @@ import {
   STEP_PHASE_MAP,
   STEPS_WITHOUT_FORMS,
 } from '@/config/onboarding-steps';
+import { queryClient } from '@/lib/query-client';
+import { authKeys } from '@/react-query/auth/keys';
 import { useUpdateProfile } from '@/react-query/auth/mutations';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
@@ -89,6 +91,21 @@ export function OnboardingFooter() {
         }
 
         if (!nextStep) {
+          const newOnboarding = response.data?.onboarding;
+          if (newOnboarding?.isOnboardingCompleted) {
+            queryClient.setQueryData(authKeys.profile(), (oldData: any) => {
+              if (!oldData) {
+                return oldData;
+              }
+              return {
+                ...oldData,
+                onboarding: {
+                  ...oldData.onboarding,
+                  ...newOnboarding,
+                },
+              };
+            });
+          }
           router.push('/dashboard');
           return;
         }
