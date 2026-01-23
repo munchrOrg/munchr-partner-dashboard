@@ -197,11 +197,31 @@ export function BusinessInfoReview() {
           </div>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
+              <span className="text-gray-600">CNIC Front</span>
+              <span className="font-medium">
+                {businessProfile?.cnicFrontKey ? 'Uploaded' : 'Not provided'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">CNIC Back</span>
+              <span className="font-medium">
+                {businessProfile?.cnicBackKey ? 'Uploaded' : 'Not provided'}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-gray-600">
                 Does your restaurant have Sales tax Registration Number (SNTN)?
               </span>
               <span className="font-medium">{businessProfile?.sntn ? 'Yes' : 'No'}</span>
             </div>
+            {businessProfile?.sntn && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">SNTN Document</span>
+                <span className="font-medium">
+                  {businessProfile?.ntnImageKey ? 'Uploaded' : 'Not provided'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -221,6 +241,12 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">CNIC Number</span>
               <span className="font-medium">{businessProfile?.cnicNumber || 'Not provided'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Tax Registration Number</span>
+              <span className="font-medium">
+                {businessProfile?.taxRegistrationNo || 'Not provided'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">First & Middle Name Per CNIC</span>

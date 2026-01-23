@@ -57,19 +57,19 @@ export function OwnerIdentityUpload() {
       toast.error('Please select whether you have a Sales Tax Registration Number (SNTN).');
       return;
     }
+
+    if (!ownerIdentity.idCardFrontFile) {
+      toast.error('Please upload the front of your ID card.');
+      return;
+    }
+    if (!ownerIdentity.idCardBackFile) {
+      toast.error('Please upload the back of your ID card.');
+      return;
+    }
+
     if (ownerIdentity.hasSNTN && !ownerIdentity.sntnFile) {
       toast.error('Please upload your SNTN document.');
       return;
-    }
-    if (!ownerIdentity.hasSNTN) {
-      if (!ownerIdentity.idCardFrontFile) {
-        toast.error('Please upload the front of your ID card.');
-        return;
-      }
-      if (!ownerIdentity.idCardBackFile) {
-        toast.error('Please upload the back of your ID card.');
-        return;
-      }
     }
 
     setStepFormData('ownerIdentity', ownerIdentity);
@@ -78,12 +78,11 @@ export function OwnerIdentityUpload() {
 
   const handleSNTNChange = (value: string) => {
     const newValue = value === 'yes';
-    setOwnerIdentity({
+    setOwnerIdentity((prev) => ({
+      ...prev,
       hasSNTN: newValue,
-      sntnFile: null,
-      idCardFrontFile: null,
-      idCardBackFile: null,
-    });
+      sntnFile: newValue ? prev.sntnFile : null,
+    }));
   };
 
   const handleIdCardFrontChange = (file: FileUpload | null) => {
@@ -125,7 +124,7 @@ export function OwnerIdentityUpload() {
     >
       <div className="flex w-full max-w-xl flex-col items-start justify-start">
         <StepHeader
-          title="Upload Business Owner ID (Front and Back)"
+          title="Upload Business Owner ID"
           description="We need to verify your identity. Please upload front and back of your ID card."
           showExamples={true}
           onViewExample={showIdCardExample}
@@ -159,32 +158,31 @@ export function OwnerIdentityUpload() {
             </RadioGroup>
           </div>
 
-          {ownerIdentity.hasSNTN === true && (
-            <FileUploadBox
-              label="SNTN"
-              value={ownerIdentity.sntnFile}
-              onChange={handleSntnChange}
-              assetType={AssetType.NTN}
-              onUploadingChange={handleUploadingChange}
-            />
-          )}
-
-          {ownerIdentity.hasSNTN === false && (
+          {ownerIdentity.hasSNTN !== null && (
             <div className="space-y-4">
               <FileUploadBox
-                label="ID Card (Front)"
+                label="ID Card (Front) *"
                 value={ownerIdentity.idCardFrontFile}
                 onChange={handleIdCardFrontChange}
                 assetType={AssetType.CNIC_FRONT}
                 onUploadingChange={handleUploadingChange}
               />
               <FileUploadBox
-                label="ID Card (Back)"
+                label="ID Card (Back) *"
                 value={ownerIdentity.idCardBackFile}
                 onChange={handleIdCardBackChange}
                 assetType={AssetType.CNIC_BACK}
                 onUploadingChange={handleUploadingChange}
               />
+              {ownerIdentity.hasSNTN === true && (
+                <FileUploadBox
+                  label="SNTN *"
+                  value={ownerIdentity.sntnFile}
+                  onChange={handleSntnChange}
+                  assetType={AssetType.NTN}
+                  onUploadingChange={handleUploadingChange}
+                />
+              )}
             </div>
           )}
         </div>

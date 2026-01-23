@@ -77,19 +77,19 @@ function transformOwnerIdentityPayload(data: OwnerIdentityFormData): Partial<Upd
     sntn: data.hasSNTN ?? undefined,
   };
 
+  const front = data.idCardFrontFile as FileWithKey;
+  const back = data.idCardBackFile as FileWithKey;
+  if (front?.key) {
+    payload.cnicFrontKey = front.key;
+  }
+  if (back?.key) {
+    payload.cnicBackKey = back.key;
+  }
+
   if (data.hasSNTN) {
-    const file = data.sntnFile as FileWithKey;
-    if (file?.key) {
-      payload.ntnImageKey = file.key;
-    }
-  } else {
-    const front = data.idCardFrontFile as FileWithKey;
-    const back = data.idCardBackFile as FileWithKey;
-    if (front?.key) {
-      payload.cnicFrontKey = front.key;
-    }
-    if (back?.key) {
-      payload.cnicBackKey = back.key;
+    const sntnFile = data.sntnFile as FileWithKey;
+    if (sntnFile?.key) {
+      payload.ntnImageKey = sntnFile.key;
     }
   }
 
