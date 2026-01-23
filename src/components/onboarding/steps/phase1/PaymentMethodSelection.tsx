@@ -16,9 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep, PaymentMethod } from '@/types/onboarding';
 import { paymentFormSchema } from '@/validations/payment';
 
@@ -48,31 +47,41 @@ const maskCardNumber = (number: string) => {
 };
 
 export function PaymentMethodSelection() {
-  const { data: profile } = useProfile();
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
-  const billingInfoData = profile?.billingInfo;
+  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
+  const billingInfoData = profileData?.billingInfo;
 
-  const prefilledAccount: SavedPaymentAccount | null = billingInfoData?.paymentMethodType
-    ? {
-        id: 'business-prefilled',
-        method: billingInfoData.paymentMethodType as PaymentMethod,
-        ...(billingInfoData.paymentMethodType === PaymentMethod.CARD
-          ? {
-              accountTitle: billingInfoData.accountTitle || '',
-              cardNumber: billingInfoData.cardNumber || '',
-              cardExpiry: billingInfoData.cardExpiry || '',
-            }
-          : {
-              accountNumber: billingInfoData.paymentAccountNumber || '',
-            }),
-      }
-    : null;
+  const getInitialPaymentData = (): PaymentMethodFormData => {
+    if (formData.paymentMethod) {
+      return formData.paymentMethod;
+    }
 
-  const [paymentData, setPaymentData] = useState<PaymentMethodFormData>(() => ({
-    savedAccounts: prefilledAccount ? [prefilledAccount] : [],
-    selectedAccountId: prefilledAccount?.id || null,
-  }));
+    const prefilledAccount: SavedPaymentAccount | null = billingInfoData?.paymentMethodType
+      ? {
+          id: 'business-prefilled',
+          method: billingInfoData.paymentMethodType as PaymentMethod,
+          ...(billingInfoData.paymentMethodType === PaymentMethod.CARD
+            ? {
+                accountTitle: billingInfoData.accountTitle || '',
+                cardNumber: billingInfoData.cardNumber || '',
+                cardExpiry: billingInfoData.cardExpiry || '',
+              }
+            : {
+                accountNumber: billingInfoData.paymentAccountNumber || '',
+              }),
+        }
+      : null;
+
+    return {
+      savedAccounts: prefilledAccount ? [prefilledAccount] : [],
+      selectedAccountId: prefilledAccount?.id || null,
+    };
+  };
+
+  const [paymentData, setPaymentData] = useState<PaymentMethodFormData>(getInitialPaymentData);
+
+  const prefilledAccount =
+    paymentData.savedAccounts.length > 0 ? paymentData.savedAccounts[0] : null;
 
   const {
     register,
@@ -162,20 +171,23 @@ export function PaymentMethodSelection() {
     }
 
     try {
+      setStepFormData('paymentMethod', paymentData);
+
       const selected = paymentData.savedAccounts.find(
         (acc) => acc.id === paymentData.selectedAccountId
       );
       if (selected) {
-        await updateProfileMutation.mutateAsync({
-          currentStep: OnboardingStep.PAYMENT_METHOD_SELECTION,
-          paymentMethod: {
-            paymentMethod: selected.method,
-            accountNumber: selected.accountNumber,
+        await updateProfile(
+          {
+            completeStep: OnboardingStep.PAYMENT_METHOD_SELECTION,
+            paymentMethod: {
+              paymentMethod: selected.method,
+              accountNumber: selected.accountNumber,
+            },
           },
-        });
+          { shouldAdvanceStep: true }
+        );
       }
-
-      triggerNavigation(OnboardingStep.PAYMENT_METHOD_SELECTION);
     } catch (error) {
       console.error('Failed to save payment method:', error);
       toast.error('Failed to save data. Please try again.');

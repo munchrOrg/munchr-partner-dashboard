@@ -6,19 +6,22 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { AssetType, OnboardingStep } from '@/types/onboarding';
 
 export function BankStatementUpload() {
-  const { openExampleDrawer, triggerNavigation, setIsUploading } = useOnboardingStore();
-  const { data: profile } = useProfile();
-  const billingInfo = profile?.billingInfo;
-  const updateProfileMutation = useUpdateProfile();
+  const { openExampleDrawer, setIsUploading, profileData, formData, setStepFormData } =
+    useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
+
+  const billingInfo = profileData?.billingInfo;
 
   const [bankStatement, setBankStatement] = useState<BankStatementFormData>(() => {
+    if (formData.bankStatement) {
+      return formData.bankStatement;
+    }
     const prefilled = billingInfo?.chequeBookImageKey
       ? createFileUploadFromKey(billingInfo.chequeBookImageKey, 'Bank Statement')
       : null;
@@ -34,13 +37,16 @@ export function BankStatementUpload() {
     }
 
     try {
-      const file = bankStatement.statementFile as FileUpload & { key?: string };
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.BANK_STATEMENT_UPLOAD,
-        chequeBookImageKey: file?.key || '',
-      });
+      setStepFormData('bankStatement', bankStatement);
 
-      triggerNavigation(OnboardingStep.BANK_STATEMENT_UPLOAD);
+      const file = bankStatement.statementFile as FileUpload & { key?: string };
+      await updateProfile(
+        {
+          completeStep: OnboardingStep.BANK_STATEMENT_UPLOAD,
+          chequeBookImageKey: file?.key || '',
+        },
+        { shouldAdvanceStep: true }
+      );
     } catch (error) {
       console.error('Failed to save bank statement:', error);
       toast.error('Failed to save data. Please try again.');

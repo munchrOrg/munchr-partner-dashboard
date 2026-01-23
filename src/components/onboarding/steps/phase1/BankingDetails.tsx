@@ -10,9 +10,8 @@ import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 const bankingSchema = z.object({
@@ -33,26 +32,29 @@ const bankingSchema = z.object({
 type BankingInput = z.infer<typeof bankingSchema>;
 
 export function BankingDetails() {
-  const { data: profile } = useProfile();
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
 
-  const billingInfoData = profile?.billingInfo;
-  const locationData = profile?.location;
+  const billingInfoData = profileData?.billingInfo;
+  const locationData = profileData?.location;
 
+  const storedBanking = formData.banking;
   const bankingPrefill = {
-    accountTitle: billingInfoData?.bankAccountOwner || '',
-    bankName: billingInfoData?.bankName || '',
-    iban: billingInfoData?.IBAN || '',
-    sameAsBusinessAddress: billingInfoData?.billingAddressAreSame || false,
+    accountTitle: storedBanking?.accountTitle || billingInfoData?.bankAccountOwner || '',
+    bankName: storedBanking?.bankName || billingInfoData?.bankName || '',
+    iban: storedBanking?.iban || billingInfoData?.IBAN || '',
+    sameAsBusinessAddress:
+      storedBanking?.sameAsBusinessAddress ?? billingInfoData?.billingAddressAreSame ?? false,
     address: '',
-    buildingName: billingInfoData?.billingAddress?.buildingPlaceName || '',
-    street: billingInfoData?.billingAddress?.street || '',
-    houseNumber: billingInfoData?.billingAddress?.houseNumber || '',
-    billingState: billingInfoData?.billingAddress?.state || '',
-    billingCity: billingInfoData?.billingAddress?.city || '',
-    area: billingInfoData?.billingAddress?.area || '',
-    billingPostalCode: billingInfoData?.billingAddress?.postalCode || '',
+    buildingName:
+      storedBanking?.buildingName || billingInfoData?.billingAddress?.buildingPlaceName || '',
+    street: storedBanking?.street || billingInfoData?.billingAddress?.street || '',
+    houseNumber: storedBanking?.houseNumber || billingInfoData?.billingAddress?.houseNumber || '',
+    billingState: storedBanking?.billingState || billingInfoData?.billingAddress?.state || '',
+    billingCity: storedBanking?.billingCity || billingInfoData?.billingAddress?.city || '',
+    area: storedBanking?.area || billingInfoData?.billingAddress?.area || '',
+    billingPostalCode:
+      storedBanking?.billingPostalCode || billingInfoData?.billingAddress?.postalCode || '',
   };
 
   const {
@@ -93,8 +95,23 @@ export function BankingDetails() {
   }, [sameAsBusinessAddress, locationData, setValue]);
 
   const onSubmit = async (data: BankingInput) => {
+    setStepFormData('banking', {
+      accountTitle: data.accountTitle,
+      bankName: data.bankName,
+      iban: data.iban,
+      sameAsBusinessAddress: data.sameAsBusinessAddress,
+      buildingName: data.buildingName,
+      street: data.street,
+      houseNumber: data.houseNumber,
+      billingState: data.billingState,
+      billingCity: data.billingCity,
+      area: data.area,
+      billingPostalCode: data.billingPostalCode,
+    });
+
     const payload: any = {
       currentStep: OnboardingStep.BANKING_DETAILS,
+      completeStep: OnboardingStep.BANKING_DETAILS,
       billingAddressAreSame: data.sameAsBusinessAddress,
       bankAccountOwner: data.accountTitle,
       bankName: data.bankName,
@@ -114,12 +131,7 @@ export function BankingDetails() {
     }
 
     try {
-      const resp = await updateProfileMutation.mutateAsync(payload);
-      if (!resp || !resp.success) {
-        toast.error(resp?.message || 'Failed to save banking details');
-        return;
-      }
-      triggerNavigation(OnboardingStep.BANKING_DETAILS);
+      await updateProfile(payload, { shouldAdvanceStep: true });
     } catch (err) {
       toast.error('Something went wrong while saving banking details');
       console.error(err);

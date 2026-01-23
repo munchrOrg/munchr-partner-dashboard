@@ -35,7 +35,7 @@ import type {
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/stores/auth-store';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { authService } from './service';
 
@@ -128,14 +128,14 @@ export const useLogout = (options?: MutationOptions<LogoutResponse, LogoutReques
     mutationFn: (data?: LogoutRequest) => authService.logout(data),
     onSuccess: (response, variables, onMutateResult, context) => {
       clearAuth();
-      useOnboardingStore.getState().reset();
+      useOnboardingProfileStore.getState().reset();
       useSignupStore.getState().reset();
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
       // Even if logout fails on backend, clear local state
       clearAuth();
-      useOnboardingStore.getState().reset();
+      useOnboardingProfileStore.getState().reset();
       useSignupStore.getState().reset();
       options?.onError?.(error, variables, onMutateResult, context);
     },

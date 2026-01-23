@@ -1,22 +1,17 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { EmailConfirmModal } from '@/components/onboarding/shared/EmailConfirmModal';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 export function BusinessInfoReview() {
-  const router = useRouter();
-  const { data: profile } = useProfile();
+  const { profileData, openEmailConfirmModal, goToStep } = useOnboardingProfileStore();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const { openEmailConfirmModal } = useOnboardingStore();
-  // const { triggerNavigation } = useOnboardingStore();
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,16 +22,15 @@ export function BusinessInfoReview() {
     }
 
     openEmailConfirmModal();
-    // triggerNavigation(OnboardingStep.WELCOME);
   };
 
-  const partner = profile?.partner;
-  const businessProfile = profile?.businessProfile;
-  const location = profile?.location;
-  const billingInfo = profile?.billingInfo;
+  const partner = profileData?.partner;
+  const businessProfile = profileData?.businessProfile;
+  const location = profileData?.location;
+  const billingInfo = profileData?.billingInfo;
 
   const handleChange = (step: OnboardingStep) => {
-    router.push(`/onboarding/${step}`);
+    goToStep(step);
   };
 
   const formatAddress = () => {

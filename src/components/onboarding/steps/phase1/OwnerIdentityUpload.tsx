@@ -7,17 +7,17 @@ import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { AssetType, OnboardingStep } from '@/types/onboarding';
 
 export function OwnerIdentityUpload() {
-  const { openExampleDrawer, triggerNavigation, setIsUploading } = useOnboardingStore();
-  const { data: profile } = useProfile();
-  const businessProfile = profile?.businessProfile;
-  const updateProfileMutation = useUpdateProfile();
+  const { openExampleDrawer, setIsUploading, profileData, formData, setStepFormData } =
+    useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
+
+  const businessProfile = profileData?.businessProfile;
 
   const uploadCountRef = useRef(0);
   const handleUploadingChange = useCallback(
@@ -28,18 +28,23 @@ export function OwnerIdentityUpload() {
     [setIsUploading]
   );
 
-  const [ownerIdentity, setOwnerIdentity] = useState<OwnerIdentityFormData>(() => ({
-    hasSNTN: businessProfile?.sntn ?? null,
-    idCardFrontFile: businessProfile?.cnicFrontKey
-      ? createFileUploadFromKey(businessProfile.cnicFrontKey, 'CNIC Front')
-      : null,
-    idCardBackFile: businessProfile?.cnicBackKey
-      ? createFileUploadFromKey(businessProfile.cnicBackKey, 'CNIC Back')
-      : null,
-    sntnFile: businessProfile?.ntnImageKey
-      ? createFileUploadFromKey(businessProfile.ntnImageKey, 'NTN')
-      : null,
-  }));
+  const [ownerIdentity, setOwnerIdentity] = useState<OwnerIdentityFormData>(() => {
+    if (formData.ownerIdentity) {
+      return formData.ownerIdentity;
+    }
+    return {
+      hasSNTN: businessProfile?.sntn ?? null,
+      idCardFrontFile: businessProfile?.cnicFrontKey
+        ? createFileUploadFromKey(businessProfile.cnicFrontKey, 'CNIC Front')
+        : null,
+      idCardBackFile: businessProfile?.cnicBackKey
+        ? createFileUploadFromKey(businessProfile.cnicBackKey, 'CNIC Back')
+        : null,
+      sntnFile: businessProfile?.ntnImageKey
+        ? createFileUploadFromKey(businessProfile.ntnImageKey, 'NTN')
+        : null,
+    };
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -64,9 +69,11 @@ export function OwnerIdentityUpload() {
     }
 
     try {
+      setStepFormData('ownerIdentity', ownerIdentity);
+
       const payload: any = {
         sntn: ownerIdentity.hasSNTN,
-        currentStep: OnboardingStep.OWNER_IDENTITY_UPLOAD,
+        completeStep: OnboardingStep.OWNER_IDENTITY_UPLOAD,
       };
 
       if (ownerIdentity.hasSNTN) {
@@ -85,8 +92,7 @@ export function OwnerIdentityUpload() {
         }
       }
 
-      await updateProfileMutation.mutateAsync(payload);
-      triggerNavigation(OnboardingStep.OWNER_IDENTITY_UPLOAD);
+      await updateProfile(payload, { shouldAdvanceStep: true });
     } catch (error) {
       console.error('Failed to save owner identity:', error);
       toast.error('Failed to save data. Please try again.');

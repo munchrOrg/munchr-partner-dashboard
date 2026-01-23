@@ -5,8 +5,9 @@ import { useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Icon } from '@/components/ui/icon';
-import { useLogout, useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useLogout } from '@/react-query/auth/mutations';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 const NEXT_STEPS = [
@@ -16,29 +17,30 @@ const NEXT_STEPS = [
 ];
 
 export function PortalSetupComplete() {
-  const { data: profile } = useProfile();
+  const { profileData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
   const logoutMutation = useLogout();
-  const updateProfileMutation = useUpdateProfile();
   const router = useRouter();
   const hasRun = useRef(false);
 
-  const email = profile?.user?.email || profile?.partner?.email || 'your@email.com';
+  const email = profileData?.user?.email || profileData?.partner?.email || 'your@email.com';
 
-  // Simple: update backend, show toast, logout
   useEffect(() => {
-    if (hasRun.current || !profile) {
+    if (hasRun.current || !profileData) {
       return undefined;
     }
     hasRun.current = true;
 
     const completePhaseAndLogout = async () => {
-      // Update backend: complete step, complete phase, set next step to WELCOME
       try {
-        await updateProfileMutation.mutateAsync({
-          completeStep: OnboardingStep.PORTAL_SETUP_COMPLETE,
-          completePhase: OnboardingPhase.VERIFY_BUSINESS,
-          currentStep: OnboardingStep.WELCOME,
-        });
+        await updateProfile(
+          {
+            completeStep: OnboardingStep.PORTAL_SETUP_COMPLETE,
+            completePhase: OnboardingPhase.VERIFY_BUSINESS,
+            currentStep: OnboardingStep.WELCOME,
+          },
+          { shouldAdvanceStep: false }
+        );
       } catch (error) {
         console.error('Failed to mark phase as complete:', error);
       }
@@ -61,9 +63,7 @@ export function PortalSetupComplete() {
     return () => {
       hasRun.current = false;
     };
-  }, [profile]);
-  // Commented to prevent un-necessary re-renders
-  // }, [logoutMutation, updateProfileMutation, router]);
+  }, [profileData]);
 
   return (
     <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">

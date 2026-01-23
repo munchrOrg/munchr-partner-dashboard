@@ -25,6 +25,7 @@ import {
 import { useSignUp } from '@/react-query/auth/mutations';
 import { useCuisines } from '@/react-query/partner/queries';
 import { useAuthStore } from '@/stores/auth-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
 import 'react-phone-number-input/style.css';
@@ -85,7 +86,6 @@ export function SignUpForm() {
         if (resp.userId) {
           setUserId(resp.userId);
         }
-        // Tokens are now in a separate 'tokens' object
         if (resp.tokens?.accessToken) {
           useAuthStore.getState().setAccessToken(resp.tokens.accessToken);
         }
@@ -124,7 +124,6 @@ export function SignUpForm() {
     }
 
     try {
-      // Step 1: Get uploadUrl and key
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const res = await fetch(`${backendUrl}/v1/storage/public/upload-url`, {
         method: 'POST',
@@ -142,22 +141,17 @@ export function SignUpForm() {
       const data = await res.json();
       const { uploadUrl, publicUrl } = data;
 
-      // Step 2: Try to upload file to uploadUrl (PUT), ignore CORS error
       try {
         await fetch(uploadUrl, {
           method: 'PUT',
-          // headers: { 'Content-Type': file.type },
           body: file,
         });
       } catch (uploadErr) {
         console.warn('File upload error (likely CORS):', uploadErr);
-        // Ignore CORS error, proceed anyway
       }
 
-      // const logoUrl = `https://pub-xxx.r2.dev/${key}`;
       setLogoPreview(publicUrl);
     } catch {
-      // setLogoError('Image upload failed');
     } finally {
       setIsUploadingLogo(false);
     }
@@ -166,7 +160,6 @@ export function SignUpForm() {
   const handleRemoveLogo = useCallback(() => {
     setLogoPreview(null);
     setLogoError(null);
-    // Removed setLogoFile(null) as logoFile is unused
   }, []);
 
   const onSubmit = async (data: SignUpInput) => {
@@ -175,7 +168,6 @@ export function SignUpForm() {
       return;
     }
 
-    // Store email/phone for URL params (all business data goes to backend, not localStorage)
     setSubmittedEmail(data.email);
     setSubmittedPhone(data.phoneNumber);
 
@@ -184,16 +176,9 @@ export function SignUpForm() {
     const parsed = parsePhoneNumberFromString(phoneRaw);
     const countryCode = parsed ? `+${parsed.countryCallingCode}` : '';
 
-    // Get sntnFile from onboarding store
-    let ntnImageKey;
-    try {
-      // Use dynamic import instead of require
-      const onboardingStore =
-        (window as any).__zustandOnboardingStore ||
-        (await import('@/stores/onboarding-store')).useOnboardingStore;
-      const onboardingData = onboardingStore.getState().formData;
-      ntnImageKey = onboardingData?.ownerIdentity?.sntnFile?.key;
-    } catch {}
+    // Get sntnFile from onboarding store if available
+    const onboardingData = useOnboardingProfileStore.getState().formData;
+    const ntnImageKey = onboardingData?.ownerIdentity?.sntnFile?.key;
 
     const payload: any = {
       email: data.email,
@@ -206,7 +191,6 @@ export function SignUpForm() {
       description: data.businessDescription,
       logoUrl: logoPreview,
     };
-    // Only add ntnImageKey if present. Do NOT add frontNicKey or backNicKey.
     if (ntnImageKey) {
       payload.ntnImageKey = ntnImageKey;
     }

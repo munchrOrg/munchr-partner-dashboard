@@ -1,7 +1,5 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
@@ -16,20 +14,16 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { authKeys } from '@/react-query/auth/keys';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 export function EmailConfirmModal() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const updateProfileMutation = useUpdateProfile();
-  const { data: profile } = useProfile();
-  const { isEmailConfirmModalOpen, closeEmailConfirmModal } = useOnboardingStore();
+  const { profileData, isEmailConfirmModalOpen, closeEmailConfirmModal, nextStep } =
+    useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
 
-  const businessEmail = profile?.user?.email || profile?.partner?.email || '';
+  const businessEmail = profileData?.user?.email || profileData?.partner?.email || '';
   const [email, setEmail] = useState(businessEmail);
 
   const handleOpenChange = (open: boolean) => {
@@ -41,24 +35,17 @@ export function EmailConfirmModal() {
   };
 
   const handleConfirm = async () => {
-    // Check if email matches partner email
-    // if (profile?.partner?.email && email === profile.partner.email) {
-    //   toast.error('This email is already in use. Please use a different email address.');
-    //   return;
-    // }
-
     try {
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.BUSINESS_INFO_REVIEW,
-        completeStep: OnboardingStep.BUSINESS_INFO_REVIEW,
-        completePhase: OnboardingPhase.ADD_BUSINESS,
-        // email,
-      } as any);
-
-      await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+      await updateProfile(
+        {
+          completeStep: OnboardingStep.BUSINESS_INFO_REVIEW,
+          completePhase: OnboardingPhase.ADD_BUSINESS,
+        },
+        { shouldAdvanceStep: false }
+      );
 
       closeEmailConfirmModal();
-      router.push(`/onboarding/${OnboardingStep.WELCOME}`);
+      nextStep();
     } catch (err) {
       console.error('Failed to update profile with email:', err);
       toast.error('Failed to save email. Please try again.');

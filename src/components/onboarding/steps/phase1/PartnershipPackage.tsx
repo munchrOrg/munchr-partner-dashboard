@@ -13,9 +13,9 @@ import {
 } from '@/components/ui/accordion';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { cn } from '@/lib/utils';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 const PACKAGES = [
@@ -104,11 +104,14 @@ const PACKAGES = [
 ];
 
 export function PartnershipPackage() {
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { formData, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
 
-  const [selectedPackage, setSelectedPackage] = useState<PackageFormData>({
-    selectedPackageId: '',
+  const [selectedPackage, setSelectedPackage] = useState<PackageFormData>(() => {
+    if (formData.package) {
+      return formData.package;
+    }
+    return { selectedPackageId: '' };
   });
 
   const handleSelect = (packageId: string) => {
@@ -124,11 +127,12 @@ export function PartnershipPackage() {
     }
 
     try {
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.PARTNERSHIP_PACKAGE,
-      });
+      setStepFormData('package', selectedPackage);
 
-      triggerNavigation(OnboardingStep.PARTNERSHIP_PACKAGE);
+      await updateProfile(
+        { completeStep: OnboardingStep.PARTNERSHIP_PACKAGE },
+        { shouldAdvanceStep: true }
+      );
     } catch (error) {
       console.error('Failed to save package selection:', error);
       toast.error('Failed to save data. Please try again.');

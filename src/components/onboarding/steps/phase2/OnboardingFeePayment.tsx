@@ -6,11 +6,10 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 const PAYMENT_DETAILS = {
@@ -21,21 +20,26 @@ const PAYMENT_DETAILS = {
 };
 
 export function OnboardingFeePayment() {
-  const { data: profile } = useProfile();
-  const businessProfile = profile?.businessProfile;
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
+
+  const businessProfile = profileData?.businessProfile;
 
   const [copied, setCopied] = useState(false);
   const fileUploadRef = useRef<HTMLInputElement>(null);
   const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
 
-  const [onboardingFee, setOnboardingFee] = useState<OnboardingFeeFormData>(() => ({
-    paymentTransactionId: businessProfile?.paymentTransactionId || '',
-    paymentScreenshot: businessProfile?.uploadScreenshotImageKey
-      ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
-      : null,
-  }));
+  const [onboardingFee, setOnboardingFee] = useState<OnboardingFeeFormData>(() => {
+    if (formData.onboardingFee) {
+      return formData.onboardingFee;
+    }
+    return {
+      paymentTransactionId: businessProfile?.paymentTransactionId || '',
+      paymentScreenshot: businessProfile?.uploadScreenshotImageKey
+        ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
+        : null,
+    };
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -46,12 +50,17 @@ export function OnboardingFeePayment() {
     }
 
     try {
+      setStepFormData('onboardingFee', onboardingFee);
+
       const file = onboardingFee.paymentScreenshot as FileUpload & { key?: string };
-      await updateProfileMutation.mutateAsync({
-        paymentTransactionId: onboardingFee.paymentTransactionId || '',
-        uploadScreenshotImageKey: file?.key || '',
-      });
-      triggerNavigation(OnboardingStep.ONBOARDING_FEE_PAYMENT);
+      await updateProfile(
+        {
+          completeStep: OnboardingStep.ONBOARDING_FEE_PAYMENT,
+          paymentTransactionId: onboardingFee.paymentTransactionId || '',
+          uploadScreenshotImageKey: file?.key || '',
+        },
+        { shouldAdvanceStep: true }
+      );
     } catch (error) {
       console.error('Failed to save onboarding fee payment:', error);
       toast.error('Failed to save data. Please try again.');

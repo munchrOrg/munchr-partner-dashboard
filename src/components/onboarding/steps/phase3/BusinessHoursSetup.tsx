@@ -7,9 +7,8 @@ import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import TimeConfirmationDrawer from '@/components/onboarding/shared/TimeConfirmationDrawer';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 const DAYS_OF_WEEK = [
@@ -74,14 +73,16 @@ function convertOperatingHoursToFormData(
 }
 
 export function BusinessHoursSetup() {
-  const { data: profile } = useProfile();
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
   const [editingDay, setEditingDay] = useState<DayKey | null>(null);
 
-  const [businessHours, setBusinessHours] = useState<BusinessHoursFormData>(() =>
-    convertOperatingHoursToFormData(profile?.primaryBranch?.operatingHours)
-  );
+  const [businessHours, setBusinessHours] = useState<BusinessHoursFormData>(() => {
+    if (formData.businessHours) {
+      return formData.businessHours;
+    }
+    return convertOperatingHoursToFormData(profileData?.primaryBranch?.operatingHours);
+  });
 
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
     setBusinessHours((prev) => ({
@@ -116,6 +117,8 @@ export function BusinessHoursSetup() {
       }
     }
 
+    setStepFormData('businessHours', businessHours);
+
     const dayMapping = {
       monday: 1,
       tuesday: 2,
@@ -149,12 +152,13 @@ export function BusinessHoursSetup() {
     });
 
     try {
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.BUSINESS_HOURS_SETUP,
-        operatingHours: operatingHoursPayload,
-      });
-
-      triggerNavigation(OnboardingStep.BUSINESS_HOURS_SETUP);
+      await updateProfile(
+        {
+          completeStep: OnboardingStep.BUSINESS_HOURS_SETUP,
+          operatingHours: operatingHoursPayload,
+        },
+        { shouldAdvanceStep: true }
+      );
     } catch (error) {
       console.error('Failed to save business hours:', error);
       toast.error('Failed to save data. Please try again.');

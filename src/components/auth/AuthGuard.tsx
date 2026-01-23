@@ -3,10 +3,9 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
-import { STEP_ORDER } from '@/config/onboarding-steps';
 import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { OnboardingPhase } from '@/types/onboarding';
 
 type AuthGuardProps = {
   children: React.ReactNode;
@@ -65,7 +64,7 @@ export function AuthGuard({
       };
     }
 
-    if (pathname === `/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`) {
+    if (pathname === '/onboarding') {
       return {
         isChecking: false,
         isAuthorized: true,
@@ -135,11 +134,8 @@ export function AuthGuard({
       }
     }
 
-    const currentStep = profile.onboarding?.currentStep as OnboardingStep;
-    const completedSteps = (profile.onboarding?.completedSteps || []) as string[];
-
-    if (enforceCurrentStep && currentStep) {
-      const expectedPath = `/onboarding/${currentStep}`;
+    if (enforceCurrentStep) {
+      const expectedPath = '/onboarding';
 
       if (profile.onboarding?.isOnboardingCompleted) {
         if (pathname.startsWith('/dashboard')) {
@@ -161,28 +157,7 @@ export function AuthGuard({
           };
         }
       } else {
-        // Not on onboarding page - redirect to current step
         if (!pathname.startsWith('/onboarding')) {
-          return {
-            isChecking: false,
-            isAuthorized: false,
-            redirectTo: expectedPath,
-            shouldClearAuth: false,
-            showPendingApprovalToast: false,
-          };
-        }
-
-        const pathStep = pathname.replace('/onboarding/', '').split('/')[0] as OnboardingStep;
-        const pathStepIndex = STEP_ORDER.indexOf(pathStep);
-        const currentStepIndex = STEP_ORDER.indexOf(currentStep);
-
-        const isOnCurrentStep = pathStep === currentStep;
-        const isBackNavigation =
-          pathStepIndex < currentStepIndex && completedSteps.includes(pathStep);
-
-        const isAllowed = isOnCurrentStep || isBackNavigation;
-
-        if (!isAllowed && pathStep) {
           return {
             isChecking: false,
             isAuthorized: false,

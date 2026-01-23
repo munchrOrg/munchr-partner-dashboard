@@ -1,11 +1,15 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import { useParams, useRouter } from 'next/navigation';
-import { useEffect } from 'react';
-
-import { STEP_ORDER } from '@/config/onboarding-steps';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
+import { OnboardingFooter } from './layout/OnboardingFooter';
+import { OnboardingHeader } from './layout/OnboardingHeader';
+import { ConfirmModal } from './shared/ConfirmModal';
+import { EmailConfirmModal } from './shared/EmailConfirmModal';
+import { ExampleDrawer } from './shared/ExampleDrawer';
+import { MapDrawer } from './shared/MapDrawer';
+import { ProgressDrawer } from './shared/ProgressDrawer';
 
 const stepComponents: Record<OnboardingStep, React.ComponentType> = {
   [OnboardingStep.WELCOME]: dynamic(
@@ -135,28 +139,43 @@ const stepComponents: Record<OnboardingStep, React.ComponentType> = {
   ),
 };
 
-export default function OnboardingPage() {
-  const router = useRouter();
-  const params = useParams();
-  const step = params.step as string;
+export function OnboardingStepper() {
+  const { currentStep, isInitialized } = useOnboardingProfileStore();
 
-  // Only redirect invalid steps to welcome - AuthGuard handles all other routing
-  useEffect(() => {
-    const stepEnum = step as OnboardingStep;
-    if (!STEP_ORDER.includes(stepEnum)) {
-      router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
-    }
-  }, [step, router]);
-
-  const StepComponent = stepComponents[step as OnboardingStep];
-
-  if (!StepComponent) {
+  if (!isInitialized) {
     return (
-      <div className="flex h-full items-center justify-center">
-        <p>Loading...</p>
+      <div className="flex h-dvh w-full items-center justify-center bg-white">
+        <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-400 border-t-transparent" />
       </div>
     );
   }
 
-  return <StepComponent />;
+  const StepComponent = stepComponents[currentStep];
+
+  if (!StepComponent) {
+    return (
+      <div className="flex h-dvh w-full items-center justify-center bg-white">
+        <p className="text-gray-500">
+          Unknown step:
+          {currentStep}
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-dvh bg-white">
+      <OnboardingHeader />
+      <main className="h-[calc(100dvh-128px-96px)] w-full overflow-y-auto">
+        <StepComponent />
+      </main>
+      <OnboardingFooter />
+
+      <ProgressDrawer />
+      <ExampleDrawer />
+      <MapDrawer />
+      <ConfirmModal />
+      <EmailConfirmModal />
+    </div>
+  );
 }

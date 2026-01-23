@@ -5,20 +5,29 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { AssetType, OnboardingStep } from '@/types/onboarding';
 
 export function DineInMenuUpload() {
-  const { openExampleDrawer, openConfirmModal, triggerNavigation, setIsUploading } =
-    useOnboardingStore();
-  const { data: profile } = useProfile();
-  const businessProfile = profile?.businessProfile;
-  const updateProfileMutation = useUpdateProfile();
+  const {
+    openExampleDrawer,
+    openConfirmModal,
+    setIsUploading,
+    profileData,
+    formData,
+    setStepFormData,
+    nextStep,
+  } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
+
+  const businessProfile = profileData?.businessProfile;
 
   const [menu, setMenu] = useState<MenuFormData>(() => {
+    if (formData.menu) {
+      return formData.menu;
+    }
     const prefilled = businessProfile?.menuImageKey
       ? createFileUploadFromKey(businessProfile.menuImageKey, 'Menu')
       : null;
@@ -34,11 +43,16 @@ export function DineInMenuUpload() {
     }
 
     try {
+      setStepFormData('menu', menu);
+
       const file = menu.menuFile as FileUpload & { key?: string };
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.DINE_IN_MENU_UPLOAD,
-        menuImageKey: file?.key || '',
-      });
+      await updateProfile(
+        {
+          completeStep: OnboardingStep.DINE_IN_MENU_UPLOAD,
+          menuImageKey: file?.key || '',
+        },
+        { shouldAdvanceStep: false }
+      );
 
       openConfirmModal({
         title: 'Does your menu meet the requirements?',
@@ -50,7 +64,7 @@ export function DineInMenuUpload() {
         ],
         confirmText: 'Yes, Continue',
         cancelText: 'No, Re-upload Menu',
-        onConfirm: () => triggerNavigation(OnboardingStep.DINE_IN_MENU_UPLOAD),
+        onConfirm: () => nextStep(),
       });
     } catch (error) {
       console.error('Failed to save menu:', error);

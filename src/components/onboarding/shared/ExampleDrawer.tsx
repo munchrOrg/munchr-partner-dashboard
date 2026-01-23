@@ -4,10 +4,11 @@ import Image from 'next/image';
 
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { cn } from '@/lib/utils';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 export function ExampleDrawer() {
-  const { isExampleDrawerOpen, closeExampleDrawer, exampleDrawerConfig } = useOnboardingStore();
+  const { isExampleDrawerOpen, closeExampleDrawer, exampleDrawerConfig } =
+    useOnboardingProfileStore();
 
   if (!exampleDrawerConfig) {
     return null;

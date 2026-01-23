@@ -8,9 +8,8 @@ import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 const legalTaxSchema = z.object({
@@ -23,13 +22,12 @@ const legalTaxSchema = z.object({
 type LegalTaxInput = z.infer<typeof legalTaxSchema>;
 
 export function LegalTaxDetails() {
-  const { data: profile } = useProfile();
-  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { openExampleDrawer, profileData, formData, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
 
-  const businessProfile = profile?.businessProfile;
+  const businessProfile = profileData?.businessProfile;
 
-  const legalTaxDefaults = {
+  const legalTaxDefaults = formData.legalTax || {
     cnicNumber: businessProfile?.cnicNumber || '',
     taxRegistrationNo: businessProfile?.taxRegistrationNo || '',
     firstAndMiddleNameForNic: businessProfile?.firstAndMiddleNameForNic || '',
@@ -47,8 +45,10 @@ export function LegalTaxDetails() {
   });
 
   const onSubmit = async (data: LegalTaxInput) => {
+    setStepFormData('legalTax', data);
+
     const payload = {
-      currentStep: OnboardingStep.LEGAL_TAX_DETAILS,
+      completeStep: OnboardingStep.LEGAL_TAX_DETAILS,
       cnicNumber: data.cnicNumber,
       taxRegistrationNo: data.taxRegistrationNo,
       firstAndMiddleNameForNic: data.firstAndMiddleNameForNic,
@@ -56,14 +56,11 @@ export function LegalTaxDetails() {
     };
 
     try {
-      const resp = await updateProfileMutation.mutateAsync(payload);
+      const resp = await updateProfile(payload, { shouldAdvanceStep: true });
 
       if (!resp || !resp.success) {
         toast.error(resp?.message || 'Failed to save legal & tax details');
-        return;
       }
-
-      triggerNavigation(OnboardingStep.LEGAL_TAX_DETAILS);
     } catch (err) {
       toast.error('Something went wrong while saving legal & tax details');
       console.error(err);

@@ -11,9 +11,8 @@ import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Input } from '@/components/ui/input';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 const libraries: 'places'[] = ['places'];
@@ -49,16 +48,21 @@ const fieldConfigs: FieldConfig[] = [
 ];
 
 export function BusinessLocation() {
-  const { data: profile } = useProfile();
-  const { openMapDrawer, triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, openMapDrawer, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
+
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinates | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
-  const addressData: { [key: string]: any } = profile?.location || {};
-  const getDefault = (key: string) => {
-    return addressData[key] ?? '';
+  const storedLocation = formData.location;
+  const addressData = profileData?.location || {};
+
+  const getDefault = (key: keyof LocationInput) => {
+    if (storedLocation && storedLocation[key as keyof LocationFormData] !== undefined) {
+      return storedLocation[key as keyof LocationFormData] as string;
+    }
+    return (addressData as any)[key] ?? '';
   };
 
   const { isLoaded } = useJsApiLoader({
@@ -147,26 +151,30 @@ export function BusinessLocation() {
   const handleMapConfirm = useCallback(
     async (confirmedLocation: LocationFormData) => {
       try {
-        await updateProfileMutation.mutateAsync({
-          currentStep: OnboardingStep.BUSINESS_LOCATION,
-          buildingPlaceName: confirmedLocation.buildingPlaceName,
-          street: confirmedLocation.street,
-          houseNumber: confirmedLocation.houseNumber,
-          state: confirmedLocation.state,
-          city: confirmedLocation.city,
-          area: confirmedLocation.area,
-          postalCode: confirmedLocation.postalCode,
-          addCommentAboutLocation: confirmedLocation.addCommentAboutLocation,
-          latitude: confirmedLocation.coordinates?.lat,
-          longitude: confirmedLocation.coordinates?.lng,
-        });
+        setStepFormData('location', confirmedLocation);
 
-        triggerNavigation(OnboardingStep.BUSINESS_LOCATION);
+        await updateProfile(
+          {
+            currentStep: OnboardingStep.BUSINESS_LOCATION,
+            completeStep: OnboardingStep.BUSINESS_LOCATION,
+            buildingPlaceName: confirmedLocation.buildingPlaceName,
+            street: confirmedLocation.street,
+            houseNumber: confirmedLocation.houseNumber,
+            state: confirmedLocation.state,
+            city: confirmedLocation.city,
+            area: confirmedLocation.area,
+            postalCode: confirmedLocation.postalCode,
+            addCommentAboutLocation: confirmedLocation.addCommentAboutLocation,
+            latitude: confirmedLocation.coordinates?.lat,
+            longitude: confirmedLocation.coordinates?.lng,
+          },
+          { shouldAdvanceStep: true }
+        );
       } catch {
         toast.error('Failed to save location');
       }
     },
-    [updateProfileMutation, triggerNavigation]
+    [updateProfile, setStepFormData]
   );
 
   const onSubmit = async (data: LocationInput) => {

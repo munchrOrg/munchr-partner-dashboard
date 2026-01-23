@@ -1,22 +1,18 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useRouter } from 'next/navigation';
+import { useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
   canGoBack,
   getNextStep,
-  getPrevStep,
   isLastStepOfPhase,
   PHASE_ENTRY_STEP,
   STEP_PHASE_MAP,
 } from '@/config/onboarding-steps';
-import { authKeys } from '@/react-query/auth/keys';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 const STEPS_WITHOUT_FORMS = new Set([
@@ -30,28 +26,22 @@ const STEPS_WITHOUT_FORMS = new Set([
 
 export function OnboardingFooter() {
   const router = useRouter();
-  const params = useParams();
-  const queryClient = useQueryClient();
 
-  const currentStep = params.step as OnboardingStep;
+  const {
+    currentStep,
+    completedPhases,
+    previousStep,
+    openProgressDrawer,
+    isSubmitting,
+    isUploading,
+  } = useOnboardingProfileStore();
 
-  const { data: profile } = useProfile();
-  const completedPhases = useMemo(
-    () => (profile?.onboarding?.completedPhases || []) as string[],
-    [profile?.onboarding?.completedPhases]
-  );
-
-  const { openProgressDrawer, shouldNavigate, navigationStep, clearNavigation, isUploading } =
-    useOnboardingStore();
+  const { updateProfile, isPending } = useOnboardingUpdateProfile();
 
   const showBack = canGoBack(currentStep);
-
   const formId = 'onboarding-step-form';
   const hasForm = !STEPS_WITHOUT_FORMS.has(currentStep);
 
-  const updateProfileMutation = useUpdateProfile();
-
-  // Determine next step after WELCOME based on completed phases
   const getNextStepAfterWelcome = useCallback((): OnboardingStep => {
     if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
       return PHASE_ENTRY_STEP[OnboardingPhase.OPEN_BUSINESS];
@@ -62,86 +52,51 @@ export function OnboardingFooter() {
     return PHASE_ENTRY_STEP[OnboardingPhase.ADD_BUSINESS];
   }, [completedPhases]);
 
-  const completeStep = useCallback(
+  const completeStepAction = useCallback(
     async (step: OnboardingStep) => {
       const isPhaseComplete = isLastStepOfPhase(step);
       const phase = STEP_PHASE_MAP[step];
-
       const nextStep =
         step === OnboardingStep.WELCOME ? getNextStepAfterWelcome() : getNextStep(step);
 
-      console.log('=== FOOTER completeStep DEBUG ===');
-      console.log('step:', step);
-      console.log('phase:', phase);
-      console.log('isPhaseComplete:', isPhaseComplete);
-      console.log('nextStep:', nextStep);
-
       try {
-        const onboardingPayload: any = {
+        const payload: any = {
           completeStep: step,
           currentStep: nextStep || step,
         };
 
         if (isPhaseComplete) {
-          onboardingPayload.completePhase = phase;
+          payload.completePhase = phase;
         }
 
-        console.log('Sending payload:', onboardingPayload);
-        const response = await updateProfileMutation.mutateAsync(onboardingPayload);
-        console.log('API response:', response);
-
-        await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
+        await updateProfile(payload, {
+          shouldAdvanceStep: true,
+          onSuccess: () => {
+            if (phase === OnboardingPhase.VERIFY_BUSINESS && isPhaseComplete) {
+              router.push('/sign-in');
+              return;
+            }
+            if (!nextStep) {
+              router.push('/dashboard');
+            }
+          },
+        });
       } catch (error) {
         console.error('Failed to sync onboarding progress:', error);
-        return;
-      }
-
-      if (phase === OnboardingPhase.VERIFY_BUSINESS && isPhaseComplete) {
-        console.log('Phase 2 complete - not navigating (AuthGuard handles logout)');
-        return;
-      }
-
-      console.log('Navigating to:', nextStep ? `/onboarding/${nextStep}` : '/dashboard');
-      if (nextStep) {
-        router.push(`/onboarding/${nextStep}`);
-      } else {
-        router.push('/dashboard');
       }
     },
-    [router, updateProfileMutation, queryClient, getNextStepAfterWelcome]
+    [updateProfile, getNextStepAfterWelcome, router]
   );
 
-  useEffect(() => {
-    if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
-      if (shouldNavigate) {
-        clearNavigation();
-      }
-      return;
-    }
+  const handleBack = useCallback(() => {
+    previousStep();
+  }, [previousStep]);
 
-    if (shouldNavigate && navigationStep) {
-      if (navigationStep !== currentStep) {
-        console.log('Skipping stale navigation:', navigationStep, 'current:', currentStep);
-        clearNavigation();
-        return;
-      }
-      completeStep(navigationStep);
-      clearNavigation();
-    }
-  }, [shouldNavigate, navigationStep, completeStep, clearNavigation, currentStep]);
-
-  const handleBack = () => {
-    const prevStep = getPrevStep(currentStep);
-    if (prevStep) {
-      router.push(`/onboarding/${prevStep}`);
-    }
-  };
-
-  const handleContinue = () => {
+  const handleContinue = useCallback(() => {
     if (STEPS_WITHOUT_FORMS.has(currentStep)) {
-      completeStep(currentStep);
+      completeStepAction(currentStep);
     }
-  };
+  }, [currentStep, completeStepAction]);
 
   if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
     return null;
@@ -156,6 +111,7 @@ export function OnboardingFooter() {
               type="button"
               variant="outline"
               onClick={handleBack}
+              disabled={isPending || isSubmitting}
               className="size-full rounded-full border-gray-400 px-6 text-lg font-medium text-black"
             >
               Back
@@ -177,14 +133,10 @@ export function OnboardingFooter() {
             type={hasForm ? 'submit' : 'button'}
             form={hasForm ? formId : undefined}
             onClick={hasForm ? undefined : handleContinue}
-            disabled={updateProfileMutation.isPending || isUploading}
+            disabled={isPending || isSubmitting || isUploading}
             className="bg-gradient-yellow size-full rounded-full px-6 text-lg font-medium text-black disabled:opacity-50"
           >
-            {updateProfileMutation.isPending
-              ? 'Saving...'
-              : isUploading
-                ? 'Uploading...'
-                : 'Continue'}
+            {isPending || isSubmitting ? 'Saving...' : isUploading ? 'Uploading...' : 'Continue'}
           </Button>
         </div>
       </div>

@@ -14,11 +14,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
+import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { convertTo24HourFormat, formatToHHMM, is24HourFormat } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { NetworkProvider, OnboardingStep } from '@/types/onboarding';
 
 const NETWORK_PROVIDERS = [
@@ -41,16 +40,21 @@ const TIME_SLOTS = [
 ];
 
 export function TrainingCallPreference() {
-  const { data: profile } = useProfile();
-  const bookSlot = profile?.bookSlot;
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
+  const { updateProfile } = useOnboardingUpdateProfile();
 
-  const [trainingCall, setTrainingCall] = useState<TrainingCallFormData>(() => ({
-    networkProvider: (bookSlot?.networkPreference as NetworkProvider) || null,
-    preferredDate: bookSlot?.bookingDate || '',
-    preferredTime: bookSlot?.bookingTime ? formatToHHMM(bookSlot.bookingTime) : '',
-  }));
+  const bookSlot = profileData?.bookSlot;
+
+  const [trainingCall, setTrainingCall] = useState<TrainingCallFormData>(() => {
+    if (formData.trainingCall) {
+      return formData.trainingCall;
+    }
+    return {
+      networkProvider: (bookSlot?.networkPreference as NetworkProvider) || null,
+      preferredDate: bookSlot?.bookingDate || '',
+      preferredTime: bookSlot?.bookingTime ? formatToHHMM(bookSlot.bookingTime) : '',
+    };
+  });
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -69,20 +73,23 @@ export function TrainingCallPreference() {
     }
 
     try {
+      setStepFormData('trainingCall', trainingCall);
+
       const time24 = is24HourFormat(trainingCall.preferredTime)
         ? trainingCall.preferredTime
         : convertTo24HourFormat(trainingCall.preferredTime);
 
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.TRAINING_CALL_PREFERENCE,
-        bookSlot: {
-          networkPreference: trainingCall.networkProvider,
-          date: trainingCall.preferredDate,
-          time: time24,
+      await updateProfile(
+        {
+          completeStep: OnboardingStep.TRAINING_CALL_PREFERENCE,
+          bookSlot: {
+            networkPreference: trainingCall.networkProvider,
+            date: trainingCall.preferredDate,
+            time: time24,
+          },
         },
-      });
-
-      triggerNavigation(OnboardingStep.TRAINING_CALL_PREFERENCE);
+        { shouldAdvanceStep: true }
+      );
     } catch (error) {
       console.error('Failed to save training call preference:', error);
       toast.error('Failed to save data. Please try again.');
