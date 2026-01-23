@@ -79,16 +79,6 @@ export enum AssetType {
   OTHER = 'other',
 }
 
-// export enum DayOfWeek {
-//   MONDAY = 'monday',
-//   TUESDAY = 'tuesday',
-//   WEDNESDAY = 'wednesday',
-//   THURSDAY = 'thursday',
-//   FRIDAY = 'friday',
-//   SATURDAY = 'saturday',
-//   SUNDAY = 'sunday',
-// }
-
 // ===== Form Data Types =====
 export type BusinessInfoFormData = {
   serviceProviderType: 'restaurant' | 'home-chef';

@@ -14,11 +14,10 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
-import { convertTo24HourFormat, formatToHHMM, is24HourFormat } from '@/lib/helpers';
+import { formatToHHMM } from '@/lib/helpers';
 import { cn } from '@/lib/utils';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { NetworkProvider, OnboardingStep } from '@/types/onboarding';
+import { NetworkProvider } from '@/types/onboarding';
 
 const NETWORK_PROVIDERS = [
   { value: NetworkProvider.JAZZ, label: 'Jazz', image: '/jazz.png' },
@@ -40,8 +39,8 @@ const TIME_SLOTS = [
 ];
 
 export function TrainingCallPreference() {
-  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
   const bookSlot = profileData?.bookSlot;
 
@@ -56,7 +55,7 @@ export function TrainingCallPreference() {
     };
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!trainingCall.networkProvider) {
@@ -72,28 +71,8 @@ export function TrainingCallPreference() {
       return;
     }
 
-    try {
-      setStepFormData('trainingCall', trainingCall);
-
-      const time24 = is24HourFormat(trainingCall.preferredTime)
-        ? trainingCall.preferredTime
-        : convertTo24HourFormat(trainingCall.preferredTime);
-
-      await updateProfile(
-        {
-          completeStep: OnboardingStep.TRAINING_CALL_PREFERENCE,
-          bookSlot: {
-            networkPreference: trainingCall.networkProvider,
-            date: trainingCall.preferredDate,
-            time: time24,
-          },
-        },
-        { shouldAdvanceStep: true }
-      );
-    } catch (error) {
-      console.error('Failed to save training call preference:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('trainingCall', trainingCall);
+    setPendingFormSubmit(true);
   };
 
   const handleProviderSelect = (provider: NetworkProvider) => {

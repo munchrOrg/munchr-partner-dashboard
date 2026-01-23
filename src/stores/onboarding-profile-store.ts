@@ -41,6 +41,7 @@ type OnboardingProfileState = {
 
   isSubmitting: boolean;
   isUploading: boolean;
+  pendingFormSubmit: boolean;
 };
 
 type OnboardingProfileActions = {
@@ -81,6 +82,7 @@ type OnboardingProfileActions = {
 
   setIsSubmitting: (isSubmitting: boolean) => void;
   setIsUploading: (isUploading: boolean) => void;
+  setPendingFormSubmit: (pending: boolean) => void;
 
   reset: () => void;
 };
@@ -107,6 +109,7 @@ const initialState: OnboardingProfileState = {
   confirmModalConfig: null,
   isSubmitting: false,
   isUploading: false,
+  pendingFormSubmit: false,
 };
 
 function convertOperatingHoursToFormData(
@@ -314,8 +317,8 @@ export const useOnboardingProfileStore = create<OnboardingProfileStore>()((set, 
         return state;
       }
 
-      const newOnboarding = response.data?.onboarding || {};
-      // Convert null to undefined for currentStep to match ProfileOnboarding type
+      const newOnboarding = response.data?.onboarding || (response as any).onboarding || {};
+
       const mergedOnboarding: ProfileOnboarding = {
         ...state.profileData.onboarding,
         ...newOnboarding,
@@ -357,8 +360,8 @@ export const useOnboardingProfileStore = create<OnboardingProfileStore>()((set, 
   },
 
   nextStep: () => {
-    const { currentStep } = get();
-    const next = getNextStep(currentStep);
+    const { currentStep, completedPhases } = get();
+    const next = getNextStep(currentStep, completedPhases);
     if (next) {
       set({ currentStep: next });
     }
@@ -423,6 +426,7 @@ export const useOnboardingProfileStore = create<OnboardingProfileStore>()((set, 
 
   setIsSubmitting: (isSubmitting: boolean) => set({ isSubmitting }),
   setIsUploading: (isUploading: boolean) => set({ isUploading }),
+  setPendingFormSubmit: (pending: boolean) => set({ pendingFormSubmit: pending }),
 
   reset: () => set(initialState),
 }));

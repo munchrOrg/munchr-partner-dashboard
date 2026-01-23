@@ -5,10 +5,9 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { AssetType, OnboardingStep } from '@/types/onboarding';
+import { AssetType } from '@/types/onboarding';
 
 export function DineInMenuUpload() {
   const {
@@ -18,9 +17,8 @@ export function DineInMenuUpload() {
     profileData,
     formData,
     setStepFormData,
-    nextStep,
+    setPendingFormSubmit,
   } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
 
   const businessProfile = profileData?.businessProfile;
 
@@ -34,7 +32,7 @@ export function DineInMenuUpload() {
     return { menuFile: prefilled };
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!menu.menuFile) {
@@ -42,34 +40,22 @@ export function DineInMenuUpload() {
       return;
     }
 
-    try {
-      setStepFormData('menu', menu);
+    setStepFormData('menu', menu);
 
-      const file = menu.menuFile as FileUpload & { key?: string };
-      await updateProfile(
-        {
-          completeStep: OnboardingStep.DINE_IN_MENU_UPLOAD,
-          menuImageKey: file?.key || '',
-        },
-        { shouldAdvanceStep: false }
-      );
-
-      openConfirmModal({
-        title: 'Does your menu meet the requirements?',
-        description:
-          'If the menu fails to meet the conditions, we cannot process your request to join munchr.',
-        bulletPoints: [
-          'A minimum of menu items for Regular Restaurants, or 18 items for Home Chefs.',
-          'All menu items have a price',
-        ],
-        confirmText: 'Yes, Continue',
-        cancelText: 'No, Re-upload Menu',
-        onConfirm: () => nextStep(),
-      });
-    } catch (error) {
-      console.error('Failed to save menu:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    openConfirmModal({
+      title: 'Does your menu meet the requirements?',
+      description:
+        'If the menu fails to meet the conditions, we cannot process your request to join munchr.',
+      bulletPoints: [
+        'A minimum of menu items for Regular Restaurants, or 18 items for Home Chefs.',
+        'All menu items have a price',
+      ],
+      confirmText: 'Yes, Continue',
+      cancelText: 'No, Re-upload Menu',
+      onConfirm: () => {
+        setPendingFormSubmit(true);
+      },
+    });
   };
 
   const handleFileChange = (file: FileUpload | null) => {

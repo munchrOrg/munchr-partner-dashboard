@@ -6,15 +6,19 @@ import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { AssetType, OnboardingStep } from '@/types/onboarding';
+import { AssetType } from '@/types/onboarding';
 
 export function BankStatementUpload() {
-  const { openExampleDrawer, setIsUploading, profileData, formData, setStepFormData } =
-    useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const {
+    openExampleDrawer,
+    setIsUploading,
+    profileData,
+    formData,
+    setStepFormData,
+    setPendingFormSubmit,
+  } = useOnboardingProfileStore();
 
   const billingInfo = profileData?.billingInfo;
 
@@ -28,7 +32,7 @@ export function BankStatementUpload() {
     return { statementFile: prefilled };
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!bankStatement.statementFile) {
@@ -36,21 +40,8 @@ export function BankStatementUpload() {
       return;
     }
 
-    try {
-      setStepFormData('bankStatement', bankStatement);
-
-      const file = bankStatement.statementFile as FileUpload & { key?: string };
-      await updateProfile(
-        {
-          completeStep: OnboardingStep.BANK_STATEMENT_UPLOAD,
-          chequeBookImageKey: file?.key || '',
-        },
-        { shouldAdvanceStep: true }
-      );
-    } catch (error) {
-      console.error('Failed to save bank statement:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('bankStatement', bankStatement);
+    setPendingFormSubmit(true);
   };
 
   const handleFileChange = (file: FileUpload | null) => {

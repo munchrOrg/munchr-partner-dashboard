@@ -16,9 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { OnboardingStep, PaymentMethod } from '@/types/onboarding';
+import { PaymentMethod } from '@/types/onboarding';
 import { paymentFormSchema } from '@/validations/payment';
 
 const PAYMENT_OPTIONS = [
@@ -47,8 +46,8 @@ const maskCardNumber = (number: string) => {
 };
 
 export function PaymentMethodSelection() {
-  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
   const billingInfoData = profileData?.billingInfo;
 
   const getInitialPaymentData = (): PaymentMethodFormData => {
@@ -158,7 +157,7 @@ export function PaymentMethodSelection() {
     });
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!paymentData.savedAccounts?.length) {
@@ -170,28 +169,8 @@ export function PaymentMethodSelection() {
       return;
     }
 
-    try {
-      setStepFormData('paymentMethod', paymentData);
-
-      const selected = paymentData.savedAccounts.find(
-        (acc) => acc.id === paymentData.selectedAccountId
-      );
-      if (selected) {
-        await updateProfile(
-          {
-            completeStep: OnboardingStep.PAYMENT_METHOD_SELECTION,
-            paymentMethod: {
-              paymentMethod: selected.method,
-              accountNumber: selected.accountNumber,
-            },
-          },
-          { shouldAdvanceStep: true }
-        );
-      }
-    } catch (error) {
-      console.error('Failed to save payment method:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('paymentMethod', paymentData);
+    setPendingFormSubmit(true);
   };
 
   const renderPaymentFields = () => {

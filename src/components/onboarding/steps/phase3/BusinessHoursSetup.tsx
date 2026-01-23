@@ -7,9 +7,7 @@ import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import TimeConfirmationDrawer from '@/components/onboarding/shared/TimeConfirmationDrawer';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { OnboardingStep } from '@/types/onboarding';
 
 const DAYS_OF_WEEK = [
   { key: 'monday', label: 'Monday' },
@@ -73,8 +71,8 @@ function convertOperatingHoursToFormData(
 }
 
 export function BusinessHoursSetup() {
-  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
   const [editingDay, setEditingDay] = useState<DayKey | null>(null);
 
   const [businessHours, setBusinessHours] = useState<BusinessHoursFormData>(() => {
@@ -118,51 +116,7 @@ export function BusinessHoursSetup() {
     }
 
     setStepFormData('businessHours', businessHours);
-
-    const dayMapping = {
-      monday: 1,
-      tuesday: 2,
-      wednesday: 3,
-      thursday: 4,
-      friday: 5,
-      saturday: 6,
-      sunday: 0,
-    };
-
-    const operatingHoursPayload: any[] = [];
-    Object.entries(businessHours).forEach(([day, schedule]) => {
-      const dayOfWeek = dayMapping[day as keyof typeof dayMapping];
-      if (schedule.isOpen && schedule.slots.length > 0) {
-        schedule.slots.forEach((slot) => {
-          operatingHoursPayload.push({
-            dayOfWeek,
-            startTime: slot.open,
-            endTime: slot.close,
-            isClosed: false,
-          });
-        });
-      } else {
-        operatingHoursPayload.push({
-          dayOfWeek,
-          startTime: '00:00',
-          endTime: '00:00',
-          isClosed: true,
-        });
-      }
-    });
-
-    try {
-      await updateProfile(
-        {
-          completeStep: OnboardingStep.BUSINESS_HOURS_SETUP,
-          operatingHours: operatingHoursPayload,
-        },
-        { shouldAdvanceStep: true }
-      );
-    } catch (error) {
-      console.error('Failed to save business hours:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setPendingFormSubmit(true);
   };
 
   return (

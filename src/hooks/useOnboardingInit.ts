@@ -2,19 +2,23 @@
 
 import { useEffect } from 'react';
 import { useProfile } from '@/react-query/auth/queries';
+import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 export function useOnboardingInit() {
-  const { isInitialized, isInitializing, initialize, setInitializing, setInitError } =
-    useOnboardingProfileStore();
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
+
+  const { isInitialized, initialize, setInitializing, setInitError } = useOnboardingProfileStore();
+
+  const shouldFetch = hasHydrated && !!accessToken && !isInitialized;
 
   const {
     data: profile,
     isLoading,
     error,
-    refetch,
   } = useProfile({
-    enabled: !isInitialized,
+    enabled: shouldFetch,
     staleTime: Infinity,
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -40,15 +44,9 @@ export function useOnboardingInit() {
     }
   }, [isInitialized, isLoading, error, profile, initialize, setInitializing, setInitError]);
 
-  useEffect(() => {
-    if (!isInitialized && !isInitializing && !profile && !isLoading && !error) {
-      refetch();
-    }
-  }, [isInitialized, isInitializing, profile, isLoading, error, refetch]);
-
   return {
     isInitialized,
-    isInitializing: isInitializing || isLoading,
+    isInitializing: isLoading || (!isInitialized && shouldFetch),
     error: error?.message || null,
   };
 }

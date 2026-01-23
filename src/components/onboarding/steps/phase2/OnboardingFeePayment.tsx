@@ -6,11 +6,9 @@ import { useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
 import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { OnboardingStep } from '@/types/onboarding';
 
 const PAYMENT_DETAILS = {
   accountName: 'Food for more',
@@ -20,8 +18,8 @@ const PAYMENT_DETAILS = {
 };
 
 export function OnboardingFeePayment() {
-  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
   const businessProfile = profileData?.businessProfile;
 
@@ -41,7 +39,7 @@ export function OnboardingFeePayment() {
     };
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!onboardingFee.paymentScreenshot) {
@@ -49,22 +47,8 @@ export function OnboardingFeePayment() {
       return;
     }
 
-    try {
-      setStepFormData('onboardingFee', onboardingFee);
-
-      const file = onboardingFee.paymentScreenshot as FileUpload & { key?: string };
-      await updateProfile(
-        {
-          completeStep: OnboardingStep.ONBOARDING_FEE_PAYMENT,
-          paymentTransactionId: onboardingFee.paymentTransactionId || '',
-          uploadScreenshotImageKey: file?.key || '',
-        },
-        { shouldAdvanceStep: true }
-      );
-    } catch (error) {
-      console.error('Failed to save onboarding fee payment:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('onboardingFee', onboardingFee);
+    setPendingFormSubmit(true);
   };
 
   const handleCopyIban = async () => {

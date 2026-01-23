@@ -222,6 +222,7 @@ export type VerifyPhoneResponse = {
 
 // Nested types for UpdateProfileRequest
 export type BillingAddressType = {
+  address?: string;
   buildingPlaceName?: string;
   street?: string;
   houseNumber?: string;
@@ -371,12 +372,17 @@ export type ProfileBranchAccess = {
   } | null;
 };
 
+export type ProfileCuisine = {
+  id: string;
+  name: string;
+};
+
 export type ProfilePrimaryBranch = {
   id: string;
   branchName: string;
   description: string;
   contactEmail: string;
-  cuisineIds: string[];
+  cuisines: ProfileCuisine[];
   operatingHours: OperatingHoursType[];
 };
 

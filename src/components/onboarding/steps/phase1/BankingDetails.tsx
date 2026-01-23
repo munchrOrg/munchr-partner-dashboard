@@ -5,14 +5,11 @@ import { CircleAlert } from 'lucide-react';
 import { useEffect } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
-import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { OnboardingStep } from '@/types/onboarding';
 
 const bankingSchema = z.object({
   accountTitle: z.string().min(1, 'Account title is required'),
@@ -32,11 +29,11 @@ const bankingSchema = z.object({
 type BankingInput = z.infer<typeof bankingSchema>;
 
 export function BankingDetails() {
-  const { profileData, formData, setStepFormData } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
   const billingInfoData = profileData?.billingInfo;
-  const locationData = profileData?.location;
+  const locationData = formData.location || profileData?.location;
 
   const storedBanking = formData.banking;
   const bankingPrefill = {
@@ -45,7 +42,7 @@ export function BankingDetails() {
     iban: storedBanking?.iban || billingInfoData?.IBAN || '',
     sameAsBusinessAddress:
       storedBanking?.sameAsBusinessAddress ?? billingInfoData?.billingAddressAreSame ?? false,
-    address: '',
+    address: storedBanking?.address || '',
     buildingName:
       storedBanking?.buildingName || billingInfoData?.billingAddress?.buildingPlaceName || '',
     street: storedBanking?.street || billingInfoData?.billingAddress?.street || '',
@@ -94,12 +91,13 @@ export function BankingDetails() {
     }
   }, [sameAsBusinessAddress, locationData, setValue]);
 
-  const onSubmit = async (data: BankingInput) => {
+  const onSubmit = (data: BankingInput) => {
     setStepFormData('banking', {
       accountTitle: data.accountTitle,
       bankName: data.bankName,
       iban: data.iban,
       sameAsBusinessAddress: data.sameAsBusinessAddress,
+      address: data.address,
       buildingName: data.buildingName,
       street: data.street,
       houseNumber: data.houseNumber,
@@ -108,34 +106,7 @@ export function BankingDetails() {
       area: data.area,
       billingPostalCode: data.billingPostalCode,
     });
-
-    const payload: any = {
-      currentStep: OnboardingStep.BANKING_DETAILS,
-      completeStep: OnboardingStep.BANKING_DETAILS,
-      billingAddressAreSame: data.sameAsBusinessAddress,
-      bankAccountOwner: data.accountTitle,
-      bankName: data.bankName,
-      IBAN: data.iban,
-    };
-
-    if (!data.sameAsBusinessAddress) {
-      payload.billingAddress = {
-        address: data.address || '',
-        street: data.street || '',
-        houseNumber: data.houseNumber || '',
-        state: data.billingState || '',
-        city: data.billingCity || '',
-        area: data.area || '',
-        postalCode: data.billingPostalCode || '',
-      };
-    }
-
-    try {
-      await updateProfile(payload, { shouldAdvanceStep: true });
-    } catch (err) {
-      toast.error('Something went wrong while saving banking details');
-      console.error(err);
-    }
+    setPendingFormSubmit(true);
   };
 
   return (

@@ -10,7 +10,7 @@ import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 export function BusinessInfoReview() {
-  const { profileData, openEmailConfirmModal, goToStep } = useOnboardingProfileStore();
+  const { profileData, formData, openEmailConfirmModal, goToStep } = useOnboardingProfileStore();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -26,8 +26,9 @@ export function BusinessInfoReview() {
 
   const partner = profileData?.partner;
   const businessProfile = profileData?.businessProfile;
-  const location = profileData?.location;
+  const location = formData.location || profileData?.location;
   const billingInfo = profileData?.billingInfo;
+  const bankingFormData = formData.banking;
 
   const handleChange = (step: OnboardingStep) => {
     goToStep(step);
@@ -46,23 +47,49 @@ export function BusinessInfoReview() {
     return parts.length ? parts.join(', ') : 'Not provided';
   };
 
+  const getBankAccountOwner = () =>
+    bankingFormData?.accountTitle || billingInfo?.bankAccountOwner || 'Not provided';
+  const getBankName = () => bankingFormData?.bankName || billingInfo?.bankName || 'Not provided';
+  const getIBAN = () => bankingFormData?.iban || billingInfo?.IBAN || 'Not provided';
+
   const formatBillingAddress = () => {
+    if (bankingFormData?.sameAsBusinessAddress && location) {
+      const parts = [
+        location.buildingPlaceName,
+        location.street,
+        location.houseNumber,
+        location.state,
+        location.city,
+        location.area,
+        location.postalCode,
+      ].filter(Boolean);
+      return parts.length ? parts.join(', ') : 'Not provided';
+    }
+
+    if (bankingFormData) {
+      const parts = [
+        bankingFormData.buildingName,
+        bankingFormData.street,
+        bankingFormData.houseNumber,
+        bankingFormData.billingState,
+        bankingFormData.billingCity,
+        bankingFormData.area,
+        bankingFormData.billingPostalCode,
+      ].filter(Boolean);
+      if (parts.length) {
+        return parts.join(', ');
+      }
+    }
+
     const billingAddress = billingInfo?.billingAddress;
-    const buildingName = billingAddress?.buildingPlaceName || '';
-    const street = billingAddress?.street || '';
-    const houseNumber = billingAddress?.houseNumber || '';
-    const billingState = billingAddress?.state || '';
-    const billingCity = billingAddress?.city || '';
-    const area = billingAddress?.area || '';
-    const postalCode = billingAddress?.postalCode || '';
     const parts = [
-      buildingName,
-      street,
-      houseNumber,
-      billingState,
-      billingCity,
-      area,
-      postalCode,
+      billingAddress?.buildingPlaceName,
+      billingAddress?.street,
+      billingAddress?.houseNumber,
+      billingAddress?.state,
+      billingAddress?.city,
+      billingAddress?.area,
+      billingAddress?.postalCode,
     ].filter(Boolean);
     return parts.length ? parts.join(', ') : 'Not provided';
   };
@@ -118,8 +145,8 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business cuisine</span>
               <span className="font-medium">
-                {businessProfile?.cuisines?.length
-                  ? businessProfile.cuisines.join(', ')
+                {profileData?.primaryBranch?.cuisines?.length
+                  ? profileData.primaryBranch.cuisines.map((c) => c.name).join(', ')
                   : 'Not provided'}
               </span>
             </div>
@@ -225,15 +252,15 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Bank Account Owner/Title</span>
-              <span className="font-medium">{billingInfo?.bankAccountOwner || 'Not provided'}</span>
+              <span className="font-medium">{getBankAccountOwner()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Bank name</span>
-              <span className="font-medium">{billingInfo?.bankName || 'Not provided'}</span>
+              <span className="font-medium">{getBankName()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">IBAN</span>
-              <span className="font-medium">{billingInfo?.IBAN || 'Not provided'}</span>
+              <span className="font-medium">{getIBAN()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Billing Address</span>

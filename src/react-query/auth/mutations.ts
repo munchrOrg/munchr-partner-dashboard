@@ -34,6 +34,7 @@ import type {
 } from './types';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { queryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { useSignupStore } from '@/stores/signup-store';
@@ -130,20 +131,20 @@ export const useLogout = (options?: MutationOptions<LogoutResponse, LogoutReques
       clearAuth();
       useOnboardingProfileStore.getState().reset();
       useSignupStore.getState().reset();
+      queryClient.clear();
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
-      // Even if logout fails on backend, clear local state
       clearAuth();
       useOnboardingProfileStore.getState().reset();
       useSignupStore.getState().reset();
+      queryClient.clear();
       options?.onError?.(error, variables, onMutateResult, context);
     },
     ...options,
   });
 };
 
-// Change password (authenticated)
 export const useChangePassword = (
   options?: MutationOptions<ChangePasswordResponse, ChangePasswordRequest>
 ) => {

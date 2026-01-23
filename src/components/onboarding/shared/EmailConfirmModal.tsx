@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -14,14 +13,11 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 export function EmailConfirmModal() {
-  const { profileData, isEmailConfirmModalOpen, closeEmailConfirmModal, nextStep } =
+  const { profileData, isEmailConfirmModalOpen, closeEmailConfirmModal, setPendingFormSubmit } =
     useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
 
   const businessEmail = profileData?.user?.email || profileData?.partner?.email || '';
   const [email, setEmail] = useState(businessEmail);
@@ -34,22 +30,9 @@ export function EmailConfirmModal() {
     }
   };
 
-  const handleConfirm = async () => {
-    try {
-      await updateProfile(
-        {
-          completeStep: OnboardingStep.BUSINESS_INFO_REVIEW,
-          completePhase: OnboardingPhase.ADD_BUSINESS,
-        },
-        { shouldAdvanceStep: false }
-      );
-
-      closeEmailConfirmModal();
-      nextStep();
-    } catch (err) {
-      console.error('Failed to update profile with email:', err);
-      toast.error('Failed to save email. Please try again.');
-    }
+  const handleConfirm = () => {
+    closeEmailConfirmModal();
+    setPendingFormSubmit(true);
   };
 
   return (
@@ -58,7 +41,7 @@ export function EmailConfirmModal() {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Confirm you email</DialogTitle>
           <DialogDescription className="text-base text-black">
-            This is where we’ll send your partnership contract and important updates. Please confirm
+            This is where we'll send your partnership contract and important updates. Please confirm
             the address below is correct.
           </DialogDescription>
         </DialogHeader>

@@ -29,11 +29,22 @@ export function AuthGuard({
   const router = useRouter();
   const pathname = usePathname();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
   const toastShownRef = useRef(false);
 
   const { data: profile, isLoading, error } = useProfile();
 
   const authResult = useMemo((): AuthResult => {
+    if (!hasHydrated) {
+      return {
+        isChecking: true,
+        isAuthorized: false,
+        redirectTo: null,
+        shouldClearAuth: false,
+        showPendingApprovalToast: false,
+      };
+    }
+
     if (!accessToken) {
       return {
         isChecking: false,
@@ -176,7 +187,16 @@ export function AuthGuard({
       shouldClearAuth: false,
       showPendingApprovalToast: false,
     };
-  }, [accessToken, profile, isLoading, error, pathname, requireVerification, enforceCurrentStep]);
+  }, [
+    hasHydrated,
+    accessToken,
+    profile,
+    isLoading,
+    error,
+    pathname,
+    requireVerification,
+    enforceCurrentStep,
+  ]);
 
   useEffect(() => {
     if (authResult.showPendingApprovalToast && !toastShownRef.current) {

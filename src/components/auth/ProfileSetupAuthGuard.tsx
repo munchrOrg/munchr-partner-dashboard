@@ -58,11 +58,10 @@ export function ProfileSetupAuthGuard({ children }: ProfileSetupAuthGuardProps) 
           redirectTo: '/dashboard',
         };
       }
-      const currentStep = profile.onboarding?.currentStep || 'welcome';
       return {
         isChecking: false,
         isAuthorized: false,
-        redirectTo: `/onboarding/${currentStep}`,
+        redirectTo: '/onboarding',
       };
     }
 

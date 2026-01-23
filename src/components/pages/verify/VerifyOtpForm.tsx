@@ -159,8 +159,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
       if (bothVerified || response.accountActivated) {
         useSignupStore.getState().reset();
-        const targetStep = response.onboarding?.currentStep || 'welcome';
-        router.push(`/onboarding/${targetStep}`);
+        router.push('/onboarding');
         return;
       }
 
@@ -176,8 +175,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         );
       } else {
         useSignupStore.getState().reset();
-        const targetStep = response.onboarding?.currentStep || 'welcome';
-        router.push(`/onboarding/${targetStep}`);
+        router.push('/onboarding');
       }
     } catch {}
   };

@@ -7,15 +7,19 @@ import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { createFileUploadFromKey } from '@/lib/helpers';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { AssetType, OnboardingStep } from '@/types/onboarding';
+import { AssetType } from '@/types/onboarding';
 
 export function OwnerIdentityUpload() {
-  const { openExampleDrawer, setIsUploading, profileData, formData, setStepFormData } =
-    useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const {
+    openExampleDrawer,
+    setIsUploading,
+    profileData,
+    formData,
+    setStepFormData,
+    setPendingFormSubmit,
+  } = useOnboardingProfileStore();
 
   const businessProfile = profileData?.businessProfile;
 
@@ -46,7 +50,7 @@ export function OwnerIdentityUpload() {
     };
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (ownerIdentity.hasSNTN === null) {
@@ -68,35 +72,8 @@ export function OwnerIdentityUpload() {
       }
     }
 
-    try {
-      setStepFormData('ownerIdentity', ownerIdentity);
-
-      const payload: any = {
-        sntn: ownerIdentity.hasSNTN,
-        completeStep: OnboardingStep.OWNER_IDENTITY_UPLOAD,
-      };
-
-      if (ownerIdentity.hasSNTN) {
-        const file = ownerIdentity.sntnFile as FileUpload & { key?: string };
-        if (file?.key) {
-          payload.ntnImageKey = file.key;
-        }
-      } else {
-        const front = ownerIdentity.idCardFrontFile as FileUpload & { key?: string };
-        const back = ownerIdentity.idCardBackFile as FileUpload & { key?: string };
-        if (front?.key) {
-          payload.cnicFrontKey = front.key;
-        }
-        if (back?.key) {
-          payload.cnicBackKey = back.key;
-        }
-      }
-
-      await updateProfile(payload, { shouldAdvanceStep: true });
-    } catch (error) {
-      console.error('Failed to save owner identity:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('ownerIdentity', ownerIdentity);
+    setPendingFormSubmit(true);
   };
 
   const handleSNTNChange = (value: string) => {

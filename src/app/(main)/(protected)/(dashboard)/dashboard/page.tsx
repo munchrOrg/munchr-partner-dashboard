@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { DashboardContent } from '@/components/dashboard/widgets/DashboardContent';
 import { useProfile } from '@/react-query/auth/queries';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { OnboardingPhase } from '@/types/onboarding';
 
 export default function DashboardPage() {
   const { data: profile } = useProfile();
@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (profile && !allPhasesCompleted) {
-      router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
+      router.replace('/onboarding');
     }
   }, [allPhasesCompleted, router, profile]);
 

@@ -6,14 +6,10 @@ import { Autocomplete, useJsApiLoader } from '@react-google-maps/api';
 import { Search } from 'lucide-react';
 import { useCallback, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
-
-import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Input } from '@/components/ui/input';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { OnboardingStep } from '@/types/onboarding';
 
 const libraries: 'places'[] = ['places'];
 
@@ -48,8 +44,8 @@ const fieldConfigs: FieldConfig[] = [
 ];
 
 export function BusinessLocation() {
-  const { profileData, formData, openMapDrawer, setStepFormData } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const { profileData, formData, openMapDrawer, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const [selectedCoordinates, setSelectedCoordinates] = useState<Coordinates | null>(null);
@@ -149,32 +145,11 @@ export function BusinessLocation() {
   };
 
   const handleMapConfirm = useCallback(
-    async (confirmedLocation: LocationFormData) => {
-      try {
-        setStepFormData('location', confirmedLocation);
-
-        await updateProfile(
-          {
-            currentStep: OnboardingStep.BUSINESS_LOCATION,
-            completeStep: OnboardingStep.BUSINESS_LOCATION,
-            buildingPlaceName: confirmedLocation.buildingPlaceName,
-            street: confirmedLocation.street,
-            houseNumber: confirmedLocation.houseNumber,
-            state: confirmedLocation.state,
-            city: confirmedLocation.city,
-            area: confirmedLocation.area,
-            postalCode: confirmedLocation.postalCode,
-            addCommentAboutLocation: confirmedLocation.addCommentAboutLocation,
-            latitude: confirmedLocation.coordinates?.lat,
-            longitude: confirmedLocation.coordinates?.lng,
-          },
-          { shouldAdvanceStep: true }
-        );
-      } catch {
-        toast.error('Failed to save location');
-      }
+    (confirmedLocation: LocationFormData) => {
+      setStepFormData('location', confirmedLocation);
+      setPendingFormSubmit(true);
     },
-    [updateProfile, setStepFormData]
+    [setStepFormData, setPendingFormSubmit]
   );
 
   const onSubmit = async (data: LocationInput) => {

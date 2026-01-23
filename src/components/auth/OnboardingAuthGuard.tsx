@@ -23,6 +23,7 @@ type AuthResult = {
 export function OnboardingAuthGuard({ children }: OnboardingAuthGuardProps) {
   const router = useRouter();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
   const toastShownRef = useRef(false);
 
   const { isInitialized, isInitializing, error } = useOnboardingInit();
@@ -30,6 +31,16 @@ export function OnboardingAuthGuard({ children }: OnboardingAuthGuardProps) {
   const { profileData, completedPhases } = useOnboardingProfileStore();
 
   const authResult = useMemo((): AuthResult => {
+    if (!hasHydrated) {
+      return {
+        isChecking: true,
+        isAuthorized: false,
+        redirectTo: null,
+        shouldClearAuth: false,
+        showPendingApprovalToast: false,
+      };
+    }
+
     if (!accessToken) {
       return {
         isChecking: false,
@@ -114,7 +125,15 @@ export function OnboardingAuthGuard({ children }: OnboardingAuthGuardProps) {
       shouldClearAuth: false,
       showPendingApprovalToast: false,
     };
-  }, [accessToken, isInitialized, isInitializing, error, profileData, completedPhases]);
+  }, [
+    hasHydrated,
+    accessToken,
+    isInitialized,
+    isInitializing,
+    error,
+    profileData,
+    completedPhases,
+  ]);
 
   useEffect(() => {
     if (authResult.showPendingApprovalToast && !toastShownRef.current) {

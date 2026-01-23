@@ -3,14 +3,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useOnboardingUpdateProfile } from '@/hooks/useOnboardingUpdateProfile';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
-import { OnboardingStep } from '@/types/onboarding';
 
 const legalTaxSchema = z.object({
   cnicNumber: z.string().max(13).min(13, 'CNIC number is required'),
@@ -22,8 +19,8 @@ const legalTaxSchema = z.object({
 type LegalTaxInput = z.infer<typeof legalTaxSchema>;
 
 export function LegalTaxDetails() {
-  const { openExampleDrawer, profileData, formData, setStepFormData } = useOnboardingProfileStore();
-  const { updateProfile } = useOnboardingUpdateProfile();
+  const { openExampleDrawer, profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
   const businessProfile = profileData?.businessProfile;
 
@@ -44,27 +41,9 @@ export function LegalTaxDetails() {
     mode: 'all',
   });
 
-  const onSubmit = async (data: LegalTaxInput) => {
+  const onSubmit = (data: LegalTaxInput) => {
     setStepFormData('legalTax', data);
-
-    const payload = {
-      completeStep: OnboardingStep.LEGAL_TAX_DETAILS,
-      cnicNumber: data.cnicNumber,
-      taxRegistrationNo: data.taxRegistrationNo,
-      firstAndMiddleNameForNic: data.firstAndMiddleNameForNic,
-      lastNameForNic: data.lastNameForNic,
-    };
-
-    try {
-      const resp = await updateProfile(payload, { shouldAdvanceStep: true });
-
-      if (!resp || !resp.success) {
-        toast.error(resp?.message || 'Failed to save legal & tax details');
-      }
-    } catch (err) {
-      toast.error('Something went wrong while saving legal & tax details');
-      console.error(err);
-    }
+    setPendingFormSubmit(true);
   };
 
   const showNameExample = () => {

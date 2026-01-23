@@ -55,8 +55,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
       if (isOnboardingCompleted || skipOnboarding) {
         router.push('/dashboard');
       } else {
-        const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-        router.push(`/onboarding/${targetStep}`);
+        router.push('/onboarding');
       }
     } catch (err: any) {
       const status = err?.response?.status;
