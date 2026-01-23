@@ -308,19 +308,7 @@ export type OnboardingState = {
   steps?: string[];
 };
 
-export type UpdateProfileResponse = {
-  success: boolean;
-  statusCode: number;
-  message: string;
-  data: {
-    id: string;
-    businessProfile: any;
-    step1: boolean;
-    step2: boolean;
-    step3: boolean;
-    onboarding: OnboardingState;
-  };
-};
+export type UpdateProfileResponse = ProfileResponse;
 
 export type ForgotPasswordRequest = {
   email?: string;

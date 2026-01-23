@@ -1,8 +1,4 @@
-import type {
-  ProfileOnboarding,
-  ProfileResponse,
-  UpdateProfileResponse,
-} from '@/react-query/auth/types';
+import type { ProfileResponse, UpdateProfileResponse } from '@/react-query/auth/types';
 import type {
   BusinessHoursFormData,
   ConfirmModalConfig,
@@ -317,29 +313,42 @@ export const useOnboardingProfileStore = create<OnboardingProfileStore>()((set, 
         return state;
       }
 
-      const newOnboarding = response.data?.onboarding || (response as any).onboarding || {};
-
-      const mergedOnboarding: ProfileOnboarding = {
-        ...state.profileData.onboarding,
-        ...newOnboarding,
-        currentStep: newOnboarding.currentStep ?? state.profileData.onboarding?.currentStep,
-      };
+      // The response is the full ProfileResponse from getProfile()
+      // Merge all profile fields, not just onboarding
       const updatedProfile: ProfileResponse = {
         ...state.profileData,
-        onboarding: mergedOnboarding,
+        user: response.user || state.profileData.user,
+        partner: response.partner ?? state.profileData.partner,
+        businessProfile: response.businessProfile ?? state.profileData.businessProfile,
+        location: response.location ?? state.profileData.location,
+        billingInfo: response.billingInfo ?? state.profileData.billingInfo,
+        bookSlot: response.bookSlot ?? state.profileData.bookSlot,
+        roles: response.roles || state.profileData.roles,
+        branchAccess: response.branchAccess || state.profileData.branchAccess,
+        primaryBranch: response.primaryBranch ?? state.profileData.primaryBranch,
+        onboarding: {
+          ...state.profileData.onboarding,
+          ...response.onboarding,
+          currentStep:
+            response.onboarding?.currentStep ?? state.profileData.onboarding?.currentStep,
+        },
       };
 
+      const newOnboarding = response.onboarding || {};
       const currentStep = (newOnboarding.currentStep as OnboardingStep) || state.currentStep;
       const completedSteps =
         (newOnboarding.completedSteps as OnboardingStep[]) || state.completedSteps;
       const completedPhases =
         (newOnboarding.completedPhases as OnboardingPhase[]) || state.completedPhases;
 
+      const updatedFormData = extractFormDataFromProfile(updatedProfile);
+
       return {
         profileData: updatedProfile,
         currentStep,
         completedSteps,
         completedPhases,
+        formData: { ...state.formData, ...updatedFormData },
       };
     });
   },

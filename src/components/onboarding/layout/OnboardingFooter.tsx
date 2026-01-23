@@ -1,6 +1,5 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useCallback, useEffect, useRef } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
@@ -21,7 +20,6 @@ import { OnboardingStep } from '@/types/onboarding';
 import { transformFormDataToPayload } from '@/utils/onboarding-payload';
 
 export function OnboardingFooter() {
-  const router = useRouter();
   const isSubmittingRef = useRef(false);
 
   const {
@@ -89,9 +87,10 @@ export function OnboardingFooter() {
         if (isPhaseComplete) {
           completePhase(phase);
         }
+        console.log({ response });
 
         if (!nextStep) {
-          const newOnboarding = response.data?.onboarding;
+          const newOnboarding = response.onboarding;
           if (newOnboarding?.isOnboardingCompleted) {
             queryClient.setQueryData(authKeys.profile(), (oldData: any) => {
               if (!oldData) {
@@ -106,7 +105,7 @@ export function OnboardingFooter() {
               };
             });
           }
-          router.push('/dashboard');
+          window.location.replace('/dashboard');
           return;
         }
 

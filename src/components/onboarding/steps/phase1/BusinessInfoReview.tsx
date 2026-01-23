@@ -12,7 +12,7 @@ import { OnboardingStep } from '@/types/onboarding';
 export function BusinessInfoReview() {
   const { profileData, formData, openEmailConfirmModal, goToStep } = useOnboardingProfileStore();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-
+  console.log({ profileData });
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
