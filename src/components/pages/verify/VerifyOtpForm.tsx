@@ -137,11 +137,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           ? await verifyEmailMutation.mutateAsync({ userId, otp })
           : await verifyPhoneMutation.mutateAsync({ userId, otp });
 
-      if (!response || !response.success) {
-        return;
-      }
-
-      toast.success(response.message || config.successMessage);
+      toast.success(config.successMessage);
 
       const { setEmailVerified, setPhoneVerified } = useSignupStore.getState();
       if (type === 'email') {

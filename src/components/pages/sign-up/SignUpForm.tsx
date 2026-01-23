@@ -77,27 +77,25 @@ export function SignUpForm() {
 
   const signUpMutation = useSignUp({
     onSuccess: (resp) => {
-      if (resp.success) {
-        toast.success(resp.message || 'Registration successful');
-        const { setPartnerId, setUserId } = useSignupStore.getState();
-        if (resp.partnerId) {
-          setPartnerId(resp.partnerId);
-        }
-        if (resp.userId) {
-          setUserId(resp.userId);
-        }
-        if (resp.tokens?.accessToken) {
-          useAuthStore.getState().setAccessToken(resp.tokens.accessToken);
-        }
-        const params = new URLSearchParams({
-          type: 'signup',
-          partnerId: resp.partnerId,
-          userId: resp.userId,
-          email: submittedEmail,
-          phone: submittedPhone,
-        });
-        router.replace(`/verify-email?${params.toString()}`);
+      toast.success('Registration successful');
+      const { setPartnerId, setUserId } = useSignupStore.getState();
+      if (resp.partnerId) {
+        setPartnerId(resp.partnerId);
       }
+      if (resp.userId) {
+        setUserId(resp.userId);
+      }
+      if (resp.tokens?.accessToken) {
+        useAuthStore.getState().setAccessToken(resp.tokens.accessToken);
+      }
+      const params = new URLSearchParams({
+        type: 'signup',
+        partnerId: resp.partnerId,
+        userId: resp.userId,
+        email: submittedEmail,
+        phone: submittedPhone,
+      });
+      router.replace(`/verify-email?${params.toString()}`);
     },
   });
 

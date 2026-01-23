@@ -109,8 +109,7 @@ export function ForgotPasswordForm() {
     try {
       const response = await forgotPasswordMutation.mutateAsync(requestData);
 
-      if (response.success && response.userId) {
-        // User exists, proceed to OTP step
+      if (response.userId) {
         setState({
           userId: response.userId,
           email: response.email || null,
@@ -121,14 +120,10 @@ export function ForgotPasswordForm() {
           currentStep: 'enter-otp',
         });
         toast.success('OTP sent successfully! Check your email/phone.');
-      } else if (response.success) {
-        // User may not exist - show generic message (security best practice)
-        toast.success(
-          response.message ||
-            'If an account with this email/phone exists, a password reset OTP has been sent.'
-        );
       } else {
-        toast.error(response.message || 'Failed to send OTP. Please try again.');
+        toast.success(
+          'If an account with this email/phone exists, a password reset OTP has been sent.'
+        );
       }
     } catch {}
   };
@@ -150,17 +145,9 @@ export function ForgotPasswordForm() {
         otp,
       });
 
-      if (response.success) {
-        toast.success('OTP verified successfully!');
-        // Navigate to reset password page with resetToken
-        window.location.href = `/reset-password?token=${encodeURIComponent(response.resetToken)}`;
-      } else {
-        setOtpError(response.message || 'Invalid OTP. Please try again.');
-      }
-    } catch {
-      // Error is already handled by mutation's onError (shows toast)
-      // No additional action needed here
-    }
+      toast.success('OTP verified successfully!');
+      window.location.href = `/reset-password?token=${encodeURIComponent(response.resetToken)}`;
+    } catch {}
   };
 
   const handleResendOtp = async () => {
@@ -179,24 +166,21 @@ export function ForgotPasswordForm() {
       } else if (state.phone) {
         response = await resendPhoneOtpMutation.mutateAsync({
           userId: state.userId,
-          phone: state.phone, // Keep + prefix - backend stores phone with +
+          phone: state.phone,
           purpose: 'password_reset',
         });
       } else {
-        return; // Should not happen
+        return;
       }
 
-      if (response?.success) {
+      if (response) {
         setState((prev) => ({
           ...prev,
           expiresAt: response.expiresAt ? new Date(response.expiresAt) : prev.expiresAt,
           canResendAt: response.canResendAt ? new Date(response.canResendAt) : prev.canResendAt,
         }));
       }
-    } catch {
-      // Error is already handled by mutation's onError (shows toast)
-      // No additional action needed here
-    }
+    } catch {}
   };
 
   const formatTime = (seconds: number) => {

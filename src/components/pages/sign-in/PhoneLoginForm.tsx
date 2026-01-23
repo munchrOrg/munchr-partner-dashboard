@@ -63,11 +63,12 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
 
       if (status === 403 && errorData?.error === 'verification_required') {
         const verificationError = errorData as VerificationRequiredError;
+        const verificationData = verificationError.data;
         const formattedPhone = normalizePhoneNumber(phoneNumber);
-        const userId = verificationError.userId || '';
-        const email = verificationError.email || '';
+        const userId = verificationData?.userId || '';
+        const email = verificationData?.email || '';
 
-        if (!verificationError.emailVerified) {
+        if (!verificationData?.emailVerified) {
           const params = new URLSearchParams({
             type: 'login',
             userId,
@@ -75,7 +76,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
             phone: formattedPhone,
           });
           router.push(`/verify-email?${params.toString()}`);
-        } else if (!verificationError.phoneVerified) {
+        } else if (!verificationData?.phoneVerified) {
           const params = new URLSearchParams({
             type: 'login',
             userId,

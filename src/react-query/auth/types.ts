@@ -1,3 +1,4 @@
+import type { ApiErrorResponse } from '@/types/api';
 import type { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
 export type LoginRequest = {
@@ -34,8 +35,7 @@ export type LoginResponse = {
   };
 };
 
-export type VerificationRequiredError = {
-  error: 'verification_required';
+export type VerificationRequiredErrorData = {
   emailVerified: boolean;
   phoneVerified: boolean;
   partnerId?: string;
@@ -44,10 +44,9 @@ export type VerificationRequiredError = {
   phone?: string;
 };
 
-export type PendingApprovalError = {
-  error: 'pending_approval';
-  message: string;
-};
+export type VerificationRequiredError = ApiErrorResponse<VerificationRequiredErrorData>;
+
+export type PendingApprovalError = ApiErrorResponse<null>;
 
 export type RefreshTokenRequest = {
   refreshToken: string;
@@ -62,20 +61,14 @@ export type LogoutRequest = {
   refreshToken?: string;
 };
 
-export type LogoutResponse = {
-  success: boolean;
-  message: string;
-};
+export type LogoutResponse = null;
 
 export type ChangePasswordRequest = {
   currentPassword: string;
   newPassword: string;
 };
 
-export type ChangePasswordResponse = {
-  success: boolean;
-  message: string;
-};
+export type ChangePasswordResponse = null;
 
 export type SignUpRequest = {
   email: string;
@@ -90,10 +83,8 @@ export type SignUpRequest = {
 };
 
 export type SignUpResponse = {
-  success: boolean;
   partnerId: string;
   userId: string;
-  message: string;
   tokens: {
     accessToken: string;
     refreshToken: string;
@@ -129,7 +120,6 @@ export type VerifyOtpRequest = {
 };
 
 export type VerifyOtpResponse = {
-  message: string;
   user: {
     id: string;
     email: string;
@@ -144,8 +134,6 @@ export type VerifyForgotPasswordOtpRequest = {
 };
 
 export type VerifyForgotPasswordOtpResponse = {
-  success: boolean;
-  message: string;
   resetToken: string;
 };
 
@@ -154,8 +142,6 @@ export type ResendOtpRequest = {
 };
 
 export type ResendOtpResponse = {
-  success: boolean;
-  message: string;
   expiresAt?: string;
   canResendAt?: string;
 };
@@ -178,8 +164,6 @@ export type VerifyEmailRequest = {
 };
 
 export type VerifyEmailResponse = {
-  success: boolean;
-  message: string;
   emailVerified: boolean;
   phoneVerified: boolean;
   accountActivated: boolean;
@@ -202,8 +186,6 @@ export type VerifyPhoneRequest = {
 };
 
 export type VerifyPhoneResponse = {
-  success: boolean;
-  message: string;
   emailVerified: boolean;
   phoneVerified: boolean;
   accountActivated: boolean;
@@ -316,8 +298,6 @@ export type ForgotPasswordRequest = {
 };
 
 export type ForgotPasswordResponse = {
-  success: boolean;
-  message: string;
   userId?: string;
   email?: string;
   phone?: string;
@@ -330,10 +310,7 @@ export type ResetPasswordRequest = {
   newPassword: string;
 };
 
-export type ResetPasswordResponse = {
-  success: boolean;
-  message: string;
-};
+export type ResetPasswordResponse = null;
 
 export type ProfilePermission = {
   id: string;

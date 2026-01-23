@@ -3,4 +3,4 @@ export type Cuisine = {
   name: string;
 };
 
-export type CuisinesResponse = Cuisine[] | { data: Cuisine[] };
+export type CuisinesResponse = Cuisine[];
