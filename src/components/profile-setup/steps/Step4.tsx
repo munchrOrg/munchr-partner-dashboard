@@ -142,7 +142,7 @@ export function Step4() {
       useProfileSetupStore.getState().reset();
 
       toast.success('Profile setup completed successfully!');
-      router.push('/dashboard');
+      router.replace('/dashboard');
     } catch (error) {
       toast.error('Failed to complete profile setup. Please try again.');
       console.error('Profile setup error:', error);

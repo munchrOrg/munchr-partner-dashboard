@@ -341,14 +341,11 @@ export const useOnboardingProfileStore = create<OnboardingProfileStore>()((set, 
       const completedPhases =
         (newOnboarding.completedPhases as OnboardingPhase[]) || state.completedPhases;
 
-      const updatedFormData = extractFormDataFromProfile(updatedProfile);
-
       return {
         profileData: updatedProfile,
         currentStep,
         completedSteps,
         completedPhases,
-        formData: { ...state.formData, ...updatedFormData },
       };
     });
   },

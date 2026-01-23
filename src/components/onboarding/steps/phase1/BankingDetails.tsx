@@ -2,7 +2,7 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
 import { z } from 'zod';
@@ -68,7 +68,20 @@ export function BankingDetails() {
 
   const sameAsBusinessAddress = useWatch({ control, name: 'sameAsBusinessAddress' });
 
+  const prevSameAsBusinessAddressRef = useRef<boolean | undefined>(undefined);
+
   useEffect(() => {
+    if (prevSameAsBusinessAddressRef.current === undefined) {
+      prevSameAsBusinessAddressRef.current = sameAsBusinessAddress;
+      return;
+    }
+
+    if (prevSameAsBusinessAddressRef.current === sameAsBusinessAddress) {
+      return;
+    }
+
+    prevSameAsBusinessAddressRef.current = sameAsBusinessAddress;
+
     if (sameAsBusinessAddress) {
       setValue('address', '');
       setValue('buildingName', locationData?.buildingPlaceName || '');
@@ -79,7 +92,6 @@ export function BankingDetails() {
       setValue('area', locationData?.area || '');
       setValue('billingPostalCode', locationData?.postalCode || '');
     } else {
-      // Clear all fields
       setValue('address', '');
       setValue('buildingName', '');
       setValue('street', '');

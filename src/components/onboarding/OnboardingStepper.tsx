@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { CENTERED_STEPS } from '@/config/onboarding-steps';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 import { OnboardingFooter } from './layout/OnboardingFooter';
@@ -151,6 +152,7 @@ export function OnboardingStepper() {
   }
 
   const StepComponent = stepComponents[currentStep];
+  const isCentered = CENTERED_STEPS.has(currentStep);
 
   if (!StepComponent) {
     return (
@@ -166,8 +168,12 @@ export function OnboardingStepper() {
   return (
     <div className="h-dvh bg-white">
       <OnboardingHeader />
-      <main className="h-[calc(100dvh-128px-96px)] w-full overflow-y-auto">
-        <StepComponent />
+      <main
+        className={`flex ${currentStep === OnboardingStep.BUSINESS_INFO_REVIEW ? 'overflow-hidden pb-16' : 'h-[calc(100dvh-128px-96px)]'} w-full flex-col overflow-y-auto`}
+      >
+        <div className={`min-h-full w-full ${isCentered ? 'my-auto' : ''}`}>
+          <StepComponent />
+        </div>
       </main>
       <OnboardingFooter />
 

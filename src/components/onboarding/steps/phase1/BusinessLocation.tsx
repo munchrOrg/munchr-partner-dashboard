@@ -169,8 +169,8 @@ export function BusinessLocation() {
   };
 
   return (
-    <div className="flex h-full w-full items-center justify-center px-4 sm:px-8">
-      <div className="w-full max-w-xl">
+    <div className="flex min-h-full w-full flex-col px-4 sm:px-8">
+      <div className="mx-auto my-auto w-full max-w-xl py-8">
         <StepHeader
           title="Where is your business located?"
           description="Customers and riders will use this information to find your store."

@@ -150,7 +150,6 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         setPhoneVerified(true);
       }
 
-      // Tokens are now in a separate 'tokens' property
       if (response.tokens?.accessToken) {
         setAccessToken(response.tokens.accessToken);
       }
@@ -159,23 +158,23 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
 
       if (bothVerified || response.accountActivated) {
         useSignupStore.getState().reset();
-        router.push('/onboarding');
+        router.replace('/onboarding');
         return;
       }
 
       if (type === 'email' && !response.phoneVerified) {
         const phone = searchParams.get('phone') || '';
-        router.push(
+        router.replace(
           `/verify-phone?type=signup&userId=${userId}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(searchParams.get('email') || '')}`
         );
       } else if (type === 'phone' && !response.emailVerified) {
         const email = searchParams.get('email') || '';
-        router.push(
+        router.replace(
           `/verify-email?type=signup&userId=${userId}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(searchParams.get('phone') || '')}`
         );
       } else {
         useSignupStore.getState().reset();
-        router.push('/onboarding');
+        router.replace('/onboarding');
       }
     } catch {}
   };

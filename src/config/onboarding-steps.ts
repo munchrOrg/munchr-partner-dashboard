@@ -109,6 +109,16 @@ export const STEPS_WITHOUT_FORMS = new Set<OnboardingStep>([
   OnboardingStep.BUSINESS_INFO_REVIEW,
 ]);
 
+export const CENTERED_STEPS = new Set<OnboardingStep>([
+  OnboardingStep.WELCOME,
+  OnboardingStep.ADD_BUSINESS_INTRO,
+  OnboardingStep.VERIFY_BUSINESS_INTRO,
+  OnboardingStep.OPEN_BUSINESS_INTRO,
+  OnboardingStep.PORTAL_SETUP_COMPLETE,
+  OnboardingStep.BUSINESS_LOCATION,
+  OnboardingStep.BUSINESS_HOURS_SETUP,
+]);
+
 function getNextPhaseEntry(completedPhases: OnboardingPhase[]): OnboardingStep {
   if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
     return PHASE_ENTRY_STEP[OnboardingPhase.OPEN_BUSINESS];

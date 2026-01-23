@@ -24,7 +24,7 @@ export function PortalSetupComplete() {
     try {
       await logoutMutation.mutateAsync({});
     } catch {}
-    router.push('/sign-in');
+    router.replace('/sign-in');
   };
 
   return (

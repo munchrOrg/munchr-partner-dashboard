@@ -46,9 +46,9 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
       }
 
       if (isOnboardingCompleted || skipOnboarding) {
-        router.push('/dashboard');
+        router.replace('/dashboard');
       } else {
-        router.push('/onboarding');
+        router.replace('/onboarding');
       }
     } catch (err: any) {
       const status = err?.response?.status;

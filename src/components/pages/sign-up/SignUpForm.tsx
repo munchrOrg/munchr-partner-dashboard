@@ -96,7 +96,7 @@ export function SignUpForm() {
           email: submittedEmail,
           phone: submittedPhone,
         });
-        router.push(`/verify-email?${params.toString()}`);
+        router.replace(`/verify-email?${params.toString()}`);
       }
     },
   });
