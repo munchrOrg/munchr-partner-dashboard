@@ -15,6 +15,6 @@ export const useProfile = (options?: QueryOptions<ProfileResponse>) =>
   useQuery({
     queryKey: authKeys.profile(),
     queryFn: authService.getProfile,
-    staleTime: 60 * 1000,
+    staleTime: 5 * 60 * 1000, // 5 minutes
     ...options,
   });

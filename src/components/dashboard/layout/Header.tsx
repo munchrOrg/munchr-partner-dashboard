@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { cn } from '@/lib/utils';
 import { useLogout } from '@/react-query/auth/mutations';
+import { useProfile } from '@/react-query/auth/queries';
 import { StoresDrawer } from './StoresDrawer';
 
 const pathLabels: Record<string, string> = {
@@ -41,6 +42,7 @@ function Breadcrumbs({
 }>) {
   const pathname = usePathname();
   const segments = pathname.split('/').filter(Boolean);
+  const { data: profile } = useProfile();
 
   // Get the last segment for the current page title
   const currentSegment = segments.at(-1) ?? 'dashboard';
@@ -70,7 +72,9 @@ function Breadcrumbs({
         className="items-left mt-1 -ml-2 flex h-auto justify-start gap-1 p-0 text-left text-sm font-normal text-[#918D8C] hover:text-[#918D8C]"
         onClick={onStoreClick}
       >
-        <span>Kababjees Fried Chicken</span>
+        <span>
+          {profile?.businessProfile?.businessName || profile?.user?.name || 'Select Store'}
+        </span>
         <ChevronDown className="h-4 w-4" />
       </Button>
     </nav>
