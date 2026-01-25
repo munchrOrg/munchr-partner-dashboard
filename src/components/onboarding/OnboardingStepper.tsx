@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { CENTERED_STEPS } from '@/config/onboarding-steps';
+import { useOnboardingInit } from '@/hooks/useOnboardingInit';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 import { OnboardingFooter } from './layout/OnboardingFooter';
@@ -141,12 +142,17 @@ const stepComponents: Record<OnboardingStep, React.ComponentType> = {
 };
 
 export function OnboardingStepper() {
-  const { currentStep, isInitialized } = useOnboardingProfileStore();
+  const { isInitialized, error } = useOnboardingInit();
+  const currentStep = useOnboardingProfileStore((state) => state.currentStep);
 
   if (!isInitialized) {
     return (
-      <div className="flex h-dvh w-full items-center justify-center bg-white">
-        <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-400 border-t-transparent" />
+      <div className="flex h-dvh w-full flex-col items-center justify-center bg-white">
+        {error ? (
+          <p className="text-red-500">{error}</p>
+        ) : (
+          <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-400 border-t-transparent" />
+        )}
       </div>
     );
   }

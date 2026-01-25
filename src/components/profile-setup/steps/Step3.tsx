@@ -16,7 +16,6 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { useUpdateBranch } from '@/react-query/branches/mutations';
-import { useBranchOnboardingProfile } from '@/react-query/branches/queries';
 import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step3Schema } from '@/validations/profile-setup';
 
@@ -50,9 +49,8 @@ export function Step3() {
     }
   }, [formData.step3, form]);
 
-  const { data: branchData } = useBranchOnboardingProfile();
-  const branchName = branchData?.branch?.branchName;
-  const address = branchData?.branch;
+  // Use the location from Step 1 (either entered by partner or updated via map drawer)
+  const step1Location = formData.step1?.location;
 
   const onSubmit = async (data: Step3Input) => {
     setStepData('step3', data);
@@ -60,7 +58,6 @@ export function Step3() {
       accountDetail: data.accountTitle,
       bankName: data.bankName,
       iban: data.iban,
-      businessName: branchName,
       billingAddressAreSame: data.useExistingAddress,
     };
 
@@ -176,14 +173,14 @@ export function Step3() {
               </div>
 
               {useExistingAddress ? (
-                address && (
+                step1Location && (
                   <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
                     <div className="mb-2 text-base font-bold text-gray-900">Billing Address</div>
                     <div className="text-base whitespace-pre-line text-gray-700">
                       {`
-${address.buildingPlaceName || ''} ${address.houseNumber || ''}
-${address.street || ''}, ${address.area || ''}
-${address.city || ''}, ${address.state || ''} ${address.postalCode || ''}
+${step1Location.buildingPlaceName || ''} ${step1Location.houseNumber || ''}
+${step1Location.street || ''}, ${step1Location.area || ''}
+${step1Location.city || ''}, ${step1Location.state || ''} ${step1Location.postalCode || ''}
             `}
                     </div>
                   </div>

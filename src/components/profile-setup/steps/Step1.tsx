@@ -1,9 +1,10 @@
 'use client';
 
+import type { LocationFormData } from '@/types/onboarding';
 import type { Step1Input } from '@/validations/profile-setup';
 import { zodResolver } from '@hookform/resolvers/zod';
 import Image from 'next/image';
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
 import {
@@ -24,6 +25,26 @@ import { useCuisines } from '@/react-query/cuisine/queries';
 import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step1Schema } from '@/validations/profile-setup';
 
+const getLocationDisplayString = (location: LocationFormData | null): string => {
+  if (!location) {
+    return '';
+  }
+  const parts = [location.area, location.city].filter(Boolean);
+  return parts.join(', ') || location.buildingPlaceName || '';
+};
+
+const emptyLocation: LocationFormData = {
+  buildingPlaceName: '',
+  street: '',
+  houseNumber: '',
+  state: '',
+  city: '',
+  area: '',
+  postalCode: '',
+  addCommentAboutLocation: '',
+  coordinates: null,
+};
+
 export function Step1() {
   const { formData, setStepData, completeStep, nextStep, openMapDrawer } = useProfileSetupStore();
 
@@ -33,7 +54,7 @@ export function Step1() {
       businessName: '',
       businessDescription: '',
       cuisines: '',
-      location: '',
+      location: emptyLocation,
     },
   });
 
@@ -41,25 +62,24 @@ export function Step1() {
     control,
     setValue,
     reset,
+    watch,
     formState: { errors },
   } = form;
+
+  const currentLocation = watch('location');
+  const locationDisplayString = getLocationDisplayString(currentLocation);
+
   useEffect(() => {
     if (formData.step1 && !form.formState.isDirty) {
       reset(formData.step1);
     }
   }, [formData.step1, reset, form.formState.isDirty]);
 
-  useEffect(() => {
-    if (formData.step1?.location) {
-      setValue('location', formData.step1.location);
-    }
-  }, [formData.step1?.location, setValue]);
   const { mutate: updateBranch } = useUpdateBranch();
   const { data: profile }: any = useProfile();
-  const [branchData, setBranchData] = useState<any>(null);
-  console.warn('branchData', branchData);
   const { data: cuisinesList = [] } = useCuisines();
   const cuisineOptions = cuisinesList.map((c) => ({ label: c.name, value: c.id }));
+
   useEffect(() => {
     const id = profile?.onboarding?.branchId;
     if (!id) {
@@ -68,12 +88,31 @@ export function Step1() {
     const fetchBranch = async () => {
       try {
         const data = await branchesService.getById(id);
-        setBranchData(data);
+
+        // Convert branch location to LocationFormData format
+        const locationData: LocationFormData = {
+          buildingPlaceName: data.location?.buildingPlaceName || '',
+          street: data.location?.street || '',
+          houseNumber: data.location?.houseNumber || '',
+          state: data.location?.state || '',
+          city: data.location?.city || '',
+          area: data.location?.area || '',
+          postalCode: data.location?.postalCode || '',
+          addCommentAboutLocation: data.location?.addCommentAboutLocation || '',
+          coordinates:
+            data.location?.latitude && data.location?.longitude
+              ? {
+                  lat: Number.parseFloat(data.location.latitude),
+                  lng: Number.parseFloat(data.location.longitude),
+                }
+              : null,
+        };
+
         reset({
           businessName: data.branchName || '',
           businessDescription: data.description || '',
           cuisines: data.cuisineIds?.[0] || '',
-          location: data.location?.area || '',
+          location: locationData,
         });
       } catch (err) {
         console.error('Error fetching branch:', err);
@@ -81,6 +120,17 @@ export function Step1() {
     };
     fetchBranch();
   }, [profile, reset]);
+
+  const handleLocationUpdate = useCallback(
+    (updatedLocation: LocationFormData) => {
+      setValue('location', updatedLocation, { shouldValidate: true });
+    },
+    [setValue]
+  );
+
+  const handleOpenMapDrawer = useCallback(() => {
+    openMapDrawer(currentLocation || emptyLocation, handleLocationUpdate);
+  }, [openMapDrawer, currentLocation, handleLocationUpdate]);
 
   const onSubmit = async (data: Step1Input) => {
     try {
@@ -90,7 +140,15 @@ export function Step1() {
         businessName: data.businessName,
         description: data.businessDescription,
         cuisineIds: [data.cuisines],
-        buildingPlaceName: data.location,
+        buildingPlaceName: data.location.buildingPlaceName,
+        street: data.location.street,
+        houseNumber: data.location.houseNumber,
+        state: data.location.state,
+        city: data.location.city,
+        area: data.location.area,
+        postalCode: data.location.postalCode,
+        latitude: data.location.coordinates?.lat,
+        longitude: data.location.coordinates?.lng,
       } as any);
       toast.success('Branch updated successfully');
       completeStep(1);
@@ -99,12 +157,6 @@ export function Step1() {
       toast.error(error?.response?.data?.message || 'Something went wrong');
     }
   };
-
-  useEffect(() => {
-    if (formData.step1?.location) {
-      setValue('location', formData.step1.location);
-    }
-  }, [formData.step1?.location, setValue]);
 
   return (
     <div className="mx-auto mt-9 flex max-w-4xl flex-col gap-8 lg:flex-row lg:items-start lg:gap-12">
@@ -186,32 +238,30 @@ export function Step1() {
               )}
             </FormItem>
 
-            <FormField
-              control={control}
-              name="location"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-base font-medium">Location</FormLabel>
-                  <FormControl>
-                    <Input
-                      placeholder="Location Here"
-                      {...field}
-                      className="h-11 rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
-                    />
-                  </FormControl>
-                  <div className="flex w-full justify-end">
-                    <button
-                      type="button"
-                      onClick={openMapDrawer}
-                      className="text-sm font-medium text-[#2C2F2E] hover:underline"
-                    >
-                      Change Location
-                    </button>
-                  </div>
-                  <FormMessage />
-                </FormItem>
+            <FormItem>
+              <FormLabel className="text-base font-medium">Location</FormLabel>
+              <FormControl>
+                <Input
+                  placeholder="Location Here"
+                  value={locationDisplayString}
+                  readOnly
+                  onClick={handleOpenMapDrawer}
+                  className="h-11 cursor-pointer rounded-full border-gray-300 px-4 sm:h-12 sm:px-5"
+                />
+              </FormControl>
+              <div className="flex w-full justify-end">
+                <button
+                  type="button"
+                  onClick={handleOpenMapDrawer}
+                  className="text-sm font-medium text-[#2C2F2E] hover:underline"
+                >
+                  Change Location
+                </button>
+              </div>
+              {errors.location && (
+                <p className="mt-1 ml-4 text-sm text-red-500">Location is required</p>
               )}
-            />
+            </FormItem>
           </form>
         </Form>
       </div>

@@ -14,7 +14,6 @@ import { Form, FormField, FormItem } from '@/components/ui/form';
 import { Icon } from '@/components/ui/icon';
 import profilestep4 from '@/public/assets/images/profile-step-4.png';
 import { useUpdateBranchProfile } from '@/react-query/branches/mutations';
-import { useBranchProfile } from '@/react-query/branches/queries';
 import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step4Schema } from '@/validations/profile-setup';
 
@@ -60,8 +59,7 @@ export function Step4() {
       form.reset(formData.step4);
     }
   }, [formData.step4, form]);
-  const { data: branchData } = useBranchProfile();
-  const branchName = branchData?.branch?.branchName;
+
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
     const updatedBusinessHours: BusinessHoursFormData = {
       ...businessHours,
@@ -131,8 +129,6 @@ export function Step4() {
       });
       await updateBranchProfile({
         openingTiming: operatingHoursPayload,
-        branchName,
-        completeStep: 4,
         markOnboardingComplete: true,
       });
 

@@ -1,3 +1,4 @@
+import type { LocationFormData } from '@/types/onboarding';
 import type {
   ExampleDrawerConfig,
   ProfileSetupFormData,
@@ -23,6 +24,8 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
       isCompleted: false,
       isProgressDrawerOpen: false,
       isMapDrawerOpen: false,
+      mapLocation: null,
+      mapLocationCallback: null,
       isExampleDrawerOpen: false,
       exampleDrawerConfig: null,
       isScheduleDrawerOpen: false,
@@ -69,8 +72,13 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
 
       openProgressDrawer: () => set({ isProgressDrawerOpen: true }),
       closeProgressDrawer: () => set({ isProgressDrawerOpen: false }),
-      openMapDrawer: () => set({ isMapDrawerOpen: true }),
-      closeMapDrawer: () => set({ isMapDrawerOpen: false }),
+      openMapDrawer: (
+        location: LocationFormData,
+        onConfirm: (location: LocationFormData) => void
+      ) => set({ isMapDrawerOpen: true, mapLocation: location, mapLocationCallback: onConfirm }),
+      closeMapDrawer: () =>
+        set({ isMapDrawerOpen: false, mapLocation: null, mapLocationCallback: null }),
+      updateMapLocation: (location: LocationFormData) => set({ mapLocation: location }),
       openExampleDrawer: (config: ExampleDrawerConfig) =>
         set({ isExampleDrawerOpen: true, exampleDrawerConfig: config }),
       closeExampleDrawer: () => set({ isExampleDrawerOpen: false, exampleDrawerConfig: null }),
@@ -86,6 +94,8 @@ export const useProfileSetupStore = create<ProfileSetupStore>()(
           isCompleted: false,
           isProgressDrawerOpen: false,
           isMapDrawerOpen: false,
+          mapLocation: null,
+          mapLocationCallback: null,
           isExampleDrawerOpen: false,
           exampleDrawerConfig: null,
           isScheduleDrawerOpen: false,

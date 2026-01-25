@@ -10,9 +10,11 @@ import type {
   OnboardingFeeFormData,
   OnboardingFormData,
   OwnerIdentityFormData,
+  PaymentMethodFormData,
   TrainingCallFormData,
 } from '@/types/onboarding';
 import { convertTo24HourFormat, is24HourFormat } from '@/lib/helpers';
+import { PaymentMethod } from '@/types/onboarding';
 
 type FileWithKey = FileUpload & { key?: string };
 
@@ -39,6 +41,9 @@ export function transformFormDataToPayload(
 
     case 'bankStatement':
       return transformBankStatementPayload(formData as BankStatementFormData);
+
+    case 'paymentMethod':
+      return transformPaymentMethodPayload(formData as PaymentMethodFormData);
 
     case 'menu':
       return transformMenuPayload(formData as MenuFormData);
@@ -132,6 +137,23 @@ function transformBankStatementPayload(data: BankStatementFormData): Partial<Upd
   const file = data.statementFile as FileWithKey;
   return {
     chequeBookImageKey: file?.key || '',
+  };
+}
+
+function transformPaymentMethodPayload(data: PaymentMethodFormData): Partial<UpdateProfileRequest> {
+  const selectedAccount = data.savedAccounts.find((acc) => acc.id === data.selectedAccountId);
+  if (!selectedAccount) {
+    return {};
+  }
+
+  return {
+    paymentMethod: {
+      paymentMethod: selectedAccount.method,
+      accountNumber:
+        selectedAccount.method === PaymentMethod.CARD
+          ? selectedAccount.cardNumber
+          : selectedAccount.accountNumber,
+    },
   };
 }
 

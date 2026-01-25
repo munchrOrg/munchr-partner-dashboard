@@ -1,5 +1,22 @@
 import { z } from 'zod';
 
+const coordinatesSchema = z.object({
+  lat: z.number(),
+  lng: z.number(),
+});
+
+const locationSchema = z.object({
+  buildingPlaceName: z.string(),
+  street: z.string(),
+  houseNumber: z.string(),
+  state: z.string(),
+  city: z.string(),
+  area: z.string(),
+  postalCode: z.string(),
+  addCommentAboutLocation: z.string(),
+  coordinates: coordinatesSchema.nullable(),
+});
+
 export const step1Schema = z.object({
   businessName: z
     .string()
@@ -10,7 +27,7 @@ export const step1Schema = z.object({
     .min(1, 'Business description is required')
     .min(10, 'Business description must be at least 10 characters'),
   cuisines: z.string().min(1, 'Cuisines is required'),
-  location: z.string().min(1, 'Location is required'),
+  location: locationSchema,
 });
 
 export const step2Schema = z.object({

@@ -8,13 +8,13 @@ import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
 import { OnboardingPhase } from '@/types/onboarding';
 
-type AuthGuardProps = {
+type ProtectedRouteGuardProps = {
   children: React.ReactNode;
   requireVerification?: boolean;
   enforceCurrentStep?: boolean;
 };
 
-type AuthResult = {
+type RouteAuthResult = {
   isChecking: boolean;
   isAuthorized: boolean;
   redirectTo: string | null;
@@ -22,11 +22,11 @@ type AuthResult = {
   showPendingApprovalToast: boolean;
 };
 
-export function AuthGuard({
+export function ProtectedRouteGuard({
   children,
   requireVerification = true,
   enforceCurrentStep = true,
-}: AuthGuardProps) {
+}: ProtectedRouteGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const accessToken = useAuthStore((state) => state.accessToken);
@@ -35,7 +35,7 @@ export function AuthGuard({
 
   const { data: profile, isLoading, error } = useProfile();
 
-  const authResult = useMemo((): AuthResult => {
+  const authResult = useMemo((): RouteAuthResult => {
     if (!hasHydrated) {
       return {
         isChecking: true,

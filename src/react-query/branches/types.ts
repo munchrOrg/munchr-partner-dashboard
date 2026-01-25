@@ -154,7 +154,7 @@ export type GetBranchesResponse = {
 };
 
 export type BranchProfileUpdateRequest = {
-  branchName?: string;
+  businessName?: string;
   description?: string;
   cuisineIds?: string[];
   buildingPlaceName?: string;
@@ -168,13 +168,11 @@ export type BranchProfileUpdateRequest = {
   longitude?: number;
   addCommentAboutLocation?: string;
   chequeBookImageKey?: string;
-  bankAccountOwner?: string;
+  accountDetail?: string;
   bankName?: string;
-  IBAN?: string;
+  iban?: string;
   billingAddressAreSame?: boolean;
   billingAddress?: BillingAddress;
   openingTiming?: OpeningTiming[];
-  currentStep?: number;
-  completeStep?: number;
   markOnboardingComplete?: boolean;
 };
