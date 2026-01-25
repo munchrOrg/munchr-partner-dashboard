@@ -1,12 +1,15 @@
 'use client';
 
+import type { Option } from '@/components/ui/multi-select';
+import type { PortalUser } from '@/react-query/portal-users/types';
 import type { UserFormInput } from '@/validations/user-management';
+
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useQuery } from '@tanstack/react-query';
 import { X } from 'lucide-react';
-import { useEffect } from 'react';
-import { useForm } from 'react-hook-form';
+import { useEffect, useMemo } from 'react';
+import { Controller, useForm } from 'react-hook-form';
 import { toast } from 'sonner';
+
 import { Button } from '@/components/ui/button';
 import {
   Form,
@@ -17,25 +20,17 @@ import {
   FormMessage,
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
+import { MultiSelect } from '@/components/ui/multi-select';
 import { Sheet, SheetClose, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { useCreatePortalUser, useUpdatePortalUser } from '@/react-query/portal-users/mutations';
-import { rolesKeys } from '@/react-query/roles/keys';
-import { rolesService } from '@/react-query/roles/service';
-import { userFormSchema } from '@/validations/user-management';
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-  // roleIds: string[];
-  roles: { id: string; name: string; description: string }[];
-  status?: 'approved' | 'pending';
-};
+import { useCreatePortalUser, useUpdatePortalUser } from '@/react-query/portal-users/mutations';
+import { useAllRoles } from '@/react-query/roles/queries';
+import { userFormSchema } from '@/validations/user-management';
 
 type UserFormDrawerProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  user?: User | null;
+  user?: PortalUser | null;
 };
 
 export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDrawerProps>) {
@@ -43,12 +38,18 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
   const createUserMutation = useCreatePortalUser();
   const updateUserMutation = useUpdatePortalUser();
 
-  // Fetch roles
-  const { data: roles, isLoading: rolesLoading } = useQuery({
-    queryKey: rolesKeys.all,
-    queryFn: rolesService.getAll,
-  });
-  console.log('roles data:', rolesLoading);
+  const { data: roles, isLoading: rolesLoading } = useAllRoles();
+
+  const roleOptions: Option[] = useMemo(() => {
+    if (!roles) {
+      return [];
+    }
+    return roles.map((role) => ({
+      value: role.id,
+      label: role.name,
+    }));
+  }, [roles]);
+
   const form = useForm<UserFormInput>({
     resolver: zodResolver(userFormSchema),
     defaultValues: {
@@ -65,7 +66,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
         name: user.name,
         email: user.email,
         password: '',
-        roleIds: user.roles.map((r) => r.id), // backend se id nikal ke daal do
+        roleIds: user.roles?.map((r) => r.id) || [],
       });
     } else if (open && !user) {
       form.reset({
@@ -77,15 +78,15 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
     }
   }, [open, user, form]);
 
-  // Submit handler
   const onSubmit = async (data: UserFormInput) => {
     try {
       if (isEditMode && user) {
         await updateUserMutation.mutateAsync({
           id: user.id,
-          name: data.name,
-          roleIds: data.roleIds,
-          status: 'active',
+          data: {
+            name: data.name,
+            roleIds: data.roleIds,
+          },
         });
         toast.success('User updated successfully');
       } else {
@@ -106,16 +107,6 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
   };
 
   const isLoading = createUserMutation.isPending || updateUserMutation.isPending;
-
-  const getButtonText = () => {
-    if (isLoading) {
-      return 'Loading...';
-    }
-    if (isEditMode) {
-      return 'Update User';
-    }
-    return 'Create User';
-  };
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -144,7 +135,6 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
               className="flex flex-1 flex-col overflow-hidden"
             >
               <div className="mt-2 flex-1 space-y-6 overflow-y-auto px-[30px]">
-                {/* Name */}
                 <FormField
                   control={form.control}
                   name="name"
@@ -161,7 +151,6 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                   )}
                 />
 
-                {/* Email & Password (only create mode) */}
                 {!isEditMode && (
                   <FormField
                     control={form.control}
@@ -179,6 +168,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                     )}
                   />
                 )}
+
                 {!isEditMode && (
                   <FormField
                     control={form.control}
@@ -197,35 +187,30 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                   />
                 )}
 
-                {/* Roles Dropdown */}
-                <FormField
+                <Controller
                   control={form.control}
                   name="roleIds"
-                  render={({ field }) => (
+                  render={({ field, fieldState }) => (
                     <FormItem>
                       <FormLabel>
-                        Role <span className="text-destructive">*</span>
+                        Roles <span className="text-destructive">*</span>
                       </FormLabel>
-                      <select
-                        value={field.value[0] || ''} // single role
-                        onChange={(e) => field.onChange([e.target.value])} // wrap in array
-                        className="w-full rounded border px-2 py-1"
-                        required
-                      >
-                        <option value="">Select Role</option>
-                        {roles?.data?.map((role: any) => (
-                          <option key={role.id} value={role.id}>
-                            {role.name}
-                          </option>
-                        ))}
-                      </select>
-                      <FormMessage />
+                      <MultiSelect
+                        options={roleOptions}
+                        selected={field.value}
+                        onChange={field.onChange}
+                        placeholder="Select roles"
+                        emptyMessage="No roles found"
+                        isLoading={rolesLoading}
+                      />
+                      {fieldState.error && (
+                        <p className="text-destructive text-sm">{fieldState.error.message}</p>
+                      )}
                     </FormItem>
                   )}
                 />
               </div>
 
-              {/* Buttons */}
               <div
                 className="mt-auto flex w-full gap-2 border-t px-[30px] py-4"
                 style={{ boxShadow: '0px -4px 20px 0px rgba(0, 0, 0, 0.1)' }}
@@ -240,7 +225,7 @@ export function UserFormDrawer({ open, onOpenChange, user }: Readonly<UserFormDr
                   Cancel
                 </Button>
                 <Button type="submit" disabled={isLoading} className="w-1/2 rounded-full">
-                  {getButtonText()}
+                  {isLoading ? 'Saving...' : isEditMode ? 'Update User' : 'Create User'}
                 </Button>
               </div>
             </form>

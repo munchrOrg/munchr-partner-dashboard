@@ -136,8 +136,8 @@ export function SignUpForm() {
         throw new Error('Failed to get upload URL');
       }
       // TODO: Add types for return type of upload api.
-      const data = await res.json();
-      const { uploadUrl, publicUrl } = data;
+      const response = await res.json();
+      const { uploadUrl, publicUrl } = response.data;
 
       try {
         await fetch(uploadUrl, {

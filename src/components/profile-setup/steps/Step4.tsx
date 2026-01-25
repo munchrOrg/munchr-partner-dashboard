@@ -61,7 +61,7 @@ export function Step4() {
     }
   }, [formData.step4, form]);
   const { data: branchData } = useBranchProfile();
-  const branchName = branchData?.data?.branch?.branchName;
+  const branchName = branchData?.branch?.branchName;
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
     const updatedBusinessHours: BusinessHoursFormData = {
       ...businessHours,

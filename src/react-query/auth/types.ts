@@ -13,6 +13,12 @@ export type PhoneLoginRequest = {
   deviceInfo?: string;
 };
 
+export type LoginUserRole = {
+  id: string;
+  name: string;
+  code: string | null;
+};
+
 export type LoginResponse = {
   accessToken: string;
   refreshToken?: string;
@@ -22,7 +28,7 @@ export type LoginResponse = {
     name: string;
     email: string;
     isOwner: boolean;
-    role: string;
+    roles: LoginUserRole[];
   };
   onboarding?: {
     currentStep?: string;
@@ -95,7 +101,7 @@ export type SignUpResponse = {
     name: string;
     email: string;
     isOwner: boolean;
-    role: string;
+    roles: LoginUserRole[];
   };
   partner: {
     id: string;
@@ -323,6 +329,7 @@ export type ProfilePermission = {
 export type ProfileRole = {
   id: string;
   name: string;
+  code: string | null;
   permissions: ProfilePermission[];
 };
 

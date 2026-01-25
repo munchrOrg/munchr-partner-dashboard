@@ -73,7 +73,7 @@ export function Step1() {
           businessName: data.branchName || '',
           businessDescription: data.description || '',
           cuisines: data.cuisineIds?.[0] || '',
-          location: data.area || '',
+          location: data.location?.area || '',
         });
       } catch (err) {
         console.error('Error fetching branch:', err);

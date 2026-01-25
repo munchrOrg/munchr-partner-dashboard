@@ -1,6 +1,6 @@
 'use client';
 
-import type { Role } from '@/types/roles';
+import type { Role } from '@/react-query/roles/types';
 import { useQuery } from '@tanstack/react-query';
 import { Plus } from 'lucide-react';
 import { useState } from 'react';
@@ -96,7 +96,7 @@ export default function UserManagementPage() {
             {rolesLoading ? (
               <div>Loading roles...</div>
             ) : (
-              roles?.data?.map((role: Role) => (
+              roles?.map((role: Role) => (
                 <RoleCard
                   key={role.id}
                   role={role}

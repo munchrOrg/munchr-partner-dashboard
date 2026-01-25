@@ -50,9 +50,9 @@ export function Step3() {
     }
   }, [formData.step3, form]);
 
-  const { data: branchData }: any = useBranchOnboardingProfile();
-  const branchName = branchData?.data?.branch?.branchName;
-  const address = branchData?.data?.branch?.location;
+  const { data: branchData } = useBranchOnboardingProfile();
+  const branchName = branchData?.branch?.branchName;
+  const address = branchData?.branch;
 
   const onSubmit = async (data: Step3Input) => {
     setStepData('step3', data);

@@ -35,21 +35,23 @@ export function StoresDrawer({ isOpen, onClose }: Readonly<StoresDrawerProps>) {
   const [step1FormData, setStep1FormData] = useState<BranchStep1Input | null>(null);
   const { data: branchesData } = useBranches();
   const { mutate: createBranch } = useCreateBranch();
+  const branches = branchesData?.branches || [];
+
   const [stores, setStores] = useState<Store[]>(
     () =>
-      branchesData?.data.map((branch: any) => ({
+      branches.map((branch) => ({
         id: branch.id,
         name: branch.branchName || 'Unnamed Branch',
-        address: `${branch.buildingPlaceName}, ${branch.street}, ${branch.city}`,
-        isEnabled: branch.isActive ?? false,
+        address: `${branch.location?.buildingPlaceName || ''}, ${branch.location?.street || ''}, ${branch.location?.city || ''}`,
+        isEnabled: branch.isActive,
       })) || []
   );
-  if (branchesData?.data && branchesData.data.length !== stores.length) {
-    const mappedStores: Store[] = branchesData.data.map((branch: any) => ({
+  if (branches.length !== stores.length) {
+    const mappedStores: Store[] = branches.map((branch) => ({
       id: branch.id,
       name: branch.branchName || 'Unnamed Branch',
-      address: `${branch.buildingPlaceName}, ${branch.street}, ${branch.city}`,
-      isEnabled: branch.isActive ?? false,
+      address: `${branch.location?.buildingPlaceName || ''}, ${branch.location?.street || ''}, ${branch.location?.city || ''}`,
+      isEnabled: branch.isActive,
     }));
     setStores(mappedStores);
   }

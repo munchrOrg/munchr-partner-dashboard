@@ -90,7 +90,8 @@ export function OnboardingFeePayment() {
         console.error('Failed to get upload URL');
         return;
       }
-      const { key, uploadUrl } = await res.json();
+      const response = await res.json();
+      const { key, uploadUrl } = response.data;
       try {
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',

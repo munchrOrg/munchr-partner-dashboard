@@ -38,9 +38,9 @@ export function Step2() {
       imageContainerClass: 'w-[400px] h-[250px]',
     });
   };
-  const { data: branchData }: any = useBranchOnboardingProfile();
-  const branchName = branchData?.data?.branch?.branchName;
-  const chequeBookImageKey = branchData?.data?.billingInfo?.chequeBookImageKey;
+  const { data: branchData } = useBranchOnboardingProfile();
+  const branchName = branchData?.branch?.branchName;
+  const chequeBookImageKey = branchData?.bankingDetails?.chequeBookImageKey;
   useEffect(() => {
     if (chequeBookImageKey) {
       reset({

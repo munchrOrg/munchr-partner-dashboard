@@ -1,4 +1,4 @@
-import type { RolePermissionsResponse } from './types';
+import type { RolePermission } from './types';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { rolesKeys } from './keys';
 import { rolesService } from './service';
@@ -20,7 +20,7 @@ export const useUpdateRole = () => {
 };
 
 export function useGetPermissionsMutation() {
-  return useMutation<RolePermissionsResponse, Error>({
+  return useMutation<RolePermission[], Error>({
     mutationFn: rolesService.getPermissions,
   });
 }

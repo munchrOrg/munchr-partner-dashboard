@@ -91,8 +91,8 @@ export function FileUploadBox({
         throw new Error('Failed to get upload URL');
       }
 
-      const data = await res.json();
-      const { key, uploadUrl, publicUrl } = data;
+      const response = await res.json();
+      const { key, uploadUrl, publicUrl } = response.data;
 
       try {
         await fetch(uploadUrl, {
