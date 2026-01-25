@@ -3,6 +3,7 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
+import { getUserType } from '@/constants/roles';
 import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
 import { OnboardingPhase } from '@/types/onboarding';
@@ -146,9 +147,9 @@ export function AuthGuard({
     }
 
     if (enforceCurrentStep) {
-      const expectedPath = '/onboarding';
+      const userType = getUserType(profile.roles);
 
-      if (profile.onboarding?.isOnboardingCompleted) {
+      if (profile.onboarding?.isOnboardingCompleted || profile.onboarding?.skipOnboarding) {
         if (pathname.startsWith('/dashboard')) {
           return {
             isChecking: false,
@@ -158,7 +159,7 @@ export function AuthGuard({
             showPendingApprovalToast: false,
           };
         }
-        if (pathname.startsWith('/onboarding')) {
+        if (pathname.startsWith('/onboarding') || pathname.startsWith('/profile-setup')) {
           return {
             isChecking: false,
             isAuthorized: false,
@@ -168,11 +169,42 @@ export function AuthGuard({
           };
         }
       } else {
+        if (userType === 'branch_manager') {
+          if (pathname.startsWith('/profile-setup')) {
+            return {
+              isChecking: false,
+              isAuthorized: true,
+              redirectTo: null,
+              shouldClearAuth: false,
+              showPendingApprovalToast: false,
+            };
+          }
+          if (!pathname.startsWith('/profile-setup')) {
+            return {
+              isChecking: false,
+              isAuthorized: false,
+              redirectTo: '/profile-setup',
+              shouldClearAuth: false,
+              showPendingApprovalToast: false,
+            };
+          }
+        }
+
+        if (userType === 'branch_user') {
+          return {
+            isChecking: false,
+            isAuthorized: pathname.startsWith('/dashboard'),
+            redirectTo: pathname.startsWith('/dashboard') ? null : '/dashboard',
+            shouldClearAuth: false,
+            showPendingApprovalToast: false,
+          };
+        }
+
         if (!pathname.startsWith('/onboarding')) {
           return {
             isChecking: false,
             isAuthorized: false,
-            redirectTo: expectedPath,
+            redirectTo: '/onboarding',
             shouldClearAuth: false,
             showPendingApprovalToast: false,
           };

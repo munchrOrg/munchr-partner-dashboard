@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
+import { getUserType } from '@/constants/roles';
 import { useOnboardingInit } from '@/hooks/useOnboardingInit';
 import { useAuthStore } from '@/stores/auth-store';
 import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
@@ -91,11 +92,33 @@ export function OnboardingAuthGuard({ children }: OnboardingAuthGuardProps) {
       };
     }
 
-    if (profileData.user?.isOwner === false) {
+    const userType = getUserType(profileData.roles);
+
+    if (userType === 'unknown') {
+      return {
+        isChecking: false,
+        isAuthorized: false,
+        redirectTo: '/sign-in',
+        shouldClearAuth: false,
+        showPendingApprovalToast: false,
+      };
+    }
+
+    if (userType === 'branch_manager') {
       return {
         isChecking: false,
         isAuthorized: false,
         redirectTo: '/profile-setup',
+        shouldClearAuth: false,
+        showPendingApprovalToast: false,
+      };
+    }
+
+    if (userType === 'branch_user') {
+      return {
+        isChecking: false,
+        isAuthorized: false,
+        redirectTo: '/dashboard',
         shouldClearAuth: false,
         showPendingApprovalToast: false,
       };

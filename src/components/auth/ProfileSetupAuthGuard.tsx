@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo } from 'react';
+import { getUserType } from '@/constants/roles';
 import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
 
@@ -46,11 +47,19 @@ export function ProfileSetupAuthGuard({ children }: ProfileSetupAuthGuardProps) 
       };
     }
 
-    const isOwner = profile.user?.isOwner;
+    const userType = getUserType(profile.roles);
     const skipOnboarding = profile.onboarding?.skipOnboarding;
     const isOnboardingCompleted = profile.onboarding?.isOnboardingCompleted;
 
-    if (isOwner === true) {
+    if (userType === 'unknown') {
+      return {
+        isChecking: false,
+        isAuthorized: false,
+        redirectTo: '/sign-in',
+      };
+    }
+
+    if (userType === 'owner') {
       if (isOnboardingCompleted || skipOnboarding) {
         return {
           isChecking: false,
@@ -62,6 +71,14 @@ export function ProfileSetupAuthGuard({ children }: ProfileSetupAuthGuardProps) 
         isChecking: false,
         isAuthorized: false,
         redirectTo: '/onboarding',
+      };
+    }
+
+    if (userType === 'branch_user') {
+      return {
+        isChecking: false,
+        isAuthorized: false,
+        redirectTo: '/dashboard',
       };
     }
 

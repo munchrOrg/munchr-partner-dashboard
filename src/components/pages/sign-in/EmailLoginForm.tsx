@@ -10,14 +10,14 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { useGetProfile, useLogin } from '@/react-query/auth/mutations';
+import { getUserType } from '@/constants/roles';
+import { useLogin } from '@/react-query/auth/mutations';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
 export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => void }) {
   const router = useRouter();
   const loginMutation = useLogin();
-  const getProfileMutation = useGetProfile();
 
   const {
     register,
@@ -28,27 +28,29 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
     resolver: zodResolver(signInSchema),
   });
 
-  const isLoading = loginMutation.isPending || getProfileMutation.isPending;
+  const isLoading = loginMutation.isPending;
 
   const onSubmit = async (data: SignInInput) => {
     try {
-      await loginMutation.mutateAsync(data);
+      const loginResponse = await loginMutation.mutateAsync(data);
 
-      const profileData = await getProfileMutation.mutateAsync();
+      const userType = getUserType(loginResponse.user?.roles);
+      const skipOnboarding = loginResponse.onboarding?.skipOnboarding;
+      const isOnboardingCompleted = loginResponse.onboarding?.isOnboardingCompleted;
 
-      const isOwner = profileData?.user?.isOwner;
-      const skipOnboarding = profileData?.onboarding?.skipOnboarding;
-      const isOnboardingCompleted = profileData?.onboarding?.isOnboardingCompleted;
-
-      if (isOwner === false && !skipOnboarding && !isOnboardingCompleted) {
-        router.push('/profile-setup');
+      if (isOnboardingCompleted || skipOnboarding) {
+        window.location.replace('/dashboard');
         return;
       }
 
-      if (isOnboardingCompleted || skipOnboarding) {
-        router.replace('/dashboard');
+      if (userType === 'owner') {
+        window.location.replace('/onboarding');
+      } else if (userType === 'branch_manager') {
+        window.location.replace('/profile-setup');
+      } else if (userType === 'branch_user') {
+        window.location.replace('/dashboard');
       } else {
-        router.replace('/onboarding');
+        toast.error('User role not configured. Please contact support.');
       }
     } catch (err: any) {
       const status = err?.response?.status;
