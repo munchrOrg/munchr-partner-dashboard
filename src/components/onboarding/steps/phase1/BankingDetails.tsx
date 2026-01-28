@@ -2,18 +2,14 @@
 
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 
-import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 const bankingSchema = z.object({
   accountTitle: z.string().min(1, 'Account title is required'),
@@ -33,26 +29,29 @@ const bankingSchema = z.object({
 type BankingInput = z.infer<typeof bankingSchema>;
 
 export function BankingDetails() {
-  const { data: profile } = useProfile();
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
-  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
-  const businessProfileAddressData = profile?.partner?.businessProfile;
+  const billingInfoData = profileData?.billingInfo;
+  const locationData = formData.location || profileData?.location;
 
+  const storedBanking = formData.banking;
   const bankingPrefill = {
-    accountTitle: businessProfile?.bankAccountOwner || '',
-    bankName: businessProfile?.bankName || '',
-    iban: businessProfile?.IBAN || '',
-    sameAsBusinessAddress: businessProfile?.billingAddressAreSame || false,
-    address: '',
-    buildingName: businessProfile?.billingBuildingPlaceName || '',
-    street: businessProfile?.billingStreet || '',
-    houseNumber: businessProfile?.billingHouseNumber || '',
-    billingState: businessProfile?.billingState || '',
-    billingCity: businessProfile?.billingCity || '',
-    area: businessProfile?.billingArea || '',
-    billingPostalCode: businessProfile?.billingPostalCode || '',
+    accountTitle: storedBanking?.accountTitle || billingInfoData?.bankAccountOwner || '',
+    bankName: storedBanking?.bankName || billingInfoData?.bankName || '',
+    iban: storedBanking?.iban || billingInfoData?.IBAN || '',
+    sameAsBusinessAddress:
+      storedBanking?.sameAsBusinessAddress ?? billingInfoData?.billingAddressAreSame ?? false,
+    address: storedBanking?.address || '',
+    buildingName:
+      storedBanking?.buildingName || billingInfoData?.billingAddress?.buildingPlaceName || '',
+    street: storedBanking?.street || billingInfoData?.billingAddress?.street || '',
+    houseNumber: storedBanking?.houseNumber || billingInfoData?.billingAddress?.houseNumber || '',
+    billingState: storedBanking?.billingState || billingInfoData?.billingAddress?.state || '',
+    billingCity: storedBanking?.billingCity || billingInfoData?.billingAddress?.city || '',
+    area: storedBanking?.area || billingInfoData?.billingAddress?.area || '',
+    billingPostalCode:
+      storedBanking?.billingPostalCode || billingInfoData?.billingAddress?.postalCode || '',
   };
 
   const {
@@ -69,18 +68,30 @@ export function BankingDetails() {
 
   const sameAsBusinessAddress = useWatch({ control, name: 'sameAsBusinessAddress' });
 
+  const prevSameAsBusinessAddressRef = useRef<boolean | undefined>(undefined);
+
   useEffect(() => {
+    if (prevSameAsBusinessAddressRef.current === undefined) {
+      prevSameAsBusinessAddressRef.current = sameAsBusinessAddress;
+      return;
+    }
+
+    if (prevSameAsBusinessAddressRef.current === sameAsBusinessAddress) {
+      return;
+    }
+
+    prevSameAsBusinessAddressRef.current = sameAsBusinessAddress;
+
     if (sameAsBusinessAddress) {
-      setValue('address', businessProfileAddressData?.address || '');
-      setValue('buildingName', businessProfileAddressData?.buildingPlaceName || '');
-      setValue('street', businessProfileAddressData?.street || '');
-      setValue('houseNumber', businessProfileAddressData?.houseNumber || '');
-      setValue('billingState', businessProfileAddressData?.state || '');
-      setValue('billingCity', businessProfileAddressData?.city || '');
-      setValue('area', businessProfileAddressData?.area || '');
-      setValue('billingPostalCode', businessProfileAddressData?.postalCode || '');
+      setValue('address', '');
+      setValue('buildingName', locationData?.buildingPlaceName || '');
+      setValue('street', locationData?.street || '');
+      setValue('houseNumber', locationData?.houseNumber || '');
+      setValue('billingState', locationData?.state || '');
+      setValue('billingCity', locationData?.city || '');
+      setValue('area', locationData?.area || '');
+      setValue('billingPostalCode', locationData?.postalCode || '');
     } else {
-      // Clear all fields
       setValue('address', '');
       setValue('buildingName', '');
       setValue('street', '');
@@ -90,40 +101,24 @@ export function BankingDetails() {
       setValue('area', '');
       setValue('billingPostalCode', '');
     }
-  }, [sameAsBusinessAddress, businessProfileAddressData, setValue]);
+  }, [sameAsBusinessAddress, locationData, setValue]);
 
-  const onSubmit = async (data: BankingInput) => {
-    const payload: any = {
-      currentStep: OnboardingStep.BANKING_DETAILS,
-      billingAddressAreSame: data.sameAsBusinessAddress,
-      bankAccountOwner: data.accountTitle,
+  const onSubmit = (data: BankingInput) => {
+    setStepFormData('banking', {
+      accountTitle: data.accountTitle,
       bankName: data.bankName,
-      IBAN: data.iban,
-    };
-
-    if (!data.sameAsBusinessAddress) {
-      payload.billingAddress = {
-        address: data.address || '',
-        street: data.street || '',
-        houseNumber: data.houseNumber || '',
-        state: data.billingState || '',
-        city: data.billingCity || '',
-        area: data.area || '',
-        postalCode: data.billingPostalCode || '',
-      };
-    }
-
-    try {
-      const resp = await updateProfileMutation.mutateAsync(payload);
-      if (!resp || !resp.success) {
-        toast.error(resp?.message || 'Failed to save banking details');
-        return;
-      }
-      triggerNavigation(OnboardingStep.BANKING_DETAILS);
-    } catch (err) {
-      toast.error('Something went wrong while saving banking details');
-      console.error(err);
-    }
+      iban: data.iban,
+      sameAsBusinessAddress: data.sameAsBusinessAddress,
+      address: data.address,
+      buildingName: data.buildingName,
+      street: data.street,
+      houseNumber: data.houseNumber,
+      billingState: data.billingState,
+      billingCity: data.billingCity,
+      area: data.area,
+      billingPostalCode: data.billingPostalCode,
+    });
+    setPendingFormSubmit(true);
   };
 
   return (

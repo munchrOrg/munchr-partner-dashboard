@@ -3,18 +3,18 @@
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useMemo, useRef } from 'react';
 import { toast } from 'sonner';
-import { STEP_ORDER } from '@/config/onboarding-steps';
+import { getUserType } from '@/constants/roles';
 import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { OnboardingPhase } from '@/types/onboarding';
 
-type AuthGuardProps = {
+type ProtectedRouteGuardProps = {
   children: React.ReactNode;
   requireVerification?: boolean;
   enforceCurrentStep?: boolean;
 };
 
-type AuthResult = {
+type RouteAuthResult = {
   isChecking: boolean;
   isAuthorized: boolean;
   redirectTo: string | null;
@@ -22,19 +22,30 @@ type AuthResult = {
   showPendingApprovalToast: boolean;
 };
 
-export function AuthGuard({
+export function ProtectedRouteGuard({
   children,
   requireVerification = true,
   enforceCurrentStep = true,
-}: AuthGuardProps) {
+}: ProtectedRouteGuardProps) {
   const router = useRouter();
   const pathname = usePathname();
   const accessToken = useAuthStore((state) => state.accessToken);
+  const hasHydrated = useAuthStore((state) => state._hasHydrated);
   const toastShownRef = useRef(false);
 
   const { data: profile, isLoading, error } = useProfile();
 
-  const authResult = useMemo((): AuthResult => {
+  const authResult = useMemo((): RouteAuthResult => {
+    if (!hasHydrated) {
+      return {
+        isChecking: true,
+        isAuthorized: false,
+        redirectTo: null,
+        shouldClearAuth: false,
+        showPendingApprovalToast: false,
+      };
+    }
+
     if (!accessToken) {
       return {
         isChecking: false,
@@ -65,7 +76,7 @@ export function AuthGuard({
       };
     }
 
-    if (pathname === `/onboarding/${OnboardingStep.PORTAL_SETUP_COMPLETE}`) {
+    if (pathname === '/onboarding') {
       return {
         isChecking: false,
         isAuthorized: true,
@@ -75,13 +86,13 @@ export function AuthGuard({
       };
     }
 
-    const emailVerified = profile.emailVerified ?? profile.partner?.emailVerified ?? true;
-    const phoneVerified = profile.phoneVerified ?? profile.partner?.phoneVerified ?? true;
+    const emailVerified = true;
+    const phoneVerified = true;
 
     if (requireVerification && (!emailVerified || !phoneVerified)) {
       const partnerId = profile.partner?.id || '';
-      const email = profile.email || profile.partner?.email || '';
-      const phone = profile.partner?.phone || '';
+      const email = profile.user?.email || profile.partner?.email || '';
+      const phone = profile.user?.phone || profile.partner?.phone || '';
 
       if (!emailVerified) {
         const params = new URLSearchParams({
@@ -135,13 +146,10 @@ export function AuthGuard({
       }
     }
 
-    const currentStep = profile.onboarding?.currentStep as OnboardingStep;
-    const completedSteps = (profile.onboarding?.completedSteps || []) as string[];
+    if (enforceCurrentStep) {
+      const userType = getUserType(profile.roles);
 
-    if (enforceCurrentStep && currentStep) {
-      const expectedPath = `/onboarding/${currentStep}`;
-
-      if (profile.onboarding?.isComplete) {
+      if (profile.onboarding?.isOnboardingCompleted || profile.onboarding?.skipOnboarding) {
         if (pathname.startsWith('/dashboard')) {
           return {
             isChecking: false,
@@ -151,7 +159,7 @@ export function AuthGuard({
             showPendingApprovalToast: false,
           };
         }
-        if (pathname.startsWith('/onboarding')) {
+        if (pathname.startsWith('/onboarding') || pathname.startsWith('/profile-setup')) {
           return {
             isChecking: false,
             isAuthorized: false,
@@ -161,32 +169,42 @@ export function AuthGuard({
           };
         }
       } else {
-        // Not on onboarding page - redirect to current step
-        if (!pathname.startsWith('/onboarding')) {
+        if (userType === 'branch_manager') {
+          if (pathname.startsWith('/profile-setup')) {
+            return {
+              isChecking: false,
+              isAuthorized: true,
+              redirectTo: null,
+              shouldClearAuth: false,
+              showPendingApprovalToast: false,
+            };
+          }
+          if (!pathname.startsWith('/profile-setup')) {
+            return {
+              isChecking: false,
+              isAuthorized: false,
+              redirectTo: '/profile-setup',
+              shouldClearAuth: false,
+              showPendingApprovalToast: false,
+            };
+          }
+        }
+
+        if (userType === 'branch_user') {
           return {
             isChecking: false,
-            isAuthorized: false,
-            redirectTo: expectedPath,
+            isAuthorized: pathname.startsWith('/dashboard'),
+            redirectTo: pathname.startsWith('/dashboard') ? null : '/dashboard',
             shouldClearAuth: false,
             showPendingApprovalToast: false,
           };
         }
 
-        const pathStep = pathname.replace('/onboarding/', '').split('/')[0] as OnboardingStep;
-        const pathStepIndex = STEP_ORDER.indexOf(pathStep);
-        const currentStepIndex = STEP_ORDER.indexOf(currentStep);
-
-        const isOnCurrentStep = pathStep === currentStep;
-        const isBackNavigation =
-          pathStepIndex < currentStepIndex && completedSteps.includes(pathStep);
-
-        const isAllowed = isOnCurrentStep || isBackNavigation;
-
-        if (!isAllowed && pathStep) {
+        if (!pathname.startsWith('/onboarding')) {
           return {
             isChecking: false,
             isAuthorized: false,
-            redirectTo: expectedPath,
+            redirectTo: '/onboarding',
             shouldClearAuth: false,
             showPendingApprovalToast: false,
           };
@@ -201,7 +219,16 @@ export function AuthGuard({
       shouldClearAuth: false,
       showPendingApprovalToast: false,
     };
-  }, [accessToken, profile, isLoading, error, pathname, requireVerification, enforceCurrentStep]);
+  }, [
+    hasHydrated,
+    accessToken,
+    profile,
+    isLoading,
+    error,
+    pathname,
+    requireVerification,
+    enforceCurrentStep,
+  ]);
 
   useEffect(() => {
     if (authResult.showPendingApprovalToast && !toastShownRef.current) {

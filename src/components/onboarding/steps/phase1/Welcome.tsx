@@ -1,13 +1,11 @@
 'use client';
 
 import { IntroStep } from '@/components/onboarding/shared/IntroStep';
-import { useProfile } from '@/react-query/auth/queries';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingPhase } from '@/types/onboarding';
 
 export function Welcome() {
-  const { data: profile } = useProfile();
-
-  const completedPhases = profile?.onboarding?.completedPhases || [];
+  const { completedPhases } = useOnboardingProfileStore();
 
   const steps = [
     {

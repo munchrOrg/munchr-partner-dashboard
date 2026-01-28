@@ -1,6 +1,6 @@
+import type { OnboardingFormData } from '@/types/onboarding';
 import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
 
-// Step order for navigation
 export const STEP_ORDER: OnboardingStep[] = [
   // Phase 1: Add Your Business
   OnboardingStep.WELCOME,
@@ -51,14 +51,12 @@ export const STEP_PHASE_MAP: Record<OnboardingStep, OnboardingPhase> = {
   [OnboardingStep.BUSINESS_HOURS_SETUP]: OnboardingPhase.OPEN_BUSINESS,
 };
 
-// Phase entry points (first sub-step of each phase after intro)
 export const PHASE_ENTRY_STEP: Record<OnboardingPhase, OnboardingStep> = {
   [OnboardingPhase.ADD_BUSINESS]: OnboardingStep.ADD_BUSINESS_INTRO,
   [OnboardingPhase.VERIFY_BUSINESS]: OnboardingStep.VERIFY_BUSINESS_INTRO,
   [OnboardingPhase.OPEN_BUSINESS]: OnboardingStep.OPEN_BUSINESS_INTRO,
 };
 
-// Phase display info for progress drawer
 export const PHASE_INFO: Record<OnboardingPhase, { title: string; description: string }> = {
   [OnboardingPhase.ADD_BUSINESS]: {
     title: 'Add your business',
@@ -75,31 +73,85 @@ export const PHASE_INFO: Record<OnboardingPhase, { title: string; description: s
   },
 };
 
-// Phase order
 export const PHASE_ORDER: OnboardingPhase[] = [
   OnboardingPhase.ADD_BUSINESS,
   OnboardingPhase.VERIFY_BUSINESS,
   OnboardingPhase.OPEN_BUSINESS,
 ];
 
-// Last step of each phase (triggers phase completion)
 export const PHASE_LAST_STEP: Record<OnboardingPhase, OnboardingStep> = {
   [OnboardingPhase.ADD_BUSINESS]: OnboardingStep.BUSINESS_INFO_REVIEW,
   [OnboardingPhase.VERIFY_BUSINESS]: OnboardingStep.PORTAL_SETUP_COMPLETE,
   [OnboardingPhase.OPEN_BUSINESS]: OnboardingStep.BUSINESS_HOURS_SETUP,
 };
 
-// Navigation helpers
-export function getNextStep(current: OnboardingStep): OnboardingStep | null {
-  console.log('currentStep', current);
-  const isLastStep = isLastStepOfPhase(current);
-  if (isLastStep) {
+export const STEP_FORM_KEY_MAP: Partial<Record<OnboardingStep, keyof OnboardingFormData>> = {
+  [OnboardingStep.BUSINESS_LOCATION]: 'location',
+  [OnboardingStep.OWNER_IDENTITY_UPLOAD]: 'ownerIdentity',
+  [OnboardingStep.LEGAL_TAX_DETAILS]: 'legalTax',
+  [OnboardingStep.BANKING_DETAILS]: 'banking',
+  [OnboardingStep.BANK_STATEMENT_UPLOAD]: 'bankStatement',
+  [OnboardingStep.PARTNERSHIP_PACKAGE]: 'package',
+  [OnboardingStep.PAYMENT_METHOD_SELECTION]: 'paymentMethod',
+  [OnboardingStep.DINE_IN_MENU_UPLOAD]: 'menu',
+  [OnboardingStep.TRAINING_CALL_PREFERENCE]: 'trainingCall',
+  [OnboardingStep.ONBOARDING_FEE_PAYMENT]: 'onboardingFee',
+  [OnboardingStep.BUSINESS_HOURS_SETUP]: 'businessHours',
+};
+
+export const STEPS_WITHOUT_FORMS = new Set<OnboardingStep>([
+  OnboardingStep.WELCOME,
+  OnboardingStep.ADD_BUSINESS_INTRO,
+  OnboardingStep.VERIFY_BUSINESS_INTRO,
+  OnboardingStep.OPEN_BUSINESS_INTRO,
+  OnboardingStep.PORTAL_SETUP_COMPLETE,
+  OnboardingStep.GROWTH_INFORMATION,
+  OnboardingStep.BUSINESS_INFO_REVIEW,
+]);
+
+export const CENTERED_STEPS = new Set<OnboardingStep>([
+  OnboardingStep.WELCOME,
+  OnboardingStep.ADD_BUSINESS_INTRO,
+  OnboardingStep.VERIFY_BUSINESS_INTRO,
+  OnboardingStep.OPEN_BUSINESS_INTRO,
+  OnboardingStep.PORTAL_SETUP_COMPLETE,
+  OnboardingStep.BUSINESS_LOCATION,
+  OnboardingStep.BUSINESS_HOURS_SETUP,
+]);
+
+function getNextPhaseEntry(completedPhases: OnboardingPhase[]): OnboardingStep {
+  if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
+    return PHASE_ENTRY_STEP[OnboardingPhase.OPEN_BUSINESS];
+  }
+  if (completedPhases.includes(OnboardingPhase.ADD_BUSINESS)) {
+    return PHASE_ENTRY_STEP[OnboardingPhase.VERIFY_BUSINESS];
+  }
+  return PHASE_ENTRY_STEP[OnboardingPhase.ADD_BUSINESS];
+}
+
+export function getNextStep(
+  current: OnboardingStep,
+  completedPhases: OnboardingPhase[] = []
+): OnboardingStep | null {
+  if (current === OnboardingStep.WELCOME) {
+    return getNextPhaseEntry(completedPhases);
+  }
+
+  if (current === OnboardingStep.PORTAL_SETUP_COMPLETE) {
+    return null;
+  }
+
+  if (isLastStepOfPhase(current)) {
+    if (current === OnboardingStep.BUSINESS_HOURS_SETUP) {
+      return null;
+    }
     return OnboardingStep.WELCOME;
   }
-  console.log('isLastStep', isLastStep);
 
   const index = STEP_ORDER.indexOf(current);
-  console.log('steporder', STEP_ORDER[index + 1]);
+  if (index === -1 || index >= STEP_ORDER.length - 1) {
+    return null;
+  }
   return STEP_ORDER[index + 1] ?? null;
 }
 
@@ -108,36 +160,12 @@ export function getPrevStep(current: OnboardingStep): OnboardingStep | null {
   if (index <= 0) {
     return null;
   }
-  const prevStep = STEP_ORDER[index - 1];
-  return prevStep ?? null;
+  return STEP_ORDER[index - 1] ?? null;
 }
 
 export function canGoBack(step: OnboardingStep): boolean {
   return step !== OnboardingStep.WELCOME;
 }
-
-export function canAccessStep(step: OnboardingStep, completedSteps: OnboardingStep[]): boolean {
-  // Welcome is always accessible
-  if (step === OnboardingStep.WELCOME) {
-    return true;
-  }
-
-  const stepIndex = STEP_ORDER.indexOf(step);
-  if (stepIndex <= 0) {
-    return true;
-  }
-
-  // Can access if previous step is completed
-  const prevStep = STEP_ORDER[stepIndex - 1];
-  if (!prevStep) {
-    return true;
-  }
-  return completedSteps.includes(prevStep);
-}
-
-// export function getCurrentPhase(step: OnboardingStep): OnboardingPhase {
-//   return STEP_PHASE_MAP[step];
-// }
 
 export function getNextPhase(currentPhase: OnboardingPhase): OnboardingPhase | null {
   const index = PHASE_ORDER.indexOf(currentPhase);
@@ -148,22 +176,3 @@ export function isLastStepOfPhase(step: OnboardingStep): boolean {
   const phase = STEP_PHASE_MAP[step];
   return PHASE_LAST_STEP[phase] === step;
 }
-
-// export function getStepNumber(step: OnboardingStep): number {
-//   return STEP_ORDER.indexOf(step);
-// }
-
-// export function getTotalSteps(): number {
-//   return STEP_ORDER.length;
-// }
-
-// Step mapper will be populated with lazy imports
-// export const STEP_MAPPER: Record<OnboardingStep, ComponentType> = {} as Record<
-//   OnboardingStep,
-//   ComponentType
-// >;
-
-// Function to register step components (called from each step file)
-// export function registerStep(step: OnboardingStep, component: ComponentType) {
-//   STEP_MAPPER[step] = component;
-// }

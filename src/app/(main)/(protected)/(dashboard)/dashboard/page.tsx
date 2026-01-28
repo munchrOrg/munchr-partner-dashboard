@@ -4,7 +4,7 @@ import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { DashboardContent } from '@/components/dashboard/widgets/DashboardContent';
 import { useProfile } from '@/react-query/auth/queries';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { OnboardingPhase } from '@/types/onboarding';
 
 export default function DashboardPage() {
   const { data: profile } = useProfile();
@@ -12,7 +12,7 @@ export default function DashboardPage() {
 
   const completedPhases = (profile?.onboarding?.completedPhases || []) as OnboardingPhase[];
   const skipOnboarding = profile?.onboarding?.skipOnboarding || false;
-  const isOnboardingComplete = profile?.onboarding?.isComplete || false;
+  const isOnboardingComplete = profile?.onboarding?.isOnboardingCompleted || false;
 
   const allPhasesCompleted =
     skipOnboarding ||
@@ -23,7 +23,7 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (profile && !allPhasesCompleted) {
-      router.replace(`/onboarding/${OnboardingStep.WELCOME}`);
+      router.replace('/onboarding');
     }
   }, [allPhasesCompleted, router, profile]);
 
@@ -36,8 +36,8 @@ export default function DashboardPage() {
   }
 
   const user = {
-    name: profile.name || null,
-    email: profile.email || null,
+    name: profile.user?.name || null,
+    email: profile.user?.email || null,
   };
 
   return <DashboardContent user={user} />;

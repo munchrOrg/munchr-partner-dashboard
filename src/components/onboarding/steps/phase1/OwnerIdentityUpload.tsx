@@ -1,97 +1,88 @@
 'use client';
 
 import type { FileUpload, OwnerIdentityFormData } from '@/types/onboarding';
-import { useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Label } from '@/components/ui/label';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { createFileUploadFromKey } from '@/lib/helpers';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { AssetType, OnboardingStep } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
+import { AssetType } from '@/types/onboarding';
 
 export function OwnerIdentityUpload() {
-  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
-  const { data: profile } = useProfile();
-  const businessProfile = profile?.partner?.businessProfile;
-  const updateProfileMutation = useUpdateProfile();
+  const {
+    openExampleDrawer,
+    setIsUploading,
+    profileData,
+    formData,
+    setStepFormData,
+    setPendingFormSubmit,
+  } = useOnboardingProfileStore();
 
-  const [ownerIdentity, setOwnerIdentity] = useState<OwnerIdentityFormData>(() => ({
-    hasSNTN: businessProfile?.sntn ?? null,
-    idCardFrontFile: businessProfile?.cnicFrontKey
-      ? createFileUploadFromKey(businessProfile.cnicFrontKey, 'CNIC Front')
-      : null,
-    idCardBackFile: businessProfile?.cnicBackKey
-      ? createFileUploadFromKey(businessProfile.cnicBackKey, 'CNIC Back')
-      : null,
-    sntnFile: businessProfile?.ntnImageKey
-      ? createFileUploadFromKey(businessProfile.ntnImageKey, 'NTN')
-      : null,
-  }));
+  const businessProfile = profileData?.businessProfile;
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const uploadCountRef = useRef(0);
+  const handleUploadingChange = useCallback(
+    (isUploading: boolean) => {
+      uploadCountRef.current += isUploading ? 1 : -1;
+      setIsUploading(uploadCountRef.current > 0);
+    },
+    [setIsUploading]
+  );
+
+  const [ownerIdentity, setOwnerIdentity] = useState<OwnerIdentityFormData>(() => {
+    if (formData.ownerIdentity) {
+      return formData.ownerIdentity;
+    }
+    return {
+      hasSNTN: businessProfile?.sntn ?? null,
+      idCardFrontFile: businessProfile?.cnicFrontKey
+        ? createFileUploadFromKey(businessProfile.cnicFrontKey, 'CNIC Front')
+        : null,
+      idCardBackFile: businessProfile?.cnicBackKey
+        ? createFileUploadFromKey(businessProfile.cnicBackKey, 'CNIC Back')
+        : null,
+      sntnFile: businessProfile?.ntnImageKey
+        ? createFileUploadFromKey(businessProfile.ntnImageKey, 'NTN')
+        : null,
+    };
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (ownerIdentity.hasSNTN === null) {
       toast.error('Please select whether you have a Sales Tax Registration Number (SNTN).');
       return;
     }
+
+    if (!ownerIdentity.idCardFrontFile) {
+      toast.error('Please upload the front of your ID card.');
+      return;
+    }
+    if (!ownerIdentity.idCardBackFile) {
+      toast.error('Please upload the back of your ID card.');
+      return;
+    }
+
     if (ownerIdentity.hasSNTN && !ownerIdentity.sntnFile) {
       toast.error('Please upload your SNTN document.');
       return;
     }
-    if (!ownerIdentity.hasSNTN) {
-      if (!ownerIdentity.idCardFrontFile) {
-        toast.error('Please upload the front of your ID card.');
-        return;
-      }
-      if (!ownerIdentity.idCardBackFile) {
-        toast.error('Please upload the back of your ID card.');
-        return;
-      }
-    }
 
-    try {
-      const payload: any = {
-        sntn: ownerIdentity.hasSNTN,
-        currentStep: OnboardingStep.OWNER_IDENTITY_UPLOAD,
-      };
-
-      if (ownerIdentity.hasSNTN) {
-        const file = ownerIdentity.sntnFile as FileUpload & { key?: string };
-        if (file?.key) {
-          payload.ntnImageKey = file.key;
-        }
-      } else {
-        const front = ownerIdentity.idCardFrontFile as FileUpload & { key?: string };
-        const back = ownerIdentity.idCardBackFile as FileUpload & { key?: string };
-        if (front?.key) {
-          payload.cnicFrontKey = front.key;
-        }
-        if (back?.key) {
-          payload.cnicBackKey = back.key;
-        }
-      }
-
-      await updateProfileMutation.mutateAsync(payload);
-      triggerNavigation(OnboardingStep.OWNER_IDENTITY_UPLOAD);
-    } catch (error) {
-      console.error('Failed to save owner identity:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('ownerIdentity', ownerIdentity);
+    setPendingFormSubmit(true);
   };
 
   const handleSNTNChange = (value: string) => {
     const newValue = value === 'yes';
-    setOwnerIdentity({
+    setOwnerIdentity((prev) => ({
+      ...prev,
       hasSNTN: newValue,
-      sntnFile: null,
-      idCardFrontFile: null,
-      idCardBackFile: null,
-    });
+      sntnFile: newValue ? prev.sntnFile : null,
+    }));
   };
 
   const handleIdCardFrontChange = (file: FileUpload | null) => {
@@ -133,7 +124,7 @@ export function OwnerIdentityUpload() {
     >
       <div className="flex w-full max-w-xl flex-col items-start justify-start">
         <StepHeader
-          title="Upload Business Owner ID (Front and Back)"
+          title="Upload Business Owner ID"
           description="We need to verify your identity. Please upload front and back of your ID card."
           showExamples={true}
           onViewExample={showIdCardExample}
@@ -167,29 +158,31 @@ export function OwnerIdentityUpload() {
             </RadioGroup>
           </div>
 
-          {ownerIdentity.hasSNTN === true && (
-            <FileUploadBox
-              label="SNTN"
-              value={ownerIdentity.sntnFile}
-              onChange={handleSntnChange}
-              assetType={AssetType.NTN}
-            />
-          )}
-
-          {ownerIdentity.hasSNTN === false && (
+          {ownerIdentity.hasSNTN !== null && (
             <div className="space-y-4">
               <FileUploadBox
-                label="ID Card (Front)"
+                label="ID Card (Front) *"
                 value={ownerIdentity.idCardFrontFile}
                 onChange={handleIdCardFrontChange}
                 assetType={AssetType.CNIC_FRONT}
+                onUploadingChange={handleUploadingChange}
               />
               <FileUploadBox
-                label="ID Card (Back)"
+                label="ID Card (Back) *"
                 value={ownerIdentity.idCardBackFile}
                 onChange={handleIdCardBackChange}
                 assetType={AssetType.CNIC_BACK}
+                onUploadingChange={handleUploadingChange}
               />
+              {ownerIdentity.hasSNTN === true && (
+                <FileUploadBox
+                  label="SNTN *"
+                  value={ownerIdentity.sntnFile}
+                  onChange={handleSntnChange}
+                  assetType={AssetType.NTN}
+                  onUploadingChange={handleUploadingChange}
+                />
+              )}
             </div>
           )}
         </div>

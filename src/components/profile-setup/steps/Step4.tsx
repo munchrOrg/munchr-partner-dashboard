@@ -13,8 +13,7 @@ import { Button } from '@/components/ui/button';
 import { Form, FormField, FormItem } from '@/components/ui/form';
 import { Icon } from '@/components/ui/icon';
 import profilestep4 from '@/public/assets/images/profile-step-4.png';
-import { useUpdateBranch } from '@/react-query/branches/mutations';
-import { useBranchOnboardingProfile } from '@/react-query/branches/queries';
+import { useUpdateBranchProfile } from '@/react-query/branches/mutations';
 import { useProfileSetupStore } from '@/stores/profile-setup-store';
 import { step4Schema } from '@/validations/profile-setup';
 
@@ -53,15 +52,14 @@ export function Step4() {
   });
 
   const businessHours = formData.step4 || defaultBusinessHours;
-  const { mutate: updateBranch } = useUpdateBranch();
+  const { mutateAsync: updateBranchProfile } = useUpdateBranchProfile();
 
   useEffect(() => {
     if (formData.step4) {
       form.reset(formData.step4);
     }
   }, [formData.step4, form]);
-  const { data: branchData }: any = useBranchOnboardingProfile();
-  const branchName = branchData?.data?.branch?.branchName;
+
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
     const updatedBusinessHours: BusinessHoursFormData = {
       ...businessHours,
@@ -129,18 +127,18 @@ export function Step4() {
           });
         }
       });
-      await updateBranch({
+      await updateBranchProfile({
         openingTiming: operatingHoursPayload,
-        businessName: branchName,
-      } as any);
+        markOnboardingComplete: true,
+      });
+
       completeStep(4);
       completeSetup();
 
-      // Simulate API call - replace with actual API call
-      await new Promise((resolve) => setTimeout(resolve, 1000));
+      useProfileSetupStore.getState().reset();
 
       toast.success('Profile setup completed successfully!');
-      router.push('/dashboard');
+      router.replace('/dashboard');
     } catch (error) {
       toast.error('Failed to complete profile setup. Please try again.');
       console.error('Profile setup error:', error);

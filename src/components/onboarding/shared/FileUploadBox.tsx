@@ -11,6 +11,10 @@ const DEFAULT_MAX_SIZE = 4;
 
 const PUBLIC_ASSETS = new Set(['logo', 'menu', 'other']);
 
+type ExtendedFileUploadBoxProps = FileUploadBoxProps & {
+  onUploadingChange?: (isUploading: boolean) => void;
+};
+
 export function FileUploadBox({
   label,
   value,
@@ -18,11 +22,16 @@ export function FileUploadBox({
   acceptedFormats = DEFAULT_FORMATS,
   maxSizeMB = DEFAULT_MAX_SIZE,
   assetType = 'other',
-}: FileUploadBoxProps) {
+  onUploadingChange,
+}: ExtendedFileUploadBoxProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [isUploading, setIsUploading] = useState(false);
   const previousUrlRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    onUploadingChange?.(isUploading);
+  }, [isUploading, onUploadingChange]);
 
   useEffect(() => {
     if (value?.url && value.url !== previousUrlRef.current) {
@@ -82,8 +91,8 @@ export function FileUploadBox({
         throw new Error('Failed to get upload URL');
       }
 
-      const data = await res.json();
-      const { key, uploadUrl, publicUrl } = data;
+      const response = await res.json();
+      const { key, uploadUrl, publicUrl } = response.data;
 
       try {
         await fetch(uploadUrl, {

@@ -20,6 +20,7 @@ export function StepHeader({
           <span>{description}</span>
           {showExamples && (
             <Button
+              type="button"
               variant="link"
               className="text-purple-dark ml-1 p-0 text-base font-bold"
               onClick={onViewExample}

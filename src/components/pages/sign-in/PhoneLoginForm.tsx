@@ -6,7 +6,8 @@ import { useState } from 'react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useGetProfile, usePhoneLogin } from '@/react-query/auth/mutations';
+import { getUserType } from '@/constants/roles';
+import { usePhoneLogin } from '@/react-query/auth/mutations';
 import { FormFooter } from './FormFooter';
 
 type PhoneLoginFormProps = {
@@ -19,9 +20,8 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
   const [password, setPassword] = useState('');
 
   const phoneLoginMutation = usePhoneLogin();
-  const getProfileMutation = useGetProfile();
 
-  const isLoading = phoneLoginMutation.isPending || getProfileMutation.isPending;
+  const isLoading = phoneLoginMutation.isPending;
 
   const normalizePhoneNumber = (phone: string) => {
     const p = phone.trim();
@@ -39,15 +39,28 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
 
     try {
       const formattedPhone = normalizePhoneNumber(phoneNumber);
-      await phoneLoginMutation.mutateAsync({ phoneNumber: formattedPhone, password });
+      const loginResponse = await phoneLoginMutation.mutateAsync({
+        phoneNumber: formattedPhone,
+        password,
+      });
 
-      const profileData = await getProfileMutation.mutateAsync();
+      const userType = getUserType(loginResponse.user?.roles);
+      const skipOnboarding = loginResponse.onboarding?.skipOnboarding;
+      const isOnboardingCompleted = loginResponse.onboarding?.isOnboardingCompleted;
 
-      if (profileData?.onboarding?.isComplete || profileData?.onboarding?.skipOnboarding) {
-        router.push('/dashboard');
+      if (isOnboardingCompleted || skipOnboarding) {
+        window.location.replace('/dashboard');
+        return;
+      }
+
+      if (userType === 'owner') {
+        window.location.replace('/onboarding');
+      } else if (userType === 'branch_manager') {
+        window.location.replace('/profile-setup');
+      } else if (userType === 'branch_user') {
+        window.location.replace('/dashboard');
       } else {
-        const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-        router.push(`/onboarding/${targetStep}`);
+        toast.error('User role not configured. Please contact support.');
       }
     } catch (err: any) {
       const status = err?.response?.status;
@@ -55,11 +68,12 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
 
       if (status === 403 && errorData?.error === 'verification_required') {
         const verificationError = errorData as VerificationRequiredError;
+        const verificationData = verificationError.data;
         const formattedPhone = normalizePhoneNumber(phoneNumber);
-        const userId = verificationError.userId || '';
-        const email = verificationError.email || '';
+        const userId = verificationData?.userId || '';
+        const email = verificationData?.email || '';
 
-        if (!verificationError.emailVerified) {
+        if (!verificationData?.emailVerified) {
           const params = new URLSearchParams({
             type: 'login',
             userId,
@@ -67,7 +81,7 @@ export function PhoneLoginForm({ onSwitchToEmail }: PhoneLoginFormProps) {
             phone: formattedPhone,
           });
           router.push(`/verify-email?${params.toString()}`);
-        } else if (!verificationError.phoneVerified) {
+        } else if (!verificationData?.phoneVerified) {
           const params = new URLSearchParams({
             type: 'login',
             userId,

@@ -1,9 +1,6 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
-import { toast } from 'sonner';
 
 import { Button } from '@/components/ui/button';
 import {
@@ -16,20 +13,13 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { authKeys } from '@/react-query/auth/keys';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 export function EmailConfirmModal() {
-  const router = useRouter();
-  const queryClient = useQueryClient();
-  const updateProfileMutation = useUpdateProfile();
-  const { data: profile } = useProfile();
-  const { isEmailConfirmModalOpen, closeEmailConfirmModal } = useOnboardingStore();
+  const { profileData, isEmailConfirmModalOpen, closeEmailConfirmModal, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
-  const businessEmail = profile?.partner?.businessProfile?.email || profile?.partner?.email || '';
+  const businessEmail = profileData?.user?.email || profileData?.partner?.email || '';
   const [email, setEmail] = useState(businessEmail);
 
   const handleOpenChange = (open: boolean) => {
@@ -40,29 +30,9 @@ export function EmailConfirmModal() {
     }
   };
 
-  const handleConfirm = async () => {
-    // Check if email matches partner email
-    // if (profile?.partner?.email && email === profile.partner.email) {
-    //   toast.error('This email is already in use. Please use a different email address.');
-    //   return;
-    // }
-
-    try {
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.BUSINESS_INFO_REVIEW,
-        completeStep: OnboardingStep.BUSINESS_INFO_REVIEW,
-        completePhase: OnboardingPhase.ADD_BUSINESS,
-        // email,
-      } as any);
-
-      await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
-
-      closeEmailConfirmModal();
-      router.push(`/onboarding/${OnboardingStep.WELCOME}`);
-    } catch (err) {
-      console.error('Failed to update profile with email:', err);
-      toast.error('Failed to save email. Please try again.');
-    }
+  const handleConfirm = () => {
+    closeEmailConfirmModal();
+    setPendingFormSubmit(true);
   };
 
   return (
@@ -71,7 +41,7 @@ export function EmailConfirmModal() {
         <DialogHeader>
           <DialogTitle className="text-2xl font-bold">Confirm you email</DialogTitle>
           <DialogDescription className="text-base text-black">
-            This is where we’ll send your partnership contract and important updates. Please confirm
+            This is where we'll send your partnership contract and important updates. Please confirm
             the address below is correct.
           </DialogDescription>
         </DialogHeader>

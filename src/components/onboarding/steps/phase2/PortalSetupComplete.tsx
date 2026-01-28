@@ -1,13 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import { useEffect, useRef } from 'react';
-import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
+import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { useLogout, useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
+import { useLogout } from '@/react-query/auth/mutations';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 const NEXT_STEPS = [
   "Open the email and Click 'Create Password'",
@@ -16,55 +14,18 @@ const NEXT_STEPS = [
 ];
 
 export function PortalSetupComplete() {
-  const { data: profile } = useProfile();
+  const { profileData } = useOnboardingProfileStore();
   const logoutMutation = useLogout();
-  const updateProfileMutation = useUpdateProfile();
   const router = useRouter();
-  const hasRun = useRef(false);
 
-  const email =
-    profile?.partner?.businessProfile?.email || profile?.partner?.email || 'your@email.com';
+  const email = profileData?.user?.email || profileData?.partner?.email || 'your@email.com';
 
-  // Simple: update backend, show toast, logout
-  useEffect(() => {
-    if (hasRun.current || !profile) {
-      return undefined;
-    }
-    hasRun.current = true;
-
-    const completePhaseAndLogout = async () => {
-      // Update backend: complete step, complete phase, set next step to WELCOME
-      try {
-        await updateProfileMutation.mutateAsync({
-          completeStep: OnboardingStep.PORTAL_SETUP_COMPLETE,
-          completePhase: OnboardingPhase.VERIFY_BUSINESS,
-          currentStep: OnboardingStep.WELCOME,
-        });
-      } catch (error) {
-        console.error('Failed to mark phase as complete:', error);
-      }
-
-      toast.success('Your application is under review. You will be notified once approved.', {
-        duration: 5000,
-      });
-
-      // Logout after delay
-      setTimeout(async () => {
-        try {
-          await logoutMutation.mutateAsync({});
-        } catch {}
-        router.push('/sign-in');
-      }, 5000);
-    };
-
-    completePhaseAndLogout();
-
-    return () => {
-      hasRun.current = false;
-    };
-  }, [profile]);
-  // Commented to prevent un-necessary re-renders
-  // }, [logoutMutation, updateProfileMutation, router]);
+  const handleLogout = async () => {
+    try {
+      await logoutMutation.mutateAsync({});
+    } catch {}
+    router.replace('/sign-in');
+  };
 
   return (
     <div className="mx-auto flex h-full items-center justify-center px-4 py-8 sm:px-8">
@@ -89,6 +50,14 @@ export function PortalSetupComplete() {
               ))}
             </ul>
           </div>
+
+          <Button
+            onClick={handleLogout}
+            disabled={logoutMutation.isPending}
+            className="bg-gradient-yellow mt-8 w-full rounded-sm px-8 py-3 text-sm font-medium text-black"
+          >
+            {logoutMutation.isPending ? 'Logging out...' : 'Log Out'}
+          </Button>
         </div>
 
         <div className="flex justify-end lg:w-1/2">

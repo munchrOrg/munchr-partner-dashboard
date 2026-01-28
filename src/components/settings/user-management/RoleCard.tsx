@@ -1,6 +1,6 @@
 'use client';
 
-import type { Role } from '@/types/roles';
+import type { Role } from '@/react-query/roles/types';
 import { CheckCircle2, SquarePen } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

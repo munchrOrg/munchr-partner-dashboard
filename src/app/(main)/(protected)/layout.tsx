@@ -1,12 +1,12 @@
-import { AuthGuard } from '@/components/auth/AuthGuard';
+import { ProtectedRouteGuard } from '@/components/auth/ProtectedRouteGuard';
 import { SessionProvider } from '@/components/providers/SessionProvider';
 
 export default function ProtectedLayout({ children }: { children: React.ReactNode }) {
   return (
     <SessionProvider>
-      <AuthGuard requireVerification enforceCurrentStep>
+      <ProtectedRouteGuard requireVerification enforceCurrentStep>
         {children}
-      </AuthGuard>
+      </ProtectedRouteGuard>
     </SessionProvider>
   );
 }

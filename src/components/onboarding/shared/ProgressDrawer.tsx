@@ -1,20 +1,14 @@
 'use client';
 
-import type { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
-import { useParams } from 'next/navigation';
+import type { OnboardingPhase } from '@/types/onboarding';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { PHASE_INFO, PHASE_ORDER, STEP_PHASE_MAP } from '@/config/onboarding-steps';
 import { cn } from '@/lib/utils';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 export function ProgressDrawer() {
-  const { isProgressDrawerOpen, closeProgressDrawer } = useOnboardingStore();
-  const { data: profile } = useProfile();
-  const params = useParams();
-
-  const currentStep = params.step as OnboardingStep;
-  const completedPhases = (profile?.onboarding?.completedPhases || []) as OnboardingPhase[];
+  const { isProgressDrawerOpen, closeProgressDrawer, currentStep, completedPhases } =
+    useOnboardingProfileStore();
 
   const currentPhase = currentStep ? STEP_PHASE_MAP[currentStep] : undefined;
 

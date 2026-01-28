@@ -1,147 +1,136 @@
 'use client';
 
-import { useQueryClient } from '@tanstack/react-query';
-import { useParams, useRouter } from 'next/navigation';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import {
   canGoBack,
   getNextStep,
-  getPrevStep,
   isLastStepOfPhase,
-  PHASE_ENTRY_STEP,
+  STEP_FORM_KEY_MAP,
   STEP_PHASE_MAP,
+  STEPS_WITHOUT_FORMS,
 } from '@/config/onboarding-steps';
+import { queryClient } from '@/lib/query-client';
 import { authKeys } from '@/react-query/auth/keys';
 import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingPhase, OnboardingStep } from '@/types/onboarding';
-
-const STEPS_WITHOUT_FORMS = new Set([
-  OnboardingStep.WELCOME,
-  OnboardingStep.PORTAL_SETUP_COMPLETE,
-  OnboardingStep.ADD_BUSINESS_INTRO,
-  OnboardingStep.VERIFY_BUSINESS_INTRO,
-  OnboardingStep.GROWTH_INFORMATION,
-  OnboardingStep.OPEN_BUSINESS_INTRO,
-]);
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
+import { OnboardingStep } from '@/types/onboarding';
+import { transformFormDataToPayload } from '@/utils/onboarding-payload';
 
 export function OnboardingFooter() {
-  const router = useRouter();
-  const params = useParams();
-  const queryClient = useQueryClient();
+  const isSubmittingRef = useRef(false);
 
-  const currentStep = params.step as OnboardingStep;
+  const {
+    currentStep,
+    completedPhases,
+    formData,
+    previousStep,
+    openProgressDrawer,
+    isSubmitting,
+    isUploading,
+    pendingFormSubmit,
+    setPendingFormSubmit,
+    setIsSubmitting,
+    completeStep,
+    completePhase,
+    setCurrentStep,
+    mergeProfileFromResponse,
+  } = useOnboardingProfileStore();
 
-  const { data: profile } = useProfile();
-  const completedPhases = useMemo(
-    () => (profile?.onboarding?.completedPhases || []) as string[],
-    [profile?.onboarding?.completedPhases]
-  );
-
-  const { openProgressDrawer, shouldNavigate, navigationStep, clearNavigation } =
-    useOnboardingStore();
+  const updateProfileMutation = useUpdateProfile();
+  const isPending = updateProfileMutation.isPending;
 
   const showBack = canGoBack(currentStep);
-
   const formId = 'onboarding-step-form';
   const hasForm = !STEPS_WITHOUT_FORMS.has(currentStep);
 
-  const updateProfileMutation = useUpdateProfile();
-
-  // Determine next step after WELCOME based on completed phases
-  const getNextStepAfterWelcome = useCallback((): OnboardingStep => {
-    if (completedPhases.includes(OnboardingPhase.VERIFY_BUSINESS)) {
-      return PHASE_ENTRY_STEP[OnboardingPhase.OPEN_BUSINESS];
-    }
-    if (completedPhases.includes(OnboardingPhase.ADD_BUSINESS)) {
-      return PHASE_ENTRY_STEP[OnboardingPhase.VERIFY_BUSINESS];
-    }
-    return PHASE_ENTRY_STEP[OnboardingPhase.ADD_BUSINESS];
-  }, [completedPhases]);
-
-  const completeStep = useCallback(
-    async (step: OnboardingStep) => {
-      const isPhaseComplete = isLastStepOfPhase(step);
-      const phase = STEP_PHASE_MAP[step];
-
-      const nextStep =
-        step === OnboardingStep.WELCOME ? getNextStepAfterWelcome() : getNextStep(step);
-
-      console.log('=== FOOTER completeStep DEBUG ===');
-      console.log('step:', step);
-      console.log('phase:', phase);
-      console.log('isPhaseComplete:', isPhaseComplete);
-      console.log('nextStep:', nextStep);
-
-      try {
-        const onboardingPayload: any = {
-          completeStep: step,
-          currentStep: nextStep || step,
-        };
-
-        if (isPhaseComplete) {
-          onboardingPayload.completePhase = phase;
-        }
-
-        console.log('Sending payload:', onboardingPayload);
-        const response = await updateProfileMutation.mutateAsync(onboardingPayload);
-        console.log('API response:', response);
-
-        await queryClient.invalidateQueries({ queryKey: authKeys.profile() });
-      } catch (error) {
-        console.error('Failed to sync onboarding progress:', error);
-        return;
-      }
-
-      if (phase === OnboardingPhase.VERIFY_BUSINESS && isPhaseComplete) {
-        console.log('Phase 2 complete - not navigating (AuthGuard handles logout)');
-        return;
-      }
-
-      console.log('Navigating to:', nextStep ? `/onboarding/${nextStep}` : '/dashboard');
-      if (nextStep) {
-        router.push(`/onboarding/${nextStep}`);
-      } else {
-        router.push('/dashboard');
-      }
-    },
-    [router, updateProfileMutation, queryClient, getNextStepAfterWelcome]
-  );
-
   useEffect(() => {
-    if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
-      if (shouldNavigate) {
-        clearNavigation();
-      }
+    if (!pendingFormSubmit || isSubmittingRef.current) {
       return;
     }
 
-    if (shouldNavigate && navigationStep) {
-      if (navigationStep !== currentStep) {
-        console.log('Skipping stale navigation:', navigationStep, 'current:', currentStep);
-        clearNavigation();
-        return;
+    if ((currentStep as string) === OnboardingStep.PORTAL_SETUP_COMPLETE) {
+      setPendingFormSubmit(false);
+      return;
+    }
+
+    isSubmittingRef.current = true;
+    setPendingFormSubmit(false);
+
+    const submitToApi = async () => {
+      const step = currentStep;
+      const isPhaseComplete = isLastStepOfPhase(step);
+      const phase = STEP_PHASE_MAP[step];
+      const nextStep = getNextStep(step, completedPhases);
+
+      const formKey = STEP_FORM_KEY_MAP[step];
+      const stepFormData = formKey ? (formData[formKey] ?? null) : null;
+      const transformedPayload = formKey ? transformFormDataToPayload(formKey, stepFormData) : {};
+
+      const payload = {
+        ...transformedPayload,
+        completeStep: step,
+        currentStep: nextStep || step,
+
+        ...(isPhaseComplete &&
+          step !== OnboardingStep.PORTAL_SETUP_COMPLETE && { completePhase: phase }),
+      };
+
+      try {
+        setIsSubmitting(true);
+        const response = await updateProfileMutation.mutateAsync(payload);
+
+        mergeProfileFromResponse(response);
+        completeStep(step);
+        if (isPhaseComplete) {
+          completePhase(phase);
+        }
+        console.log({ response });
+
+        if (!nextStep) {
+          const newOnboarding = response.onboarding;
+          if (newOnboarding?.isOnboardingCompleted) {
+            queryClient.setQueryData(authKeys.profile(), (oldData: any) => {
+              if (!oldData) {
+                return oldData;
+              }
+              return {
+                ...oldData,
+                onboarding: {
+                  ...oldData.onboarding,
+                  ...newOnboarding,
+                },
+              };
+            });
+          }
+          window.location.replace('/dashboard');
+          return;
+        }
+
+        setCurrentStep(nextStep);
+      } catch (error) {
+        console.error('Failed to save onboarding progress:', error);
+        toast.error('Failed to save. Please try again.');
+      } finally {
+        setIsSubmitting(false);
+        isSubmittingRef.current = false;
       }
-      completeStep(navigationStep);
-      clearNavigation();
-    }
-  }, [shouldNavigate, navigationStep, completeStep, clearNavigation, currentStep]);
+    };
 
-  const handleBack = () => {
-    const prevStep = getPrevStep(currentStep);
-    if (prevStep) {
-      router.push(`/onboarding/${prevStep}`);
-    }
-  };
+    submitToApi();
+  }, [pendingFormSubmit]);
 
-  const handleContinue = () => {
+  const handleBack = useCallback(() => {
+    previousStep();
+  }, [previousStep]);
+
+  const handleContinue = useCallback(() => {
     if (STEPS_WITHOUT_FORMS.has(currentStep)) {
-      completeStep(currentStep);
+      setPendingFormSubmit(true);
     }
-  };
+  }, [currentStep, setPendingFormSubmit]);
 
   if (currentStep === OnboardingStep.PORTAL_SETUP_COMPLETE) {
     return null;
@@ -156,6 +145,7 @@ export function OnboardingFooter() {
               type="button"
               variant="outline"
               onClick={handleBack}
+              disabled={isPending || isSubmitting}
               className="size-full rounded-full border-gray-400 px-6 text-lg font-medium text-black"
             >
               Back
@@ -177,10 +167,10 @@ export function OnboardingFooter() {
             type={hasForm ? 'submit' : 'button'}
             form={hasForm ? formId : undefined}
             onClick={hasForm ? undefined : handleContinue}
-            disabled={updateProfileMutation.isPending}
+            disabled={isPending || isSubmitting || isUploading}
             className="bg-gradient-yellow size-full rounded-full px-6 text-lg font-medium text-black disabled:opacity-50"
           >
-            {updateProfileMutation.isPending ? 'Saving...' : 'Continue'}
+            {isPending || isSubmitting ? 'Saving...' : isUploading ? 'Uploading...' : 'Continue'}
           </Button>
         </div>
       </div>

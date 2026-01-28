@@ -68,7 +68,7 @@ export function UserManagementTable() {
     return <div>Failed to load users.</div>;
   }
 
-  const users = data?.data || [];
+  const users = data || [];
 
   return (
     <>

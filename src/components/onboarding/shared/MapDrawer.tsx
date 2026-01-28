@@ -6,7 +6,7 @@ import { GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 const libraries: 'places'[] = ['places'];
 
@@ -23,7 +23,7 @@ const defaultCenter = {
 
 export function MapDrawer() {
   const { isMapDrawerOpen, closeMapDrawer, mapLocation, mapLocationCallback, updateMapLocation } =
-    useOnboardingStore();
+    useOnboardingProfileStore();
 
   const [markerPosition, setMarkerPosition] = useState(defaultCenter);
   const mapRef = useRef<google.maps.Map | null>(null);

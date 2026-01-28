@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { useAuthStore } from '@/stores/auth-store';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { useSignupStore } from '@/stores/signup-store';
 
 const apiClient = axios.create({
@@ -49,7 +49,7 @@ apiClient.interceptors.response.use(
 
     if (status === 401 && typeof window !== 'undefined' && !isAuthRoute) {
       useAuthStore.getState().clearAuth();
-      useOnboardingStore.getState().reset();
+      useOnboardingProfileStore.getState().reset();
       useSignupStore.getState().reset();
       window.location.href = '/sign-in';
     }

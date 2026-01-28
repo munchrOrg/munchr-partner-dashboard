@@ -1,10 +1,25 @@
+import type { Role } from '@/react-query/roles/types';
+
+export type UserStatus = 'invited' | 'active' | 'inactive' | 'suspended';
+
 export type PortalUser = {
   id: string;
   name: string;
   email: string;
-  // Add more fields as per API response
+  status: UserStatus;
+  roles: Role[];
+  createdAt?: string;
 };
 
-export type PortalUsersResponse = {
-  data: PortalUser[];
+export type CreatePortalUserRequest = {
+  name: string;
+  email: string;
+  password: string;
+  roleIds: string[];
+};
+
+export type UpdatePortalUserRequest = {
+  name?: string;
+  roleIds?: string[];
+  status?: UserStatus;
 };

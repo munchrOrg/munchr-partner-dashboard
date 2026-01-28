@@ -7,11 +7,8 @@ import { toast } from 'sonner';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { createFileUploadFromKey } from '@/lib/helpers';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
 import { useAuthStore } from '@/stores/auth-store';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 const PAYMENT_DETAILS = {
   accountName: 'Food for more',
@@ -21,29 +18,28 @@ const PAYMENT_DETAILS = {
 };
 
 export function OnboardingFeePayment() {
-  const { data: profile } = useProfile();
-  const businessProfile = profile?.partner?.businessProfile;
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
+
+  const businessProfile = profileData?.businessProfile;
 
   const [copied, setCopied] = useState(false);
   const fileUploadRef = useRef<HTMLInputElement>(null);
   const [isUploadingScreenshot, setIsUploadingScreenshot] = useState(false);
 
-  const [onboardingFee, setOnboardingFee] = useState<OnboardingFeeFormData>(() => ({
-    paymentTransactionId: businessProfile?.paymentTransactionId || '',
-    paymentScreenshot: businessProfile?.uploadScreenshotImageKey
-      ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
-      : businessProfile?.uploadScreenshotImage
-        ? {
-            name: businessProfile.uploadScreenshotImage.fileName || 'Unknown',
-            size: businessProfile.uploadScreenshotImage.size || 0,
-            url: businessProfile.uploadScreenshotImage.url || '',
-          }
+  const [onboardingFee, setOnboardingFee] = useState<OnboardingFeeFormData>(() => {
+    if (formData.onboardingFee) {
+      return formData.onboardingFee;
+    }
+    return {
+      paymentTransactionId: businessProfile?.paymentTransactionId || '',
+      paymentScreenshot: businessProfile?.uploadScreenshotImageKey
+        ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
         : null,
-  }));
+    };
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!onboardingFee.paymentScreenshot) {
@@ -51,17 +47,8 @@ export function OnboardingFeePayment() {
       return;
     }
 
-    try {
-      const file = onboardingFee.paymentScreenshot as FileUpload & { key?: string };
-      await updateProfileMutation.mutateAsync({
-        paymentTransactionId: onboardingFee.paymentTransactionId || '',
-        uploadScreenshotImageKey: file?.key || '',
-      });
-      triggerNavigation(OnboardingStep.ONBOARDING_FEE_PAYMENT);
-    } catch (error) {
-      console.error('Failed to save onboarding fee payment:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('onboardingFee', onboardingFee);
+    setPendingFormSubmit(true);
   };
 
   const handleCopyIban = async () => {
@@ -103,7 +90,8 @@ export function OnboardingFeePayment() {
         console.error('Failed to get upload URL');
         return;
       }
-      const { key, uploadUrl } = await res.json();
+      const response = await res.json();
+      const { key, uploadUrl } = response.data;
       try {
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',

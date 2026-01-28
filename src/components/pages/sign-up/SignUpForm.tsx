@@ -8,7 +8,7 @@ import { Loader2, X } from 'lucide-react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useState } from 'react';
 import { Controller, useForm } from 'react-hook-form';
 import PhoneInput from 'react-phone-number-input';
 import { toast } from 'sonner';
@@ -23,7 +23,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { useSignUp } from '@/react-query/auth/mutations';
+import { useCuisines } from '@/react-query/partner/queries';
 import { useAuthStore } from '@/stores/auth-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { signUpSchema } from '@/validations/auth';
 import 'react-phone-number-input/style.css';
@@ -36,21 +38,12 @@ export function SignUpForm() {
   const [logoPreview, setLogoPreview] = useState<string | null>(null);
   const [logoError, setLogoError] = useState<string | null>(null);
   const [isUploadingLogo, setIsUploadingLogo] = useState(false);
-  // Removed unused logoFile
-  const [cuisineOptions, setCuisineOptions] = useState<Option[]>([
-    { value: '1', label: 'Italian', group: 'Cuisines' },
-    { value: '2', label: 'Chinese', group: 'Cuisines' },
-    { value: '3', label: 'Mexican', group: 'Cuisines' },
-    { value: '4', label: 'Indian', group: 'Cuisines' },
-    { value: '5', label: 'Japanese', group: 'Cuisines' },
-    { value: '6', label: 'Thai', group: 'Cuisines' },
-    { value: '7', label: 'American', group: 'Cuisines' },
-    { value: '8', label: 'Mediterranean', group: 'Cuisines' },
-    { value: '9', label: 'French', group: 'Cuisines' },
-    { value: '10', label: 'Pakistani', group: 'Cuisines' },
-    { value: '11', label: 'Middle Eastern', group: 'Cuisines' },
-    { value: '12', label: 'Korean', group: 'Cuisines' },
-  ]);
+  const { data: cuisinesData, isLoading: isLoadingCuisines } = useCuisines();
+  const cuisineOptions: Option[] = (cuisinesData || []).map((c) => ({
+    value: c.id,
+    label: c.name,
+    group: 'Cuisines',
+  }));
 
   const {
     register,
@@ -78,61 +71,31 @@ export function SignUpForm() {
     }
     return 'Enter your Business/Kitchen Name *';
   };
-  useEffect(() => {
-    let mounted = true;
-    const fetchCuisines = async () => {
-      try {
-        const base = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-        const r = await fetch(`${base}/v1/partner/cuisines`);
-        if (!r.ok) {
-          throw new Error('Failed to fetch');
-        }
-        const resJson = await r.json();
-        const items = Array.isArray(resJson)
-          ? resJson
-          : Array.isArray(resJson?.data)
-            ? resJson.data
-            : [];
-        const opts = items.map((c: any) => ({ value: c.id, label: c.name, group: 'Cuisines' }));
-        if (mounted) {
-          setCuisineOptions(opts);
-        }
-      } catch {}
-    };
-    fetchCuisines();
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   const [submittedEmail, setSubmittedEmail] = useState<string>('');
   const [submittedPhone, setSubmittedPhone] = useState<string>('');
 
   const signUpMutation = useSignUp({
     onSuccess: (resp) => {
-      if (resp.success) {
-        toast.success(resp.message || 'Registration successful');
-        const { setPartnerId, setUserId } = useSignupStore.getState();
-        if (resp.partnerId) {
-          setPartnerId(resp.partnerId);
-        }
-        if (resp.userId) {
-          setUserId(resp.userId);
-        }
-        // Token can be at root level or nested under 'tokens'
-        const accessToken = resp.accessToken || resp.tokens?.accessToken;
-        if (accessToken) {
-          useAuthStore.getState().setAccessToken(accessToken);
-        }
-        const params = new URLSearchParams({
-          type: 'signup',
-          partnerId: resp.partnerId,
-          userId: resp.userId,
-          email: submittedEmail,
-          phone: submittedPhone,
-        });
-        router.push(`/verify-email?${params.toString()}`);
+      toast.success('Registration successful');
+      const { setPartnerId, setUserId } = useSignupStore.getState();
+      if (resp.partnerId) {
+        setPartnerId(resp.partnerId);
       }
+      if (resp.userId) {
+        setUserId(resp.userId);
+      }
+      if (resp.tokens?.accessToken) {
+        useAuthStore.getState().setAccessToken(resp.tokens.accessToken);
+      }
+      const params = new URLSearchParams({
+        type: 'signup',
+        partnerId: resp.partnerId,
+        userId: resp.userId,
+        email: submittedEmail,
+        phone: submittedPhone,
+      });
+      router.replace(`/verify-email?${params.toString()}`);
     },
   });
 
@@ -148,16 +111,17 @@ export function SignUpForm() {
 
     if (!ALLOWED_FILE_TYPES.includes(file.type)) {
       setLogoError('File must be JPG, PNG, or WebP');
+      setIsUploadingLogo(false);
       return;
     }
 
     if (file.size > MAX_FILE_SIZE) {
       setLogoError('File size must be under 5MB');
+      setIsUploadingLogo(false);
       return;
     }
 
     try {
-      // Step 1: Get uploadUrl and key
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
       const res = await fetch(`${backendUrl}/v1/storage/public/upload-url`, {
         method: 'POST',
@@ -172,25 +136,20 @@ export function SignUpForm() {
         throw new Error('Failed to get upload URL');
       }
       // TODO: Add types for return type of upload api.
-      const data = await res.json();
-      const { uploadUrl, publicUrl } = data;
+      const response = await res.json();
+      const { uploadUrl, publicUrl } = response.data;
 
-      // Step 2: Try to upload file to uploadUrl (PUT), ignore CORS error
       try {
         await fetch(uploadUrl, {
           method: 'PUT',
-          // headers: { 'Content-Type': file.type },
           body: file,
         });
       } catch (uploadErr) {
         console.warn('File upload error (likely CORS):', uploadErr);
-        // Ignore CORS error, proceed anyway
       }
 
-      // const logoUrl = `https://pub-xxx.r2.dev/${key}`;
       setLogoPreview(publicUrl);
     } catch {
-      // setLogoError('Image upload failed');
     } finally {
       setIsUploadingLogo(false);
     }
@@ -199,7 +158,6 @@ export function SignUpForm() {
   const handleRemoveLogo = useCallback(() => {
     setLogoPreview(null);
     setLogoError(null);
-    // Removed setLogoFile(null) as logoFile is unused
   }, []);
 
   const onSubmit = async (data: SignUpInput) => {
@@ -208,7 +166,6 @@ export function SignUpForm() {
       return;
     }
 
-    // Store email/phone for URL params (all business data goes to backend, not localStorage)
     setSubmittedEmail(data.email);
     setSubmittedPhone(data.phoneNumber);
 
@@ -217,16 +174,9 @@ export function SignUpForm() {
     const parsed = parsePhoneNumberFromString(phoneRaw);
     const countryCode = parsed ? `+${parsed.countryCallingCode}` : '';
 
-    // Get sntnFile from onboarding store
-    let ntnImageKey;
-    try {
-      // Use dynamic import instead of require
-      const onboardingStore =
-        (window as any).__zustandOnboardingStore ||
-        (await import('@/stores/onboarding-store')).useOnboardingStore;
-      const onboardingData = onboardingStore.getState().formData;
-      ntnImageKey = onboardingData?.ownerIdentity?.sntnFile?.key;
-    } catch {}
+    // Get sntnFile from onboarding store if available
+    const onboardingData = useOnboardingProfileStore.getState().formData;
+    const ntnImageKey = onboardingData?.ownerIdentity?.sntnFile?.key;
 
     const payload: any = {
       email: data.email,
@@ -239,7 +189,6 @@ export function SignUpForm() {
       description: data.businessDescription,
       logoUrl: logoPreview,
     };
-    // Only add ntnImageKey if present. Do NOT add frontNicKey or backNicKey.
     if (ntnImageKey) {
       payload.ntnImageKey = ntnImageKey;
     }
@@ -357,6 +306,7 @@ export function SignUpForm() {
                 onChange={field.onChange}
                 placeholder="Select cuisines *"
                 emptyMessage="No cuisines found."
+                isLoading={isLoadingCuisines}
               />
             )}
           />
@@ -438,10 +388,20 @@ export function SignUpForm() {
 
         <Button
           type="submit"
-          disabled={isSubmitting || !isValid}
+          disabled={
+            isSubmitting ||
+            signUpMutation.isPending ||
+            !isValid ||
+            isUploadingLogo ||
+            isLoadingCuisines
+          }
           className="bg-gradient-yellow h-11 w-full rounded-full font-medium text-black sm:h-12"
         >
-          {isSubmitting ? 'Creating account...' : 'Continue'}
+          {isSubmitting || signUpMutation.isPending
+            ? 'Creating account...'
+            : isUploadingLogo
+              ? 'Uploading logo...'
+              : 'Continue'}
         </Button>
 
         <p className="mt-4 text-center text-xs text-gray-400">

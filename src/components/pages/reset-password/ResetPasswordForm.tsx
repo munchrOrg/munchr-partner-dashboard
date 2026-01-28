@@ -43,14 +43,11 @@ export function ResetPasswordForm() {
     }
 
     try {
-      const response = await resetPasswordMutation.mutateAsync({
+      await resetPasswordMutation.mutateAsync({
         resetToken,
         newPassword: data.password,
       });
-
-      if (response.success) {
-        router.push('/sign-in');
-      }
+      router.push('/sign-in');
     } catch {}
   };
 

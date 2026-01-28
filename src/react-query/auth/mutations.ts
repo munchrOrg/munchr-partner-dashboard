@@ -32,31 +32,18 @@ import type {
   VerifyPhoneRequest,
   VerifyPhoneResponse,
 } from './types';
+import type { ApiErrorResponse } from '@/types/api';
 import { useMutation } from '@tanstack/react-query';
 import { toast } from 'sonner';
+import { getApiErrorMessage } from '@/lib/api-utils';
+import { queryClient } from '@/lib/query-client';
 import { useAuthStore } from '@/stores/auth-store';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { useSignupStore } from '@/stores/signup-store';
 import { authService } from './service';
 
-type ApiErrorResponse = {
-  message?: string;
-  error?: string;
-  statusCode?: number;
-};
-
-const getErrorMessage = (error: unknown): string => {
-  const axiosError = error as AxiosError<ApiErrorResponse>;
-  return (
-    axiosError?.response?.data?.message ||
-    axiosError?.response?.data?.error ||
-    axiosError?.message ||
-    'An unexpected error occurred'
-  );
-};
-
 const defaultOnError = (error: unknown) => {
-  toast.error(getErrorMessage(error));
+  toast.error(getApiErrorMessage(error));
 };
 
 type MutationOptions<TData, TVariables> = Omit<
@@ -128,29 +115,29 @@ export const useLogout = (options?: MutationOptions<LogoutResponse, LogoutReques
     mutationFn: (data?: LogoutRequest) => authService.logout(data),
     onSuccess: (response, variables, onMutateResult, context) => {
       clearAuth();
-      useOnboardingStore.getState().reset();
+      useOnboardingProfileStore.getState().reset();
       useSignupStore.getState().reset();
+      queryClient.clear();
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
-      // Even if logout fails on backend, clear local state
       clearAuth();
-      useOnboardingStore.getState().reset();
+      useOnboardingProfileStore.getState().reset();
       useSignupStore.getState().reset();
+      queryClient.clear();
       options?.onError?.(error, variables, onMutateResult, context);
     },
     ...options,
   });
 };
 
-// Change password (authenticated)
 export const useChangePassword = (
   options?: MutationOptions<ChangePasswordResponse, ChangePasswordRequest>
 ) => {
   return useMutation({
     mutationFn: (data: ChangePasswordRequest) => authService.changePassword(data),
     onSuccess: (response, variables, onMutateResult, context) => {
-      toast.success(response.message || 'Password changed successfully');
+      toast.success('Password changed successfully');
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
@@ -232,7 +219,7 @@ export const useResendOtp = (options?: MutationOptions<ResendOtpResponse, Resend
   return useMutation({
     mutationFn: (data: ResendOtpRequest) => authService.resendOtp(data),
     onSuccess: (response, variables, onMutateResult, context) => {
-      toast.success(response.message || 'OTP sent successfully');
+      toast.success('OTP sent successfully');
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
@@ -250,7 +237,7 @@ export const useResendEmailOtp = (
   return useMutation({
     mutationFn: (data: ResendEmailOtpRequest) => authService.resendEmailOtp(data),
     onSuccess: (response, variables, onMutateResult, context) => {
-      toast.success(response.message || 'OTP sent to email');
+      toast.success('OTP sent to email');
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
@@ -268,7 +255,7 @@ export const useResendPhoneOtp = (
   return useMutation({
     mutationFn: (data: ResendPhoneOtpRequest) => authService.resendPhoneOtp(data),
     onSuccess: (response, variables, onMutateResult, context) => {
-      toast.success(response.message || 'OTP sent to phone');
+      toast.success('OTP sent to phone');
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {
@@ -314,7 +301,7 @@ export const useResetPassword = (
   return useMutation({
     mutationFn: (data: ResetPasswordRequest) => authService.resetPassword(data),
     onSuccess: (response, variables, onMutateResult, context) => {
-      toast.success(response.message || 'Password reset successfully');
+      toast.success('Password reset successfully');
       options?.onSuccess?.(response, variables, onMutateResult, context);
     },
     onError: (error, variables, onMutateResult, context) => {

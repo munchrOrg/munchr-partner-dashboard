@@ -9,10 +9,10 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 export function ConfirmModal() {
-  const { isConfirmModalOpen, closeConfirmModal, confirmModalConfig } = useOnboardingStore();
+  const { isConfirmModalOpen, closeConfirmModal, confirmModalConfig } = useOnboardingProfileStore();
 
   if (!confirmModalConfig) {
     return null;

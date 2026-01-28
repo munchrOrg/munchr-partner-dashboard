@@ -1,3 +1,6 @@
+'use client';
+
+import { useProfile } from '@/react-query/auth/queries';
 import { Header } from './Header';
 import { Sidebar } from './Sidebar';
 
@@ -5,15 +8,14 @@ type DashboardLayoutProps = {
   children: React.ReactNode;
 };
 
-// TODO: Remove dummy user when auth flow is implemented
-const dummyUser = {
-  name: 'Test User',
-  email: 'test@example.com',
-};
-
 export function DashboardLayout({ children }: Readonly<DashboardLayoutProps>) {
-  // Bypass authentication - use dummy user directly
-  const user = dummyUser;
+  const { data: profile } = useProfile();
+
+  const user = {
+    name: profile?.user?.name ?? null,
+    email: profile?.user?.email ?? null,
+    image: profile?.businessProfile?.logoImageUrl ?? null,
+  };
 
   return (
     <div className="flex h-screen">

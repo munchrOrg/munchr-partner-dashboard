@@ -18,12 +18,6 @@ const baseConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'pub-xxx.r2.dev',
-        port: '',
-        pathname: '/**',
-      },
-      {
-        protocol: 'https',
         hostname: 'pub-8e1260e6963c4934adb0fd85ce240ebe.r2.dev',
         pathname: '/**',
       },

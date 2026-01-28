@@ -1,23 +1,18 @@
 'use client';
 
-import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import { toast } from 'sonner';
 
 import { EmailConfirmModal } from '@/components/onboarding/shared/EmailConfirmModal';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Checkbox } from '@/components/ui/checkbox';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 import { OnboardingStep } from '@/types/onboarding';
 
 export function BusinessInfoReview() {
-  const router = useRouter();
-  const { data: profile } = useProfile();
+  const { profileData, formData, openEmailConfirmModal, goToStep } = useOnboardingProfileStore();
   const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const { openEmailConfirmModal } = useOnboardingStore();
-  // const { triggerNavigation } = useOnboardingStore();
-
+  console.log({ profileData });
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
@@ -27,46 +22,74 @@ export function BusinessInfoReview() {
     }
 
     openEmailConfirmModal();
-    // triggerNavigation(OnboardingStep.WELCOME);
   };
 
-  const partner = profile?.partner;
-  const businessProfile = partner?.businessProfile;
+  const partner = profileData?.partner;
+  const businessProfile = profileData?.businessProfile;
+  const location = formData.location || profileData?.location;
+  const billingInfo = profileData?.billingInfo;
+  const bankingFormData = formData.banking;
 
   const handleChange = (step: OnboardingStep) => {
-    router.push(`/onboarding/${step}`);
+    goToStep(step);
   };
 
   const formatAddress = () => {
-    const buildingPlaceName = businessProfile?.buildingPlaceName || '';
-    const street = businessProfile?.street || '';
-    const houseNumber = businessProfile?.houseNumber || '';
-    const postalCode = businessProfile?.postalCode || '';
-    const city = businessProfile?.city || '';
-    const state = businessProfile?.state || '';
+    const buildingPlaceName = location?.buildingPlaceName || '';
+    const street = location?.street || '';
+    const houseNumber = location?.houseNumber || '';
+    const postalCode = location?.postalCode || '';
+    const city = location?.city || '';
+    const state = location?.state || '';
 
     const parts = [buildingPlaceName, street, houseNumber, postalCode, city, state].filter(Boolean);
 
     return parts.length ? parts.join(', ') : 'Not provided';
   };
 
+  const getBankAccountOwner = () =>
+    bankingFormData?.accountTitle || billingInfo?.bankAccountOwner || 'Not provided';
+  const getBankName = () => bankingFormData?.bankName || billingInfo?.bankName || 'Not provided';
+  const getIBAN = () => bankingFormData?.iban || billingInfo?.IBAN || 'Not provided';
+
   const formatBillingAddress = () => {
-    const billingInfo = businessProfile?.billingInfo;
-    const buildingName = billingInfo?.billingBuildingPlaceName || '';
-    const street = billingInfo?.billingStreet || '';
-    const houseNumber = billingInfo?.billingHouseNumber || '';
-    const billingState = billingInfo?.billingState || '';
-    const billingCity = billingInfo?.billingCity || '';
-    const area = billingInfo?.billingArea || '';
-    const postalCode = billingInfo?.billingPostalCode || '';
+    if (bankingFormData?.sameAsBusinessAddress && location) {
+      const parts = [
+        location.buildingPlaceName,
+        location.street,
+        location.houseNumber,
+        location.state,
+        location.city,
+        location.area,
+        location.postalCode,
+      ].filter(Boolean);
+      return parts.length ? parts.join(', ') : 'Not provided';
+    }
+
+    if (bankingFormData) {
+      const parts = [
+        bankingFormData.buildingName,
+        bankingFormData.street,
+        bankingFormData.houseNumber,
+        bankingFormData.billingState,
+        bankingFormData.billingCity,
+        bankingFormData.area,
+        bankingFormData.billingPostalCode,
+      ].filter(Boolean);
+      if (parts.length) {
+        return parts.join(', ');
+      }
+    }
+
+    const billingAddress = billingInfo?.billingAddress;
     const parts = [
-      buildingName,
-      street,
-      houseNumber,
-      billingState,
-      billingCity,
-      area,
-      postalCode,
+      billingAddress?.buildingPlaceName,
+      billingAddress?.street,
+      billingAddress?.houseNumber,
+      billingAddress?.state,
+      billingAddress?.city,
+      billingAddress?.area,
+      billingAddress?.postalCode,
     ].filter(Boolean);
     return parts.length ? parts.join(', ') : 'Not provided';
   };
@@ -97,7 +120,7 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Business name</span>
-              <span className="font-medium">{partner?.businessName || 'Not provided'}</span>
+              <span className="font-medium">{businessProfile?.businessName || 'Not provided'}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Business type</span>
@@ -122,8 +145,8 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">Business cuisine</span>
               <span className="font-medium">
-                {businessProfile?.cuisines?.length
-                  ? businessProfile.cuisines.join(', ')
+                {profileData?.primaryBranch?.cuisines?.length
+                  ? profileData.primaryBranch.cuisines.map((c) => c.name).join(', ')
                   : 'Not provided'}
               </span>
             </div>
@@ -174,11 +197,31 @@ export function BusinessInfoReview() {
           </div>
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
+              <span className="text-gray-600">CNIC Front</span>
+              <span className="font-medium">
+                {businessProfile?.cnicFrontKey ? 'Uploaded' : 'Not provided'}
+              </span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">CNIC Back</span>
+              <span className="font-medium">
+                {businessProfile?.cnicBackKey ? 'Uploaded' : 'Not provided'}
+              </span>
+            </div>
+            <div className="flex justify-between">
               <span className="text-gray-600">
                 Does your restaurant have Sales tax Registration Number (SNTN)?
               </span>
               <span className="font-medium">{businessProfile?.sntn ? 'Yes' : 'No'}</span>
             </div>
+            {businessProfile?.sntn && (
+              <div className="flex justify-between">
+                <span className="text-gray-600">SNTN Document</span>
+                <span className="font-medium">
+                  {businessProfile?.ntnImageKey ? 'Uploaded' : 'Not provided'}
+                </span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -198,6 +241,12 @@ export function BusinessInfoReview() {
             <div className="flex justify-between">
               <span className="text-gray-600">CNIC Number</span>
               <span className="font-medium">{businessProfile?.cnicNumber || 'Not provided'}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-gray-600">Tax Registration Number</span>
+              <span className="font-medium">
+                {businessProfile?.taxRegistrationNo || 'Not provided'}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">First & Middle Name Per CNIC</span>
@@ -229,21 +278,15 @@ export function BusinessInfoReview() {
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-gray-600">Bank Account Owner/Title</span>
-              <span className="font-medium">
-                {businessProfile?.billingInfo?.bankAccountOwner || 'Not provided'}
-              </span>
+              <span className="font-medium">{getBankAccountOwner()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Bank name</span>
-              <span className="font-medium">
-                {businessProfile?.billingInfo?.bankName || 'Not provided'}
-              </span>
+              <span className="font-medium">{getBankName()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">IBAN</span>
-              <span className="font-medium">
-                {businessProfile?.billingInfo?.IBAN || 'Not provided'}
-              </span>
+              <span className="font-medium">{getIBAN()}</span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Billing Address</span>

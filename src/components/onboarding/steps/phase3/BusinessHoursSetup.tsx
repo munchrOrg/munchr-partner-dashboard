@@ -7,10 +7,7 @@ import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import TimeConfirmationDrawer from '@/components/onboarding/shared/TimeConfirmationDrawer';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 const DAYS_OF_WEEK = [
   { key: 'monday', label: 'Monday' },
@@ -74,14 +71,16 @@ function convertOperatingHoursToFormData(
 }
 
 export function BusinessHoursSetup() {
-  const { data: profile } = useProfile();
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
   const [editingDay, setEditingDay] = useState<DayKey | null>(null);
 
-  const [businessHours, setBusinessHours] = useState<BusinessHoursFormData>(() =>
-    convertOperatingHoursToFormData(profile?.operatingHours)
-  );
+  const [businessHours, setBusinessHours] = useState<BusinessHoursFormData>(() => {
+    if (formData.businessHours) {
+      return formData.businessHours;
+    }
+    return convertOperatingHoursToFormData(profileData?.primaryBranch?.operatingHours);
+  });
 
   const updateDaySchedule = (day: DayKey, schedule: DaySchedule) => {
     setBusinessHours((prev) => ({
@@ -116,49 +115,8 @@ export function BusinessHoursSetup() {
       }
     }
 
-    const dayMapping = {
-      monday: 1,
-      tuesday: 2,
-      wednesday: 3,
-      thursday: 4,
-      friday: 5,
-      saturday: 6,
-      sunday: 0,
-    };
-
-    const operatingHoursPayload: any[] = [];
-    Object.entries(businessHours).forEach(([day, schedule]) => {
-      const dayOfWeek = dayMapping[day as keyof typeof dayMapping];
-      if (schedule.isOpen && schedule.slots.length > 0) {
-        schedule.slots.forEach((slot) => {
-          operatingHoursPayload.push({
-            dayOfWeek,
-            startTime: slot.open,
-            endTime: slot.close,
-            isClosed: false,
-          });
-        });
-      } else {
-        operatingHoursPayload.push({
-          dayOfWeek,
-          startTime: '00:00',
-          endTime: '00:00',
-          isClosed: true,
-        });
-      }
-    });
-
-    try {
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.BUSINESS_HOURS_SETUP,
-        operatingHours: operatingHoursPayload,
-      });
-
-      triggerNavigation(OnboardingStep.BUSINESS_HOURS_SETUP);
-    } catch (error) {
-      console.error('Failed to save business hours:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('businessHours', businessHours);
+    setPendingFormSubmit(true);
   };
 
   return (

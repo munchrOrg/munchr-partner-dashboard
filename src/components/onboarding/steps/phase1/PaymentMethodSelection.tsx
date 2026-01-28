@@ -16,10 +16,8 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Input } from '@/components/ui/input';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep, PaymentMethod } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
+import { PaymentMethod } from '@/types/onboarding';
 import { paymentFormSchema } from '@/validations/payment';
 
 const PAYMENT_OPTIONS = [
@@ -48,31 +46,41 @@ const maskCardNumber = (number: string) => {
 };
 
 export function PaymentMethodSelection() {
-  const { data: profile } = useProfile();
-  const { triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
-  const businessProfile = profile?.partner?.businessProfile?.billingInfo;
+  const { profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
+  const billingInfoData = profileData?.billingInfo;
 
-  const prefilledAccount: SavedPaymentAccount | null = businessProfile?.paymentMethodType
-    ? {
-        id: 'business-prefilled',
-        method: businessProfile.paymentMethodType,
-        ...(businessProfile.paymentMethodType === PaymentMethod.CARD
-          ? {
-              accountTitle: businessProfile.accountTitle || '',
-              cardNumber: businessProfile.cardNumber || '',
-              cardExpiry: businessProfile.cardExpiry || '',
-            }
-          : {
-              accountNumber: businessProfile.paymentAccountNumber || '',
-            }),
-      }
-    : null;
+  const getInitialPaymentData = (): PaymentMethodFormData => {
+    if (formData.paymentMethod) {
+      return formData.paymentMethod;
+    }
 
-  const [paymentData, setPaymentData] = useState<PaymentMethodFormData>(() => ({
-    savedAccounts: prefilledAccount ? [prefilledAccount] : [],
-    selectedAccountId: prefilledAccount?.id || null,
-  }));
+    const prefilledAccount: SavedPaymentAccount | null = billingInfoData?.paymentMethodType
+      ? {
+          id: 'business-prefilled',
+          method: billingInfoData.paymentMethodType as PaymentMethod,
+          ...(billingInfoData.paymentMethodType === PaymentMethod.CARD
+            ? {
+                accountTitle: billingInfoData.accountTitle || '',
+                cardNumber: billingInfoData.cardNumber || '',
+                cardExpiry: billingInfoData.cardExpiry || '',
+              }
+            : {
+                accountNumber: billingInfoData.paymentAccountNumber || '',
+              }),
+        }
+      : null;
+
+    return {
+      savedAccounts: prefilledAccount ? [prefilledAccount] : [],
+      selectedAccountId: prefilledAccount?.id || null,
+    };
+  };
+
+  const [paymentData, setPaymentData] = useState<PaymentMethodFormData>(getInitialPaymentData);
+
+  const prefilledAccount =
+    paymentData.savedAccounts.length > 0 ? paymentData.savedAccounts[0] : null;
 
   const {
     register,
@@ -149,7 +157,7 @@ export function PaymentMethodSelection() {
     });
   };
 
-  const handleFormSubmit = async (e: React.FormEvent) => {
+  const handleFormSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!paymentData.savedAccounts?.length) {
@@ -161,25 +169,8 @@ export function PaymentMethodSelection() {
       return;
     }
 
-    try {
-      const selected = paymentData.savedAccounts.find(
-        (acc) => acc.id === paymentData.selectedAccountId
-      );
-      if (selected) {
-        await updateProfileMutation.mutateAsync({
-          currentStep: OnboardingStep.PAYMENT_METHOD_SELECTION,
-          paymentMethod: {
-            paymentMethod: selected.method,
-            accountNumber: selected.accountNumber,
-          },
-        });
-      }
-
-      triggerNavigation(OnboardingStep.PAYMENT_METHOD_SELECTION);
-    } catch (error) {
-      console.error('Failed to save payment method:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('paymentMethod', paymentData);
+    setPendingFormSubmit(true);
   };
 
   const renderPaymentFields = () => {

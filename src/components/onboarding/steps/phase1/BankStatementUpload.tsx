@@ -2,36 +2,37 @@
 
 import type { BankStatementFormData, FileUpload } from '@/types/onboarding';
 import { CircleAlert } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { toast } from 'sonner';
 import { FileUploadBox } from '@/components/onboarding/shared/FileUploadBox';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { createFileUploadFromKey } from '@/lib/helpers';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { AssetType, OnboardingStep } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
+import { AssetType } from '@/types/onboarding';
 
 export function BankStatementUpload() {
-  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
-  const { data: profile } = useProfile();
-  const billingInfo = profile?.partner?.businessProfile?.billingInfo;
-  const updateProfileMutation = useUpdateProfile();
+  const {
+    openExampleDrawer,
+    setIsUploading,
+    profileData,
+    formData,
+    setStepFormData,
+    setPendingFormSubmit,
+  } = useOnboardingProfileStore();
+
+  const billingInfo = profileData?.billingInfo;
 
   const [bankStatement, setBankStatement] = useState<BankStatementFormData>(() => {
+    if (formData.bankStatement) {
+      return formData.bankStatement;
+    }
     const prefilled = billingInfo?.chequeBookImageKey
       ? createFileUploadFromKey(billingInfo.chequeBookImageKey, 'Bank Statement')
-      : billingInfo?.checkBookImage
-        ? {
-            name: billingInfo.checkBookImage.fileName || 'Unknown',
-            size: billingInfo.checkBookImage.size || 0,
-            url: billingInfo.checkBookImage.url || '',
-          }
-        : null;
+      : null;
     return { statementFile: prefilled };
   });
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
 
     if (!bankStatement.statementFile) {
@@ -39,23 +40,20 @@ export function BankStatementUpload() {
       return;
     }
 
-    try {
-      const file = bankStatement.statementFile as FileUpload & { key?: string };
-      await updateProfileMutation.mutateAsync({
-        currentStep: OnboardingStep.BANK_STATEMENT_UPLOAD,
-        chequeBookImageKey: file?.key || '',
-      });
-
-      triggerNavigation(OnboardingStep.BANK_STATEMENT_UPLOAD);
-    } catch (error) {
-      console.error('Failed to save bank statement:', error);
-      toast.error('Failed to save data. Please try again.');
-    }
+    setStepFormData('bankStatement', bankStatement);
+    setPendingFormSubmit(true);
   };
 
   const handleFileChange = (file: FileUpload | null) => {
     setBankStatement({ statementFile: file });
   };
+
+  const handleUploadingChange = useCallback(
+    (isUploading: boolean) => {
+      setIsUploading(isUploading);
+    },
+    [setIsUploading]
+  );
 
   const showExample = () => {
     openExampleDrawer({
@@ -100,6 +98,7 @@ export function BankStatementUpload() {
           value={bankStatement.statementFile}
           onChange={handleFileChange}
           assetType={AssetType.CHEQUE_BOOK}
+          onUploadingChange={handleUploadingChange}
         />
       </div>
     </form>

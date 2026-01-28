@@ -1,13 +1,3 @@
-export type RoleCreateResponse = {
-  success: boolean;
-  message: string;
-  data?: {
-    id: string;
-    name: string;
-    description: string;
-    permissionIds: string[];
-  };
-};
 export type RolePermission = {
   id: string;
   name: string;
@@ -16,6 +6,10 @@ export type RolePermission = {
   description: string;
 };
 
-export type RolePermissionsResponse = {
-  data: RolePermission[];
+export type Role = {
+  id: string;
+  name: string;
+  description: string;
+  permissionIds?: string[];
+  permissions?: RolePermission[];
 };

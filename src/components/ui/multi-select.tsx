@@ -13,6 +13,7 @@ import {
   CommandList,
 } from '@/components/ui/command';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 
 export type Option = {
@@ -29,6 +30,7 @@ type MultiSelectProps = {
   emptyMessage?: string;
   className?: string;
   disabled?: boolean;
+  isLoading?: boolean;
 };
 
 export function MultiSelect({
@@ -39,6 +41,7 @@ export function MultiSelect({
   emptyMessage = 'No options found.',
   className,
   disabled = false,
+  isLoading = false,
 }: MultiSelectProps) {
   const [open, setOpen] = React.useState(false);
 
@@ -55,7 +58,6 @@ export function MultiSelect({
     onChange(selected.filter((v) => v !== value));
   };
 
-  // Helper for keyboard removal
   const handleRemoveKeyboard = (value: string) => {
     onChange(selected.filter((v) => v !== value));
   };
@@ -76,6 +78,20 @@ export function MultiSelect({
     },
     {} as Record<string, Option[]>
   );
+
+  if (isLoading) {
+    return (
+      <div
+        className={cn(
+          'flex h-11 w-full items-center rounded-full border border-gray-300 px-4 sm:h-12 sm:px-5',
+          className
+        )}
+      >
+        <Skeleton className="h-4 w-32" />
+        <ChevronsUpDown className="ml-auto size-4 shrink-0 opacity-50" />
+      </div>
+    );
+  }
 
   return (
     <Popover open={open} onOpenChange={setOpen}>

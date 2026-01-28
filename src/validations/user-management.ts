@@ -14,24 +14,22 @@ export const updateUserSchema = z.object({
   roleIds: z.array(z.string()).min(1),
 });
 
-export const pagePermissionSchema = z.object({
-  page: z.string().min(1, 'Page name is required'),
-  view: z.boolean(),
-  edit: z.boolean(),
-  delete: z.boolean(),
+export const resourcePermissionSchema = z.object({
+  resource: z.string(),
+  permissions: z.record(z.string(), z.boolean()),
 });
 
 export const roleFormSchema = z.object({
   name: z.string().min(1, 'Role name is required'),
   description: z.string().min(1, 'Description is required'),
   permissions: z
-    .array(pagePermissionSchema)
+    .array(resourcePermissionSchema)
     .min(1, 'At least one permission is required')
     .refine(
-      (permissions) => permissions.some((p) => p.view || p.edit || p.delete),
+      (perms) => perms.some((p) => Object.values(p.permissions).some((v) => v)),
       'At least one permission action must be enabled'
     ),
 });
 
 export type RoleFormInput = z.infer<typeof roleFormSchema>;
-export type PagePermissionInput = z.infer<typeof pagePermissionSchema>;
+export type ResourcePermissionInput = z.infer<typeof resourcePermissionSchema>;

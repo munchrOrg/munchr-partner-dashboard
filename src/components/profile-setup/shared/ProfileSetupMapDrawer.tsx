@@ -1,9 +1,9 @@
 'use client';
 
-import type { Coordinates } from '@/types/onboarding';
+import type { Coordinates, LocationFormData } from '@/types/onboarding';
 import { Autocomplete, GoogleMap, Marker, useJsApiLoader } from '@react-google-maps/api';
 import { Search, X } from 'lucide-react';
-import { startTransition, useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
@@ -13,7 +13,7 @@ const libraries: 'places'[] = ['places'];
 
 const containerStyle = {
   width: '100%',
-  height: '400px',
+  height: '350px',
   borderRadius: '20px',
 };
 
@@ -23,22 +23,16 @@ const defaultCenter = {
 };
 
 export function ProfileSetupMapDrawer() {
-  const { isMapDrawerOpen, closeMapDrawer, formData, setStepData } = useProfileSetupStore();
+  const { isMapDrawerOpen, closeMapDrawer, mapLocation, mapLocationCallback, updateMapLocation } =
+    useProfileSetupStore();
 
-  const currentLocation = formData.step1?.location || '';
-  const currentCoordinates = formData.step1?.coordinates;
-
-  // Initialize state with current values
-  const [markerPosition, setMarkerPosition] = useState<Coordinates>(
-    currentCoordinates || defaultCenter
-  );
-  const [searchAddress, setSearchAddress] = useState(currentLocation);
+  const [markerPosition, setMarkerPosition] = useState(defaultCenter);
+  const [searchAddress, setSearchAddress] = useState('');
   const [showInstruction, setShowInstruction] = useState(true);
   const [autocomplete, setAutocomplete] = useState<google.maps.places.Autocomplete | null>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const pendingPanRef = useRef<Coordinates | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
-  const initializedRef = useRef(false);
 
   const panTo = useCallback((position: Coordinates) => {
     if (mapRef.current) {
@@ -63,85 +57,135 @@ export function ProfileSetupMapDrawer() {
     libraries,
   });
 
-  const geocodeAddress = useCallback(
-    async (address: string) => {
-      if (!isLoaded || !globalThis.google || !address) {
-        return;
+  const location = mapLocation;
+
+  // Build display address from location parts
+  const getDisplayAddress = useCallback((loc: LocationFormData | null): string => {
+    if (!loc) {
+      return '';
+    }
+    const parts = [
+      loc.houseNumber,
+      loc.street,
+      loc.area,
+      loc.city,
+      loc.state,
+      loc.postalCode,
+    ].filter(Boolean);
+    return parts.join(', ');
+  }, []);
+
+  const geocodeAddress = useCallback(async () => {
+    if (!isLoaded || !window.google || !location) {
+      return;
+    }
+
+    const geocoder = new window.google.maps.Geocoder();
+    const address = getDisplayAddress(location);
+
+    if (!address) {
+      return;
+    }
+
+    try {
+      const result = await geocoder.geocode({ address });
+      if (result.results[0]) {
+        const { lat, lng } = result.results[0].geometry.location;
+        const newPosition = { lat: lat(), lng: lng() };
+        setMarkerPosition(newPosition);
+        panTo(newPosition);
       }
+    } catch (error) {
+      console.error('Geocoding error:', error);
+    }
+  }, [isLoaded, location, panTo, getDisplayAddress]);
 
-      const geocoder = new globalThis.google.maps.Geocoder();
-
-      try {
-        const result = await geocoder.geocode({ address });
-        const firstResult = result?.results?.[0];
-        if (firstResult?.geometry?.location) {
-          const { lat, lng } = firstResult.geometry.location;
-          const newPosition = { lat: lat(), lng: lng() };
-          setMarkerPosition(newPosition);
-          panTo(newPosition);
-          // Update search address with formatted address
-          if (firstResult.formatted_address) {
-            setSearchAddress(firstResult.formatted_address);
-          }
-        }
-      } catch (error) {
-        console.error('Geocoding error:', error);
-      }
-    },
-    [isLoaded, panTo]
-  );
-
-  // Initialize with current location when drawer opens
   useEffect(() => {
-    if (isMapDrawerOpen && isLoaded && !initializedRef.current) {
-      initializedRef.current = true;
+    if (isMapDrawerOpen && isLoaded && location) {
+      const timeoutId = setTimeout(() => {
+        // Set search address from current location
+        setSearchAddress(getDisplayAddress(location));
+        setShowInstruction(true);
 
-      startTransition(() => {
-        if (currentCoordinates) {
-          setMarkerPosition(currentCoordinates);
-          if (currentLocation) {
-            setSearchAddress(currentLocation);
-          }
-          panTo(currentCoordinates);
-        } else if (currentLocation) {
-          setSearchAddress(currentLocation);
-          geocodeAddress(currentLocation);
+        if (location.coordinates) {
+          setMarkerPosition(location.coordinates);
+          panTo(location.coordinates);
         } else {
-          setMarkerPosition(defaultCenter);
-          panTo(defaultCenter);
+          geocodeAddress();
         }
-      });
+      }, 0);
+      return () => clearTimeout(timeoutId);
     }
-
-    // Reset initialization flag when drawer closes
-    if (!isMapDrawerOpen) {
-      initializedRef.current = false;
-    }
-  }, [isMapDrawerOpen, isLoaded, currentLocation, currentCoordinates, panTo, geocodeAddress]);
+    return undefined;
+  }, [isMapDrawerOpen, isLoaded, location, geocodeAddress, panTo, getDisplayAddress]);
 
   const reverseGeocode = useCallback(
     async (position: Coordinates) => {
-      if (!isLoaded || !globalThis.google) {
+      if (!isLoaded || !window.google || !location) {
         return;
       }
 
-      const geocoder = new globalThis.google.maps.Geocoder();
+      const geocoder = new window.google.maps.Geocoder();
 
       try {
         const result = await geocoder.geocode({ location: position });
-        const firstResult = result?.results?.[0];
-        if (firstResult?.formatted_address) {
-          setSearchAddress(firstResult.formatted_address);
+        if (result.results[0]) {
+          const addressComponents = result.results[0].address_components;
+
+          // Parse address components
+          let street = '';
+          let houseNumber = '';
+          let area = '';
+          let city = '';
+          let state = '';
+          let postalCode = '';
+
+          addressComponents.forEach((component) => {
+            const types = component.types;
+
+            if (types.includes('street_number')) {
+              houseNumber = component.long_name;
+            } else if (types.includes('route')) {
+              street = component.long_name;
+            } else if (types.includes('sublocality') || types.includes('neighborhood')) {
+              area = component.long_name;
+            } else if (types.includes('locality')) {
+              city = component.long_name;
+            } else if (types.includes('administrative_area_level_1')) {
+              state = component.long_name;
+            } else if (types.includes('postal_code')) {
+              postalCode = component.long_name;
+            }
+          });
+
+          const updatedLocation: LocationFormData = {
+            buildingPlaceName: location.buildingPlaceName || '',
+            street,
+            houseNumber,
+            area,
+            city,
+            state,
+            postalCode,
+            addCommentAboutLocation: location.addCommentAboutLocation,
+            coordinates: position,
+          };
+
+          updateMapLocation(updatedLocation);
+
+          // Update search address display
+          if (result.results[0].formatted_address) {
+            setSearchAddress(result.results[0].formatted_address);
+          }
         }
       } catch (error) {
         console.error('Reverse geocoding error:', error);
       }
     },
-    [isLoaded]
+    [isLoaded, location, updateMapLocation]
   );
 
   const onPlaceChanged = useCallback(() => {
-    if (!autocomplete) {
+    if (!autocomplete || !location) {
       return;
     }
 
@@ -158,12 +202,53 @@ export function ProfileSetupMapDrawer() {
     setMarkerPosition(coordinates);
     panTo(coordinates);
 
+    // Parse address components from selected place
+    const addressComponents = place.address_components || [];
+    let street = '';
+    let houseNumber = '';
+    let area = '';
+    let city = '';
+    let state = '';
+    let postalCode = '';
+
+    addressComponents.forEach((component) => {
+      const types = component.types;
+
+      if (types.includes('street_number')) {
+        houseNumber = component.long_name;
+      } else if (types.includes('route')) {
+        street = component.long_name;
+      } else if (types.includes('sublocality') || types.includes('neighborhood')) {
+        area = component.long_name;
+      } else if (types.includes('locality')) {
+        city = component.long_name;
+      } else if (types.includes('administrative_area_level_1')) {
+        state = component.long_name;
+      } else if (types.includes('postal_code')) {
+        postalCode = component.long_name;
+      }
+    });
+
+    const updatedLocation: LocationFormData = {
+      buildingPlaceName: place.name || location.buildingPlaceName || '',
+      street,
+      houseNumber,
+      area,
+      city,
+      state,
+      postalCode,
+      addCommentAboutLocation: location.addCommentAboutLocation,
+      coordinates,
+    };
+
+    updateMapLocation(updatedLocation);
+
     if (place.formatted_address) {
       setSearchAddress(place.formatted_address);
     } else if (place.name) {
       setSearchAddress(place.name);
     }
-  }, [autocomplete, panTo]);
+  }, [autocomplete, location, panTo, updateMapLocation]);
 
   const onMarkerDragEnd = (e: google.maps.MapMouseEvent) => {
     if (e.latLng) {
@@ -176,30 +261,29 @@ export function ProfileSetupMapDrawer() {
     }
   };
 
-  const handleSubmit = () => {
-    if (!formData.step1) {
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    // Autocomplete handles this automatically
+  };
+
+  const handleConfirm = () => {
+    if (!location) {
       return;
     }
 
-    // Update Step1 form data with new location and coordinates
-    setStepData('step1', {
-      ...formData.step1,
-      location: searchAddress || formData.step1.location,
+    const updatedLocation: LocationFormData = {
+      ...location,
       coordinates: markerPosition,
-    });
+    };
 
-    // Close drawer
+    if (mapLocationCallback) {
+      mapLocationCallback(updatedLocation);
+    }
+
     closeMapDrawer();
   };
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (searchAddress.trim()) {
-      geocodeAddress(searchAddress);
-    }
-  };
-
-  if (!isMapDrawerOpen) {
+  if (!location) {
     return null;
   }
 
@@ -213,49 +297,49 @@ export function ProfileSetupMapDrawer() {
           <SheetTitle className="text-3xl font-bold">Is This the right location?</SheetTitle>
 
           <p className="pt-2 text-lg">
-            This helps customers find you easily. If it&apos;s not correct, search for your exact
-            address or a nearby landmark.
+            This helps customers find you easily. Search for your address or drag the marker to your
+            exact location.
           </p>
         </SheetHeader>
 
         <div className="mt-6 flex flex-1 flex-col">
-          <div className="relative">
-            {/* Search Bar */}
-            {isLoaded && (
-              <div className="mb-4">
-                <Autocomplete
-                  onLoad={setAutocomplete}
-                  onPlaceChanged={onPlaceChanged}
-                  options={{ types: ['establishment', 'geocode'] }}
-                >
-                  <form onSubmit={handleSearchSubmit} className="relative">
-                    <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-gray-400" />
-                    <Input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Search address or landmark"
-                      value={searchAddress}
-                      onChange={(e) => setSearchAddress(e.target.value)}
-                      className="h-12 rounded-full border-gray-300 px-6 py-7 pl-12"
-                    />
-                  </form>
-                </Autocomplete>
-              </div>
-            )}
+          {/* Search Bar */}
+          {isLoaded && (
+            <div className="mb-4">
+              <Autocomplete
+                onLoad={setAutocomplete}
+                onPlaceChanged={onPlaceChanged}
+                options={{ types: ['establishment', 'geocode'] }}
+              >
+                <form onSubmit={handleSearchSubmit} className="relative">
+                  <Search className="absolute top-1/2 left-4 size-5 -translate-y-1/2 text-gray-400" />
+                  <Input
+                    ref={searchInputRef}
+                    type="text"
+                    placeholder="Search address or landmark"
+                    value={searchAddress}
+                    onChange={(e) => setSearchAddress(e.target.value)}
+                    className="h-12 rounded-full border-gray-300 px-6 py-7 pl-12"
+                  />
+                </form>
+              </Autocomplete>
+            </div>
+          )}
 
+          <div className="relative">
             <div className="relative overflow-hidden rounded-2xl border">
               {/* Map */}
               {isLoaded ? (
                 <GoogleMap
                   mapContainerStyle={containerStyle}
-                  center={markerPosition}
+                  center={defaultCenter}
                   zoom={15}
                   onLoad={onMapLoad}
                 >
                   <Marker position={markerPosition} draggable onDragEnd={onMarkerDragEnd} />
                 </GoogleMap>
               ) : (
-                <div className="flex h-[400px] items-center justify-center bg-gray-100">
+                <div className="flex h-[350px] items-center justify-center bg-gray-100">
                   Loading map...
                 </div>
               )}
@@ -281,10 +365,10 @@ export function ProfileSetupMapDrawer() {
           </div>
 
           <Button
-            onClick={handleSubmit}
+            onClick={handleConfirm}
             className="bg-gradient-yellow mt-auto w-full rounded-full py-6 text-base font-semibold text-black hover:opacity-90"
           >
-            Submit
+            Continue
           </Button>
         </div>
       </SheetContent>

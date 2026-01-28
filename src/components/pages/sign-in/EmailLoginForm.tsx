@@ -10,14 +10,14 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { useGetProfile, useLogin } from '@/react-query/auth/mutations';
+import { getUserType } from '@/constants/roles';
+import { useLogin } from '@/react-query/auth/mutations';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
 
 export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => void }) {
   const router = useRouter();
   const loginMutation = useLogin();
-  const getProfileMutation = useGetProfile();
 
   const {
     register,
@@ -28,19 +28,29 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
     resolver: zodResolver(signInSchema),
   });
 
-  const isLoading = loginMutation.isPending || getProfileMutation.isPending;
+  const isLoading = loginMutation.isPending;
 
   const onSubmit = async (data: SignInInput) => {
     try {
-      await loginMutation.mutateAsync(data);
+      const loginResponse = await loginMutation.mutateAsync(data);
 
-      const profileData = await getProfileMutation.mutateAsync();
+      const userType = getUserType(loginResponse.user?.roles);
+      const skipOnboarding = loginResponse.onboarding?.skipOnboarding;
+      const isOnboardingCompleted = loginResponse.onboarding?.isOnboardingCompleted;
 
-      if (profileData?.onboarding?.isComplete || profileData?.onboarding?.skipOnboarding) {
-        router.push('/dashboard');
+      if (isOnboardingCompleted || skipOnboarding) {
+        window.location.replace('/dashboard');
+        return;
+      }
+
+      if (userType === 'owner') {
+        window.location.replace('/onboarding');
+      } else if (userType === 'branch_manager') {
+        window.location.replace('/profile-setup');
+      } else if (userType === 'branch_user') {
+        window.location.replace('/dashboard');
       } else {
-        const targetStep = profileData?.onboarding?.currentStep || 'welcome';
-        router.push(`/onboarding/${targetStep}`);
+        toast.error('User role not configured. Please contact support.');
       }
     } catch (err: any) {
       const status = err?.response?.status;
@@ -48,11 +58,12 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
 
       if (status === 403 && errorData?.error === 'verification_required') {
         const verificationError = errorData as VerificationRequiredError;
+        const verificationData = verificationError.data;
         const email = getValues('email');
-        const userId = verificationError.userId || '';
-        const phone = verificationError.phone || '';
+        const userId = verificationData?.userId || '';
+        const phone = verificationData?.phone || '';
 
-        if (!verificationError.emailVerified) {
+        if (!verificationData?.emailVerified) {
           const params = new URLSearchParams({
             type: 'login',
             userId,
@@ -60,7 +71,7 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
             phone,
           });
           router.push(`/verify-email?${params.toString()}`);
-        } else if (!verificationError.phoneVerified) {
+        } else if (!verificationData?.phoneVerified) {
           const params = new URLSearchParams({
             type: 'login',
             userId,

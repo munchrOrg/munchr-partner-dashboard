@@ -137,11 +137,7 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
           ? await verifyEmailMutation.mutateAsync({ userId, otp })
           : await verifyPhoneMutation.mutateAsync({ userId, otp });
 
-      if (!response || !response.success) {
-        return;
-      }
-
-      toast.success(response.message || config.successMessage);
+      toast.success(config.successMessage);
 
       const { setEmailVerified, setPhoneVerified } = useSignupStore.getState();
       if (type === 'email') {
@@ -150,34 +146,31 @@ export function VerifyOtpForm({ type }: VerifyOtpFormProps) {
         setPhoneVerified(true);
       }
 
-      const accessToken = response.accessToken || (response as any).tokens?.accessToken;
-      if (accessToken) {
-        setAccessToken(accessToken);
+      if (response.tokens?.accessToken) {
+        setAccessToken(response.tokens.accessToken);
       }
 
       const bothVerified = response.emailVerified && response.phoneVerified;
 
       if (bothVerified || response.accountActivated) {
         useSignupStore.getState().reset();
-        const targetStep = response.onboarding?.currentStep || 'welcome';
-        router.push(`/onboarding/${targetStep}`);
+        router.replace('/onboarding');
         return;
       }
 
       if (type === 'email' && !response.phoneVerified) {
         const phone = searchParams.get('phone') || '';
-        router.push(
+        router.replace(
           `/verify-phone?type=signup&userId=${userId}&phone=${encodeURIComponent(phone)}&email=${encodeURIComponent(searchParams.get('email') || '')}`
         );
       } else if (type === 'phone' && !response.emailVerified) {
         const email = searchParams.get('email') || '';
-        router.push(
+        router.replace(
           `/verify-email?type=signup&userId=${userId}&email=${encodeURIComponent(email)}&phone=${encodeURIComponent(searchParams.get('phone') || '')}`
         );
       } else {
         useSignupStore.getState().reset();
-        const targetStep = response.onboarding?.currentStep || 'welcome';
-        router.push(`/onboarding/${targetStep}`);
+        router.replace('/onboarding');
       }
     } catch {}
   };

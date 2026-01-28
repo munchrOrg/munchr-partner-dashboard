@@ -33,7 +33,7 @@ export function proxy(request: NextRequest) {
   }
 
   if (isAuthOnlyRoute && isAuthenticated) {
-    return NextResponse.redirect(new URL('/onboarding/welcome', request.url));
+    return NextResponse.redirect(new URL('/onboarding', request.url));
   }
 
   if (isVerificationRoute) {
@@ -42,7 +42,7 @@ export function proxy(request: NextRequest) {
 
   if (pathname === '/') {
     if (isAuthenticated) {
-      return NextResponse.redirect(new URL('/onboarding/welcome', request.url));
+      return NextResponse.redirect(new URL('/onboarding', request.url));
     }
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }

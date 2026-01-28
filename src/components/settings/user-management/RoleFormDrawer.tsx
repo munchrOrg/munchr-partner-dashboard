@@ -1,7 +1,6 @@
 'use client';
 
-import type { RolePermission } from '@/react-query/roles/types';
-import type { Role } from '@/types/roles';
+import type { Role, RolePermission } from '@/react-query/roles/types';
 import type { RoleFormInput } from '@/validations/user-management';
 
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -36,43 +35,63 @@ import { useCreateRole, useUpdateRole } from '@/react-query/roles/mutations';
 import { useRolePermissions } from '@/react-query/roles/queries';
 import { roleFormSchema } from '@/validations/user-management';
 
-/* =========================
-   Helpers
-========================= */
-
-const mapApiPermissionsToForm = (apiPermissions: RolePermission[]) => {
-  const grouped: Record<string, { page: string; view: boolean; edit: boolean; delete: boolean }> =
-    {};
-
-  apiPermissions.forEach((perm) => {
-    const page = perm.resource;
-
-    if (!grouped[page]) {
-      grouped[page] = {
-        page,
-        view: false,
-        edit: false,
-        delete: false,
-      };
-    }
-
-    if (perm.code === 'view') {
-      grouped[page].view = true;
-    }
-    if (perm.code === 'create' || perm.code === 'update') {
-      grouped[page].edit = true;
-    }
-    if (perm.code === 'delete') {
-      grouped[page].delete = true;
-    }
-  });
-
-  return Object.values(grouped);
+type GroupedPermissions = {
+  resource: string;
+  codes: string[];
+  permissionMap: Record<string, string>;
 };
 
-/* =========================
-   Props
-========================= */
+const groupPermissionsByResource = (
+  apiPermissions: RolePermission[]
+): { grouped: GroupedPermissions[]; allCodes: string[] } => {
+  const resourceMap: Record<string, { codes: Set<string>; permissionMap: Record<string, string> }> =
+    {};
+  const allCodesSet = new Set<string>();
+
+  apiPermissions.forEach((perm) => {
+    if (!resourceMap[perm.resource]) {
+      resourceMap[perm.resource] = { codes: new Set(), permissionMap: {} };
+    }
+    const entry = resourceMap[perm.resource];
+    if (entry) {
+      entry.codes.add(perm.code);
+      entry.permissionMap[perm.code] = perm.id;
+    }
+    allCodesSet.add(perm.code);
+  });
+
+  const codeOrder = [
+    'view',
+    'create',
+    'update',
+    'delete',
+    'cancel',
+    'export',
+    'submit',
+    'process',
+    'respond',
+  ];
+  const allCodes = codeOrder.filter((c) => allCodesSet.has(c));
+
+  const grouped = Object.entries(resourceMap).map(([resource, data]) => ({
+    resource,
+    codes: Array.from(data.codes),
+    permissionMap: data.permissionMap,
+  }));
+
+  return { grouped, allCodes };
+};
+
+const formatResourceName = (resource: string) => {
+  return resource
+    .split(/[-_]/)
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+const formatCodeName = (code: string) => {
+  return code.charAt(0).toUpperCase() + code.slice(1);
+};
 
 type RoleFormDrawerProps = {
   open: boolean;
@@ -80,14 +99,17 @@ type RoleFormDrawerProps = {
   role?: Role | null;
 };
 
-/* =========================
-   Component
-========================= */
-
 export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDrawerProps>) {
   const isEditMode = !!role;
 
   const { data: permissionsResponse } = useRolePermissions();
+
+  const { grouped, allCodes } = useMemo(() => {
+    if (!permissionsResponse) {
+      return { grouped: [], allCodes: [] };
+    }
+    return groupPermissionsByResource(permissionsResponse);
+  }, [permissionsResponse]);
 
   const form = useForm<RoleFormInput>({
     resolver: zodResolver(roleFormSchema),
@@ -103,60 +125,50 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
     name: 'permissions',
   });
 
-  /* =========================
-     Select All Logic
-  ========================= */
-
   const selectAll = useMemo(() => {
     if (!permissions?.length) {
       return false;
     }
-
-    const allSelected = permissions.every((p) => p.view && p.edit && p.delete);
-    const noneSelected = permissions.every((p) => !p.view && !p.edit && !p.delete);
-
-    return allSelected && !noneSelected;
+    return permissions.every((p) => Object.values(p.permissions).every((v) => v));
   }, [permissions]);
 
-  /* =========================
-     Load permissions from API
-  ========================= */
-
   useEffect(() => {
-    if (!open || !permissionsResponse?.data) {
+    if (!open || !permissionsResponse || !grouped.length) {
       return;
     }
 
-    const basePermissions = mapApiPermissionsToForm(permissionsResponse.data).map((p) => ({
-      ...p,
-      view: false,
-      edit: false,
-      delete: false,
+    const basePermissions = grouped.map((g) => ({
+      resource: g.resource,
+      permissions: g.codes.reduce(
+        (acc, code) => {
+          acc[code] = false;
+          return acc;
+        },
+        {} as Record<string, boolean>
+      ),
     }));
 
-    if (isEditMode && role) {
-      const permLookup: Record<string, Record<string, boolean>> = {};
-      if (Array.isArray(role.permissions)) {
-        role.permissions.forEach((perm: any) => {
-          if (!permLookup[perm.resource]) {
-            permLookup[perm.resource] = {};
-          }
-          (permLookup[perm.resource] as Record<string, boolean>)[perm.code] = true;
-        });
-      }
+    if (isEditMode && role?.permissions) {
+      const roleLookup: Record<string, Set<string>> = {};
+      role.permissions.forEach((perm: RolePermission) => {
+        if (!roleLookup[perm.resource]) {
+          roleLookup[perm.resource] = new Set();
+        }
+        roleLookup[perm.resource]?.add(perm.code);
+      });
 
       const mergedPermissions = basePermissions.map((p) => {
-        const resourcePerms = permLookup?.[p.page] ?? {};
-        return {
-          ...p,
-          view: !!resourcePerms?.view,
-          edit: !!(resourcePerms?.edit || resourcePerms?.update || resourcePerms?.create),
-          delete: !!resourcePerms?.delete,
-        };
+        const enabledCodes = roleLookup[p.resource] || new Set();
+        const updatedPerms = { ...p.permissions };
+        Object.keys(updatedPerms).forEach((code) => {
+          updatedPerms[code] = enabledCodes.has(code);
+        });
+        return { resource: p.resource, permissions: updatedPerms };
       });
+
       form.reset({
         name: role.name,
-        description: role.description,
+        description: role.description || '',
         permissions: mergedPermissions,
       });
     } else {
@@ -166,56 +178,56 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
         permissions: basePermissions,
       });
     }
-  }, [open, permissionsResponse, role, isEditMode, form]);
-
-  /* =========================
-     Handlers
-  ========================= */
+  }, [open, permissionsResponse, role, isEditMode, form, grouped]);
 
   const handleSelectAll = (checked: boolean) => {
     const updated = permissions.map((p) => ({
       ...p,
-      view: checked,
-      edit: checked,
-      delete: checked,
+      permissions: Object.keys(p.permissions).reduce(
+        (acc, code) => {
+          acc[code] = checked;
+          return acc;
+        },
+        {} as Record<string, boolean>
+      ),
     }));
     form.setValue('permissions', updated);
   };
 
-  const handlePermissionChange = (
-    index: number,
-    action: 'view' | 'edit' | 'delete',
-    checked: boolean
-  ) => {
-    const updated: any = [...permissions];
-    updated[index] = {
-      ...updated[index],
-      [action]: checked,
-    };
+  const handlePermissionChange = (resourceIndex: number, code: string, checked: boolean) => {
+    const updated = [...permissions];
+    const current = updated[resourceIndex];
+    if (current) {
+      updated[resourceIndex] = {
+        resource: current.resource,
+        permissions: {
+          ...current.permissions,
+          [code]: checked,
+        },
+      };
+    }
     form.setValue('permissions', updated);
   };
 
-  const createRoleMutation: any = useCreateRole();
-  const updateRoleMutation: any = useUpdateRole();
+  const createRoleMutation = useCreateRole();
+  const updateRoleMutation = useUpdateRole();
 
   const onSubmit = async (data: RoleFormInput) => {
     try {
-      // Collect selected permissionIds from permissionsResponse
       const selectedPermissionIds: string[] = [];
-      if (permissionsResponse?.data) {
-        data.permissions.forEach((perm) => {
-          permissionsResponse.data.forEach((apiPerm) => {
-            if (
-              apiPerm.resource === perm.page &&
-              ((apiPerm.code === 'view' && perm.view) ||
-                ((apiPerm.code === 'create' || apiPerm.code === 'update') && perm.edit) ||
-                (apiPerm.code === 'delete' && perm.delete))
-            ) {
-              selectedPermissionIds.push(apiPerm.id);
-            }
-          });
+
+      data.permissions.forEach((resourcePerm) => {
+        const groupData = grouped.find((g) => g.resource === resourcePerm.resource);
+        if (!groupData) {
+          return;
+        }
+
+        Object.entries(resourcePerm.permissions).forEach(([code, enabled]) => {
+          if (enabled && groupData.permissionMap[code]) {
+            selectedPermissionIds.push(groupData.permissionMap[code]);
+          }
         });
-      }
+      });
 
       if (isEditMode && role) {
         await updateRoleMutation.mutateAsync({
@@ -242,18 +254,14 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
     }
   };
 
-  const isLoading = createRoleMutation.isLoading || updateRoleMutation.isLoading;
-
-  /* =========================
-     Render
-  ========================= */
+  const isLoading = createRoleMutation.isPending || updateRoleMutation.isPending;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent
         side="right"
         hideCloseButton
-        className="flex h-full w-full flex-col rounded-l-[15px] px-0 sm:max-w-md"
+        className="flex h-full w-full flex-col rounded-l-[15px] px-0 sm:max-w-2xl"
       >
         <SheetHeader className="flex flex-row items-center justify-between px-[30px] pt-8">
           <SheetTitle className="text-xl font-bold">
@@ -272,7 +280,6 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
             className="flex flex-1 flex-col overflow-hidden"
           >
             <div className="flex-1 space-y-6 overflow-y-auto px-[30px] pt-4">
-              {/* Name */}
               <FormField
                 control={form.control}
                 name="name"
@@ -287,7 +294,6 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
                 )}
               />
 
-              {/* Description */}
               <FormField
                 control={form.control}
                 name="description"
@@ -302,43 +308,58 @@ export function RoleFormDrawer({ open, onOpenChange, role }: Readonly<RoleFormDr
                 )}
               />
 
-              {/* Permissions */}
               <FormItem>
                 <div className="mb-3 flex justify-between">
-                  <FormLabel className="font-semibold">Page Access Permission</FormLabel>
+                  <FormLabel className="font-semibold">Permissions</FormLabel>
                   <div className="flex items-center gap-2">
                     <Checkbox checked={selectAll} onCheckedChange={handleSelectAll} />
                     <span className="text-sm">Select All</span>
                   </div>
                 </div>
 
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Page</TableHead>
-                      <TableHead className="text-center">View</TableHead>
-                      <TableHead className="text-center">Edit</TableHead>
-                      <TableHead className="text-center">Delete</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {permissions.map((p, i) => (
-                      <TableRow key={p.page}>
-                        <TableCell>{p.page}</TableCell>
-                        {(['view', 'edit', 'delete'] as const).map((action) => (
-                          <TableCell key={action} className="text-center">
-                            <Checkbox
-                              checked={p[action]}
-                              onCheckedChange={(checked) =>
-                                handlePermissionChange(i, action, checked as boolean)
-                              }
-                            />
-                          </TableCell>
+                <div className="overflow-x-auto rounded border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead className="bg-background sticky left-0">Resource</TableHead>
+                        {allCodes.map((code) => (
+                          <TableHead key={code} className="text-center capitalize">
+                            {formatCodeName(code)}
+                          </TableHead>
                         ))}
                       </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
+                    </TableHeader>
+                    <TableBody>
+                      {permissions.map((p, i) => {
+                        const groupData = grouped.find((g) => g.resource === p.resource);
+                        return (
+                          <TableRow key={p.resource}>
+                            <TableCell className="bg-background sticky left-0 font-medium">
+                              {formatResourceName(p.resource)}
+                            </TableCell>
+                            {allCodes.map((code) => {
+                              const hasCode = groupData?.codes.includes(code);
+                              return (
+                                <TableCell key={code} className="text-center">
+                                  {hasCode ? (
+                                    <Checkbox
+                                      checked={p.permissions[code] || false}
+                                      onCheckedChange={(checked) =>
+                                        handlePermissionChange(i, code, checked as boolean)
+                                      }
+                                    />
+                                  ) : (
+                                    <span className="text-muted-foreground">—</span>
+                                  )}
+                                </TableCell>
+                              );
+                            })}
+                          </TableRow>
+                        );
+                      })}
+                    </TableBody>
+                  </Table>
+                </div>
               </FormItem>
             </div>
 

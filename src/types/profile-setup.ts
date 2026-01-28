@@ -1,4 +1,4 @@
-import type { BusinessHoursFormData, Coordinates, FileUpload } from '@/types/onboarding';
+import type { BusinessHoursFormData, FileUpload, LocationFormData } from '@/types/onboarding';
 
 // ===== Enums =====
 export enum ProfileSetupStep {
@@ -14,8 +14,7 @@ export type Step1FormData = {
   businessName: string;
   businessDescription: string;
   cuisines: string;
-  location: string;
-  coordinates?: Coordinates | null;
+  location: LocationFormData;
 };
 
 export type Step2FormData = {
@@ -72,6 +71,8 @@ type ProfileSetupState = {
   isCompleted: boolean;
   isProgressDrawerOpen: boolean;
   isMapDrawerOpen: boolean;
+  mapLocation: LocationFormData | null;
+  mapLocationCallback: ((location: LocationFormData) => void) | null;
   isExampleDrawerOpen: boolean;
   exampleDrawerConfig: ExampleDrawerConfig | null;
   isScheduleDrawerOpen: boolean;
@@ -90,8 +91,12 @@ type ProfileSetupActions = {
   completeSetup: () => void;
   openProgressDrawer: () => void;
   closeProgressDrawer: () => void;
-  openMapDrawer: () => void;
+  openMapDrawer: (
+    location: LocationFormData,
+    onConfirm: (location: LocationFormData) => void
+  ) => void;
   closeMapDrawer: () => void;
+  updateMapLocation: (location: LocationFormData) => void;
   openExampleDrawer: (config: ExampleDrawerConfig) => void;
   closeExampleDrawer: () => void;
   openScheduleDrawer: () => void;

@@ -3,15 +3,11 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { CircleAlert } from 'lucide-react';
 import { useForm } from 'react-hook-form';
-import { toast } from 'sonner';
 import { z } from 'zod';
 import { StepHeader } from '@/components/onboarding/shared/StepHeader';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { useUpdateProfile } from '@/react-query/auth/mutations';
-import { useProfile } from '@/react-query/auth/queries';
-import { useOnboardingStore } from '@/stores/onboarding-store';
-import { OnboardingStep } from '@/types/onboarding';
+import { useOnboardingProfileStore } from '@/stores/onboarding-profile-store';
 
 const legalTaxSchema = z.object({
   cnicNumber: z.string().max(13).min(13, 'CNIC number is required'),
@@ -23,13 +19,12 @@ const legalTaxSchema = z.object({
 type LegalTaxInput = z.infer<typeof legalTaxSchema>;
 
 export function LegalTaxDetails() {
-  const { data: profile } = useProfile();
-  const { openExampleDrawer, triggerNavigation } = useOnboardingStore();
-  const updateProfileMutation = useUpdateProfile();
+  const { openExampleDrawer, profileData, formData, setStepFormData, setPendingFormSubmit } =
+    useOnboardingProfileStore();
 
-  const businessProfile = profile?.partner?.businessProfile;
+  const businessProfile = profileData?.businessProfile;
 
-  const legalTaxDefaults = {
+  const legalTaxDefaults = formData.legalTax || {
     cnicNumber: businessProfile?.cnicNumber || '',
     taxRegistrationNo: businessProfile?.taxRegistrationNo || '',
     firstAndMiddleNameForNic: businessProfile?.firstAndMiddleNameForNic || '',
@@ -46,28 +41,9 @@ export function LegalTaxDetails() {
     mode: 'all',
   });
 
-  const onSubmit = async (data: LegalTaxInput) => {
-    const payload = {
-      currentStep: OnboardingStep.LEGAL_TAX_DETAILS,
-      cnicNumber: data.cnicNumber,
-      taxRegistrationNo: data.taxRegistrationNo,
-      firstAndMiddleNameForNic: data.firstAndMiddleNameForNic,
-      lastNameForNic: data.lastNameForNic,
-    };
-
-    try {
-      const resp = await updateProfileMutation.mutateAsync(payload);
-
-      if (!resp || !resp.success) {
-        toast.error(resp?.message || 'Failed to save legal & tax details');
-        return;
-      }
-
-      triggerNavigation(OnboardingStep.LEGAL_TAX_DETAILS);
-    } catch (err) {
-      toast.error('Something went wrong while saving legal & tax details');
-      console.error(err);
-    }
+  const onSubmit = (data: LegalTaxInput) => {
+    setStepFormData('legalTax', data);
+    setPendingFormSubmit(true);
   };
 
   const showNameExample = () => {
