@@ -1,5 +1,5 @@
 import type { DashboardOverview, DashboardStats, PerformanceMetric, RecentOrder } from './types';
-import apiClient from '@/lib/axios';
+import { apiClient } from '@/lib/axios';
 
 export const dashboardService = {
   getStats: () => apiClient.get<DashboardStats>('/dashboard/stats').then((res) => res.data),

@@ -64,12 +64,12 @@ export function FileUploadBox({
     }
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const backendUrl = process.env.NEXT_PUBLIC_MEDIA_URL || '';
       const isPublicAsset = PUBLIC_ASSETS.has(assetType);
 
       const endpoint = isPublicAsset
-        ? `${backendUrl}/v1/storage/public/upload-url`
-        : `${backendUrl}/v1/storage/upload-url`;
+        ? `${backendUrl}/upload/public`
+        : `${backendUrl}/upload/protected`;
 
       const accessToken = useAuthStore.getState().accessToken;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
@@ -92,7 +92,7 @@ export function FileUploadBox({
       }
 
       const response = await res.json();
-      const { key, uploadUrl, publicUrl } = response.data;
+      const { key, uploadUrl, publicUrl } = response;
 
       try {
         await fetch(uploadUrl, {

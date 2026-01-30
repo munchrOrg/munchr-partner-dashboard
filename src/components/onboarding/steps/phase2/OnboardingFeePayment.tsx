@@ -33,8 +33,8 @@ export function OnboardingFeePayment() {
     }
     return {
       paymentTransactionId: businessProfile?.paymentTransactionId || '',
-      paymentScreenshot: businessProfile?.uploadScreenshotImageKey
-        ? createFileUploadFromKey(businessProfile.uploadScreenshotImageKey, 'Payment Screenshot')
+      paymentScreenshot: businessProfile?.paymentScreenshotKey
+        ? createFileUploadFromKey(businessProfile.paymentScreenshotKey, 'Payment Screenshot')
         : null,
     };
   });
@@ -70,14 +70,14 @@ export function OnboardingFeePayment() {
     setIsUploadingScreenshot(true);
 
     try {
-      const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
+      const backendUrl = process.env.NEXT_PUBLIC_MEDIA_URL || '';
       const accessToken = useAuthStore.getState().accessToken;
       const headers: Record<string, string> = { 'Content-Type': 'application/json' };
       if (accessToken) {
         headers.Authorization = `Bearer ${accessToken}`;
       }
 
-      const res = await fetch(`${backendUrl}/v1/storage/upload-url`, {
+      const res = await fetch(`${backendUrl}/upload/protected`, {
         method: 'POST',
         headers,
         body: JSON.stringify({
@@ -91,7 +91,7 @@ export function OnboardingFeePayment() {
         return;
       }
       const response = await res.json();
-      const { key, uploadUrl } = response.data;
+      const { key, uploadUrl } = response;
       try {
         const uploadRes = await fetch(uploadUrl, {
           method: 'PUT',

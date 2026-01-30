@@ -26,8 +26,8 @@ export function BankStatementUpload() {
     if (formData.bankStatement) {
       return formData.bankStatement;
     }
-    const prefilled = billingInfo?.chequeBookImageKey
-      ? createFileUploadFromKey(billingInfo.chequeBookImageKey, 'Bank Statement')
+    const prefilled = billingInfo?.chequeBookKey
+      ? createFileUploadFromKey(billingInfo.chequeBookKey, 'Bank Statement')
       : null;
     return { statementFile: prefilled };
   });

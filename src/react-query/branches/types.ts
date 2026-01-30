@@ -32,7 +32,7 @@ export type Branch = {
   latitude: number;
   longitude: number;
   addCommentAboutLocation?: string;
-  chequeBookImageKey?: string;
+  chequeBookKey?: string;
   bankName?: string;
   accountDetail?: string;
   iban?: string;
@@ -65,7 +65,7 @@ export type BankingDetails = {
   bankAccountOwner?: string;
   bankName?: string;
   IBAN?: string;
-  chequeBookImageKey?: string;
+  chequeBookKey?: string;
   billingAddressAreSame?: boolean;
   billingAddress?: BillingAddress;
 };
@@ -112,7 +112,7 @@ export type BranchBillingInfo = {
   bankAccountOwner: string | null;
   bankName: string | null;
   IBAN: string | null;
-  chequeBookImageKey: string | null;
+  chequeBookKey: string | null;
   billingAddressAreSame: boolean;
   billingAddress: BranchBillingAddress;
 };
@@ -167,7 +167,7 @@ export type BranchProfileUpdateRequest = {
   latitude?: number;
   longitude?: number;
   addCommentAboutLocation?: string;
-  chequeBookImageKey?: string;
+  chequeBookKey?: string;
   accountDetail?: string;
   bankName?: string;
   iban?: string;

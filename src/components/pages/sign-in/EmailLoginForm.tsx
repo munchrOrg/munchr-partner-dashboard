@@ -10,7 +10,6 @@ import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Input } from '@/components/ui/input';
-import { getUserType } from '@/constants/roles';
 import { useLogin } from '@/react-query/auth/mutations';
 import { signInSchema } from '@/validations/auth';
 import { FormFooter } from './FormFooter';
@@ -33,8 +32,8 @@ export function EmailLoginForm({ onSwitchToPhone }: { onSwitchToPhone?: () => vo
   const onSubmit = async (data: SignInInput) => {
     try {
       const loginResponse = await loginMutation.mutateAsync(data);
-
-      const userType = getUserType(loginResponse.user?.roles);
+      // const userType = getUserType(loginResponse.user?.userType);
+      const userType = loginResponse.user?.userType;
       const skipOnboarding = loginResponse.onboarding?.skipOnboarding;
       const isOnboardingCompleted = loginResponse.onboarding?.isOnboardingCompleted;
 

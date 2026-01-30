@@ -31,87 +31,87 @@ import type {
   VerifyPhoneResponse,
 } from './types';
 import type { ApiResponse } from '@/types/api';
-import apiClient from '@/lib/axios';
+import { authClient, partnerClient } from '@/lib/axios';
 
 export const authService = {
   login: (data: LoginRequest) =>
-    apiClient.post<ApiResponse<LoginResponse>>('v1/auth/login', data).then((res) => res.data.data),
+    authClient.post<ApiResponse<LoginResponse>>('v1/auth/login', data).then((res) => res.data.data),
 
   phoneLogin: (data: PhoneLoginRequest) =>
-    apiClient.post<ApiResponse<LoginResponse>>('v1/auth/login', data).then((res) => res.data.data),
+    authClient.post<ApiResponse<LoginResponse>>('v1/auth/login', data).then((res) => res.data.data),
 
   refreshToken: (data: RefreshTokenRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<RefreshTokenResponse>>('v1/auth/refresh', data)
       .then((res) => res.data.data),
 
   logout: (data?: LogoutRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<LogoutResponse>>('v1/auth/logout', data || {})
       .then((res) => res.data.data),
 
   changePassword: (data: ChangePasswordRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<ChangePasswordResponse>>('v1/auth/change-password', data)
       .then((res) => res.data.data),
 
   signUp: (data: SignUpRequest) =>
-    apiClient
+    partnerClient
       .post<ApiResponse<SignUpResponse>>('v1/auth/register', data)
       .then((res) => res.data.data),
 
   verifyOtp: (data: VerifyOtpRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<VerifyOtpResponse>>('v1/auth/otp/verify', data)
       .then((res) => res.data.data),
 
   resendOtp: (data: ResendOtpRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<ResendOtpResponse>>('v1/auth/otp/resend', data)
       .then((res) => res.data.data),
 
   resendEmailOtp: (data: ResendEmailOtpRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<ResendOtpResponse>>('partner/otp/resend-email', data)
       .then((res) => res.data.data),
 
   resendPhoneOtp: (data: ResendPhoneOtpRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<ResendOtpResponse>>('partner/otp/resend-phone', data)
       .then((res) => res.data.data),
 
   verifyEmail: (data: VerifyEmailRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<VerifyEmailResponse>>('v1/auth/verify-email', data)
       .then((res) => res.data.data),
 
   verifyPhone: (data: VerifyPhoneRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<VerifyPhoneResponse>>('v1/auth/verify-phone', data)
       .then((res) => res.data.data),
 
   verifyForgotPasswordOtp: (data: VerifyForgotPasswordOtpRequest) =>
-    apiClient
+    authClient
       .post<
         ApiResponse<VerifyForgotPasswordOtpResponse>
       >('v1/auth/verify-forgot-password-otp', data)
       .then((res) => res.data.data),
 
   updateProfile: (data: UpdateProfileRequest) =>
-    apiClient
+    partnerClient
       .put<ApiResponse<UpdateProfileResponse>>('v1/auth/update/profile', data)
       .then((res) => res.data.data),
 
   forgotPassword: (data: ForgotPasswordRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<ForgotPasswordResponse>>('v1/auth/forgot-password', data)
       .then((res) => res.data.data),
 
   resetPassword: (data: ResetPasswordRequest) =>
-    apiClient
+    authClient
       .post<ApiResponse<ResetPasswordResponse>>('v1/auth/reset-password', data)
       .then((res) => res.data.data),
 
   getProfile: () =>
-    apiClient.get<ApiResponse<ProfileResponse>>('v1/auth/profile').then((res) => res.data.data),
+    partnerClient.get<ApiResponse<ProfileResponse>>('v1/auth/profile').then((res) => res.data.data),
 };

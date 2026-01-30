@@ -40,28 +40,28 @@ export function Step2() {
   };
   const { data: branchData } = useBranchOnboardingProfile();
   const branchName = branchData?.branch?.branchName;
-  const chequeBookImageKey = branchData?.bankingDetails?.chequeBookImageKey;
+  const chequeBookKey = branchData?.bankingDetails?.chequeBookKey;
   useEffect(() => {
-    if (chequeBookImageKey) {
+    if (chequeBookKey) {
       reset({
         bankProofFiles: [
           {
-            name: chequeBookImageKey,
-            url: chequeBookImageKey,
+            name: chequeBookKey,
+            url: chequeBookKey,
             size: 0,
           },
         ],
       });
     }
-  }, [chequeBookImageKey, reset]);
+  }, [chequeBookKey, reset]);
 
   const onSubmit = async (data: Step2Input) => {
     try {
       setStepData('step2', data);
-      const imageKey = data?.bankProofFiles?.[0]?.name || chequeBookImageKey;
+      const imageKey = data?.bankProofFiles?.[0]?.name || chequeBookKey;
 
       await updateBranch({
-        chequeBookImageKey: imageKey,
+        chequeBookKey: imageKey,
         businessName: branchName,
       } as any);
       toast.success('Bank data uploaded successfully');
