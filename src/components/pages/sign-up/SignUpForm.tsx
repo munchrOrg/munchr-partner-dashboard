@@ -123,7 +123,7 @@ export function SignUpForm() {
 
     try {
       const backendUrl = process.env.NEXT_PUBLIC_BACKEND_URL || '';
-      const res = await fetch(`${backendUrl}/v1/storage/public/upload-url`, {
+      const res = await fetch(`${backendUrl}/upload/public`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

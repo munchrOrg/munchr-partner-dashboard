@@ -136,7 +136,7 @@ function transformBankingPayload(data: BankingFormData): Partial<UpdateProfileRe
 function transformBankStatementPayload(data: BankStatementFormData): Partial<UpdateProfileRequest> {
   const file = data.statementFile as FileWithKey;
   return {
-    chequeBookImageKey: file?.key || '',
+    chequeBookKey: file?.key || '',
   };
 }
 
@@ -160,7 +160,7 @@ function transformPaymentMethodPayload(data: PaymentMethodFormData): Partial<Upd
 function transformMenuPayload(data: MenuFormData): Partial<UpdateProfileRequest> {
   const file = data.menuFile as FileWithKey;
   return {
-    menuImageKey: file?.key || '',
+    menuKey: file?.key || '',
   };
 }
 
@@ -182,7 +182,7 @@ function transformTrainingCallPayload(data: TrainingCallFormData): Partial<Updat
 function transformOnboardingFeePayload(data: OnboardingFeeFormData): Partial<UpdateProfileRequest> {
   const file = data.paymentScreenshot as FileWithKey;
   return {
-    uploadScreenshotImageKey: file?.key || '',
+    paymentScreenshotKey: file?.key || '',
     paymentTransactionId: data.paymentTransactionId,
   };
 }

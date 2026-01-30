@@ -26,8 +26,8 @@ export function DineInMenuUpload() {
     if (formData.menu) {
       return formData.menu;
     }
-    const prefilled = businessProfile?.menuImageKey
-      ? createFileUploadFromKey(businessProfile.menuImageKey, 'Menu')
+    const prefilled = businessProfile?.menuKey
+      ? createFileUploadFromKey(businessProfile.menuKey, 'Menu')
       : null;
     return { menuFile: prefilled };
   });

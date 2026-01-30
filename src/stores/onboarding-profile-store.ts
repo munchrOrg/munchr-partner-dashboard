@@ -209,26 +209,26 @@ function extractFormDataFromProfile(profile: ProfileResponse): Partial<Onboardin
       lastNameForNic: profile.businessProfile.lastNameForNic || '',
     };
 
-    if (profile.businessProfile.menuImageKey) {
+    if (profile.businessProfile.menuKey) {
       formData.menu = {
         menuFile: {
           name: 'Menu',
-          url: profile.businessProfile.menuImageKey,
-          key: profile.businessProfile.menuImageKey,
+          url: profile.businessProfile.menuKey,
+          key: profile.businessProfile.menuKey,
         },
       };
     }
 
     if (
-      profile.businessProfile.uploadScreenshotImageKey ||
+      profile.businessProfile.paymentScreenshotKey ||
       profile.businessProfile.paymentTransactionId
     ) {
       formData.onboardingFee = {
-        paymentScreenshot: profile.businessProfile.uploadScreenshotImageKey
+        paymentScreenshot: profile.businessProfile.paymentScreenshotKey
           ? {
               name: 'Payment Screenshot',
-              url: profile.businessProfile.uploadScreenshotImageKey,
-              key: profile.businessProfile.uploadScreenshotImageKey,
+              url: profile.businessProfile.paymentScreenshotKey,
+              key: profile.businessProfile.paymentScreenshotKey,
             }
           : null,
         paymentTransactionId: profile.businessProfile.paymentTransactionId || '',
@@ -250,12 +250,12 @@ function extractFormDataFromProfile(profile: ProfileResponse): Partial<Onboardin
       billingPostalCode: profile.billingInfo.billingAddress?.postalCode || '',
     };
 
-    if (profile.billingInfo.chequeBookImageKey) {
+    if (profile.billingInfo.chequeBookKey) {
       formData.bankStatement = {
         statementFile: {
           name: 'Bank Statement',
-          url: profile.billingInfo.chequeBookImageKey,
-          key: profile.billingInfo.chequeBookImageKey,
+          url: profile.billingInfo.chequeBookKey,
+          key: profile.billingInfo.chequeBookKey,
         },
       };
     }

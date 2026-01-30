@@ -28,6 +28,7 @@ export type LoginResponse = {
     name: string;
     email: string;
     isOwner: boolean;
+    userType: string;
     roles: LoginUserRole[];
   };
   onboarding?: {
@@ -268,14 +269,14 @@ export type UpdateProfileRequest = {
   IBAN?: string;
   billingAddressAreSame?: boolean;
   billingAddress?: BillingAddressType;
-  chequeBookImageKey?: string;
+  chequeBookKey?: string;
   paymentMethod?: PaymentMethodType;
 
   // Other business fields
   email?: string;
-  menuImageKey?: string;
+  menuKey?: string;
   bookSlot?: BookSlotType;
-  uploadScreenshotImageKey?: string;
+  paymentScreenshotKey?: string;
   paymentTransactionId?: string;
   branchId?: string;
   operatingHours?: OperatingHoursType[];
@@ -363,7 +364,7 @@ export type ProfileBusinessProfile = {
   businessName: string;
   description: string;
   logoImageUrl: string;
-  menuImageKey: string;
+  menuKey: string;
   cnicNumber: string;
   cnicFrontKey: string;
   cnicBackKey: string;
@@ -372,7 +373,7 @@ export type ProfileBusinessProfile = {
   taxRegistrationNo: string;
   firstAndMiddleNameForNic: string;
   lastNameForNic: string;
-  uploadScreenshotImageKey: string;
+  paymentScreenshotKey: string;
   paymentTransactionId: string;
   // Additional fields that may be present
   cuisines?: string[];
@@ -398,7 +399,7 @@ export type ProfileBillingInfo = {
   bankAccountOwner: string;
   bankName: string;
   IBAN: string;
-  chequeBookImageKey: string;
+  chequeBookKey: string;
   billingAddressAreSame: boolean;
   paymentAccountNumber: string;
   paymentMethodType: string;

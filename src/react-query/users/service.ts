@@ -1,5 +1,5 @@
 import type { CreateUserRequest, UpdateUserRequest, User } from './types';
-import apiClient from '@/lib/axios';
+import { apiClient } from '@/lib/axios';
 
 export const userService = {
   getAll: () => apiClient.get<User[]>('/users').then((res) => res.data),
